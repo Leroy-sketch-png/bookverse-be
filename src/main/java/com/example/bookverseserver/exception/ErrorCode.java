@@ -1,0 +1,50 @@
+package com.example.bookverseserver.exception;
+
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+
+@Getter
+public enum ErrorCode {
+    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_INPUT(1001, "Invalid input data", HttpStatus.BAD_REQUEST),
+    UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED(1003, "You do not have permission", HttpStatus.FORBIDDEN),
+
+    // USER
+    USER_EXISTED(1100, "User already exists", HttpStatus.BAD_REQUEST),
+    USER_NOT_EXISTED(1101,"User not exists", HttpStatus.BAD_REQUEST ),
+    USER_NOT_FOUND(1102, "User not found", HttpStatus.NOT_FOUND),
+
+    // BOOK
+    BOOK_EXISTED(1200, "Book already exists", HttpStatus.BAD_REQUEST),
+    BOOK_NOT_FOUND(1201, "Book not found", HttpStatus.NOT_FOUND),
+    BOOK_IMAGE_UPLOAD_FAILED(1202, "Book cover upload failed", HttpStatus.BAD_REQUEST),
+
+    // CATEGORY
+    CATEGORY_NOT_FOUND(1300, "Category not found", HttpStatus.NOT_FOUND),
+    CATEGORY_EXISTED(1301, "Category already exists", HttpStatus.BAD_REQUEST),
+
+    // INVENTORY
+    INVENTORY_NOT_FOUND(1400, "Inventory not found", HttpStatus.NOT_FOUND),
+
+    // REVIEW
+    REVIEW_NOT_FOUND(1500, "Review not found", HttpStatus.NOT_FOUND),
+
+    // GENERAL FILE/UPLOAD
+    FILE_UPLOAD_FAILED(1600, "File upload failed", HttpStatus.BAD_REQUEST),
+    FILE_DELETE_FAILED(1601, "File delete failed", HttpStatus.BAD_REQUEST),
+
+    INVALID_KEY(1700, "Invalid key" , HttpStatus.BAD_REQUEST ),
+    ROLE_NOT_FOUND(1701, "Role not found" , HttpStatus.NOT_FOUND ),;
+
+    private final int code;
+    private final String message;
+    private final HttpStatusCode statusCode;
+
+    ErrorCode(int code, String message, HttpStatusCode statusCode) {
+        this.code = code;
+        this.message = message;
+        this.statusCode = statusCode;
+    }
+}
