@@ -1,23 +1,26 @@
 package com.example.bookverseserver.dto.request.Book;
 
 import lombok.*;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.UUID;
+import lombok.experimental.FieldDefaults;
 
-@Getter
-@Setter
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookRequest {
-    private UUID sellerId;
-    private String title;
-    private String author;
-    private String isbn;
-    private String description;
-    private BigDecimal price;
-    private UUID categoryId;
-    private String coverImageUrl;
-    private Date publishedDate;
+    String title;
+    String author;
+    String isbn;
+    String description;
+    BigDecimal price;
+    Long categoryId;
+    String coverImageUrl;
+    LocalDate publishedDate;
+
+    // stock nằm trong Inventory, client có thể gửi ở đây
+    Integer stockQuantity;
 }

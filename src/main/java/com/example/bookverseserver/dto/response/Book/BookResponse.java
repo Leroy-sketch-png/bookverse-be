@@ -1,27 +1,35 @@
 package com.example.bookverseserver.dto.response.Book;
 
 import lombok.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.UUID;
+import lombok.experimental.FieldDefaults;
 
-@Getter
-@Setter
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookResponse {
-    private Long id;
-    private UUID sellerId;
-    private String title;
-    private String author;
-    private String isbn;
-    private String description;
-    private BigDecimal price;
-    private UUID categoryId;
-    private String coverImageUrl;
-    private Date publishedDate;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    Long id;
+    String title;
+    String author;
+    String isbn;
+    String description;
+    BigDecimal price;
+    String coverImageUrl;
+    LocalDate publishedDate;
+
+    Long sellerId;
+    String sellerName;
+
+    Long categoryId;
+    String categoryName;
+
+    Integer stockQuantity;
+
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }

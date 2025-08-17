@@ -1,7 +1,7 @@
 package com.example.bookverseserver.repository;
 
 import com.example.bookverseserver.dto.response.Book.BookResponse;
-import com.example.bookverseserver.entity.Product.Book;
+import com.example.bookverseserver.entity.Product.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,8 +9,5 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, Long> {
-    List<Book> findByCategory_Id(Long categoryId);
-
-    List<Book> findByCategory_NameIgnoreCase(String name);
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 }
