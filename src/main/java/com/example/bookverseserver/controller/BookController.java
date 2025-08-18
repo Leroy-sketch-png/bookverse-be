@@ -37,7 +37,7 @@ public class BookController {
     }
 
     @GetMapping("/category/{categoryId}")
-    ApiResponse<List<BookResponse>> getBooksByCategoryId(@PathVariable Long categoryId) {
+    ApiResponse<List<BookResponse>> getBooksByCategoryId(@PathVariable("categoryId") Long categoryId) {
         return ApiResponse.<List<BookResponse>>builder()
                 .result(bookService.getAllBooksByCategory(categoryId))
                 .build();

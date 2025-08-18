@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.AccessLevel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,7 +68,7 @@ public class BookService {
     }
 
     public BookResponse getBookById(Long id) {
-        Book book = (Book) bookRepository.findById(id)
+        Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
         return bookMapper.toBookResponse(book);
     }
@@ -121,10 +122,14 @@ public class BookService {
         book.setTitle(request.getTitle());
 
         // 5. Lưu book
-        Book saved = bookRepository.save(book);
+        try {
+            book = bookRepository.save(book);
+        } catch (DataIntegrityViolationException exception) {
+            throw new AppException(ErrorCode.AUTHOR_EXISTED);
+        }
 
         // 6. Map sang response
-        return bookMapper.toBookResponse(saved);
+        return bookMapper.toBookResponse(book);
     }
 
     @PreAuthorize("hasAuthority('SELLER')")

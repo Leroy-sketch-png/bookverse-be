@@ -1,4 +1,4 @@
-package com.example.bookverseserver.dto.request.Book;
+package com.example.bookverseserver.dto.response.Book;
 
 import com.example.bookverseserver.entity.Product.Book;
 import jakarta.persistence.OneToMany;
@@ -12,9 +12,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthorRequest {
+public class AuthorResponse {
+    Long id;
+
     String name;
     String biography;
     String avatarUrl;
     String nationality;
+
+    List<BookResponse> books;
 }

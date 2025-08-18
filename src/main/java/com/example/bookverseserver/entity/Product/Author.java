@@ -18,7 +18,9 @@ public class Author {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @Column(unique = true)
     String name;
+
     String biography;
     String avatarUrl;
     String nationality;
