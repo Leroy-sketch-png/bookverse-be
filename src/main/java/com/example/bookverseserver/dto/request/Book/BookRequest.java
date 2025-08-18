@@ -13,14 +13,14 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookRequest {
     String title;
-    String author;
+    Long authorId;        // reference to Author entity
+    Long categoryId;      // reference to Category entity
     String isbn;
     String description;
-    BigDecimal price;
-    Long categoryId;
+    BigDecimal price;     // selling price
+    BigDecimal listPrice; // strikethrough price (optional)
+    String condition;     // "New", "Like New", "Used", "Acceptable"
     String coverImageUrl;
     LocalDate publishedDate;
-
-    // stock nằm trong Inventory, client có thể gửi ở đây
-    Integer stockQuantity;
+    Integer stockQuantity; // client may set initial stock
 }

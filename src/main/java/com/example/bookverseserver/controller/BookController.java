@@ -64,4 +64,12 @@ public class BookController {
                 .build();
     }
 
+    @DeleteMapping("/{id}")
+    ApiResponse<String> deleteBookById(@PathVariable("id") Long id) {
+        bookService.deleteBook(id);
+        return ApiResponse.<String>builder()
+                .result("This product has been deleted!")
+                .build();
+    }
+
 }

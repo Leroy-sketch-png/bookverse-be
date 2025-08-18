@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Book.BookRequest;
 import com.example.bookverseserver.dto.response.Book.BookResponse;
+import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.entity.Product.Book;
 import com.example.bookverseserver.entity.Product.Category;
 import com.example.bookverseserver.entity.Product.Inventory;
@@ -9,6 +10,7 @@ import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.BookMapper;
+import com.example.bookverseserver.repository.AuthorRepository;
 import com.example.bookverseserver.repository.BookRepository;
 import com.example.bookverseserver.repository.CategoryRepository;
 import com.example.bookverseserver.repository.UserRepository;
@@ -36,6 +38,7 @@ public class BookService {
     BookRepository bookRepository;
     UserRepository userRepository;
     CategoryRepository categoryRepository;
+    AuthorRepository authorRepository;
 
     @Autowired
     BookMapper bookMapper;
@@ -82,8 +85,6 @@ public class BookService {
                 .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
                 .build();
 
-        book.setInventory(inventory);
-
         Book saved = bookRepository.save(book);
         return bookMapper.toBookResponse(saved);
     }
@@ -106,12 +107,10 @@ public class BookService {
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         book.setCategory(category);
 
-        // 3. Set Inventory
-        Inventory inventory = Inventory.builder()
-                .book(book)
-                .stockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0)
-                .build();
-        book.setInventory(inventory);
+        // 3. Set Author
+        Author author = authorRepository.findById(request.getAuthorId())
+                .orElseThrow(() -> new RuntimeException("Author not found"));
+        book.setAuthor(author);
 
         // 4. Upload cover image nếu có
         if (request.getCoverImageUrl() != null) {
@@ -158,10 +157,15 @@ public class BookService {
         return bookMapper.toBookResponse(bookRepository.save(book));
     }
 
-    @PreAuthorize("hasAuthority('SELLER')")
+    @PreAuthorize("hasRole('SELLER')")
     public void deleteBook(Long id) {
-        Book book = (Book) bookRepository.findById(id)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+
+        if(!book.getSeller().getUsername().equals(username)) throw new AppException((ErrorCode.UNAUTHORIZED));
 
         if (book.getCoverImageUrl() != null) {
             cloudStorageService.deleteFile(book.getCoverImageUrl());

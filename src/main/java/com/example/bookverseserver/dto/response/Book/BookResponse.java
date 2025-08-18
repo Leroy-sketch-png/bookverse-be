@@ -15,21 +15,25 @@ import java.time.LocalDateTime;
 public class BookResponse {
     Long id;
     String title;
-    String author;
+    String authorName;     // resolved from Author entity
+    Long authorId;
+
+    String categoryName;   // resolved from Category entity
+    Long categoryId;
+
+    String sellerName;
+    Long sellerId;
+
     String isbn;
     String description;
     BigDecimal price;
+    BigDecimal listPrice;
+    String condition;
     String coverImageUrl;
     LocalDate publishedDate;
-
-    Long sellerId;
-    String sellerName;
-
-    Long categoryId;
-    String categoryName;
-
     Integer stockQuantity;
 
+    // Metadata
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }
