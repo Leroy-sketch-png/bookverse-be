@@ -144,6 +144,20 @@ public class BookService {
         return bookMapper.toBookResponse(bookRepository.save(book));
     }
 
+    @PreAuthorize("hasRole('SELLER')")
+    public BookResponse updateBook(Long id, BookRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+
+        if(!book.getSeller().getUsername().equals(username)) throw new AppException((ErrorCode.UNAUTHORIZED));
+
+        bookMapper.updateBook(book, request);
+        return bookMapper.toBookResponse(bookRepository.save(book));
+    }
+
     @PreAuthorize("hasAuthority('SELLER')")
     public void deleteBook(Long id) {
         Book book = (Book) bookRepository.findById(id)

@@ -57,4 +57,11 @@ public class BookController {
                 .build();
     }
 
+    @PutMapping("/{id}")
+    ApiResponse<BookResponse> updateBookById(@RequestBody BookRequest bookRequest,@PathVariable("id") Long id) {
+        return ApiResponse.<BookResponse>builder()
+                .result(bookService.updateBook(id, bookRequest))
+                .build();
+    }
+
 }
