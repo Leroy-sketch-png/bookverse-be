@@ -4,6 +4,7 @@ import com.example.bookverseserver.entity.User.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -31,5 +32,6 @@ public class Wishlist {
     Book book;
 
     @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @CreationTimestamp
     LocalDateTime addedAt;
 }

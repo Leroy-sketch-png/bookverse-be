@@ -1,6 +1,6 @@
 package com.example.bookverseserver.entity.Order_Payment;
 
-import com.example.bookverseserver.entity.Product.Book;
+import com.example.bookverseserver.entity.Product.Listing;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,30 +8,28 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "cart_item", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"cart_id", "book_id"})
-})
+@Table(name = "cart_item")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CartItem {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
     Cart cart;
 
-    @ManyToOne
-    @JoinColumn(name = "book_id", nullable = false)
-    Book book;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "listing_id", nullable = false)
+    Listing listing;
 
-    @Column(nullable = false)
+    @Column
     Integer quantity;
 
-    LocalDateTime addedAt;
+    @Column(name = "added_at", updatable = false)
+    LocalDateTime addedAt = LocalDateTime.now();
 }

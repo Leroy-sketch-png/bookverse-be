@@ -1,12 +1,12 @@
 package com.example.bookverseserver.entity.User;
 
-import com.example.bookverseserver.entity.User.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ShippingAddress {
+public class ReadingLog {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
@@ -24,16 +24,19 @@ public class ShippingAddress {
     User user;
 
 
-    String fullName;
-    String phoneNumber;
-    String addressLine1;
-    String addressLine2;
-    String city;
-    String postalCode;
-    String country;
-    Boolean isDefault = false;
+    @ManyToOne @JoinColumn(name = "owned_book_id")
+    OwnedBook ownedBook;
 
 
-    @CreationTimestamp LocalDateTime createdAt;
-    @UpdateTimestamp LocalDateTime updatedAt;
+    Integer currentPage = 0;
+    Integer totalPages;
+    BigDecimal progressPercent;
+
+
+    LocalDateTime startedAt;
+    LocalDateTime finishedAt;
+
+
+    @UpdateTimestamp
+    LocalDateTime updatedAt;
 }

@@ -1,11 +1,10 @@
 package com.example.bookverseserver.entity.Product;
 
-import com.example.bookverseserver.entity.User.User;
-import com.example.bookverseserver.entity.Product.Book;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -15,24 +14,18 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Review {
+public class ListingPhoto {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
 
-    @ManyToOne @JoinColumn(name = "book_id")
-    Book book;
+    @ManyToOne @JoinColumn(name = "listing_id")
+    Listing listing;
 
 
-    @ManyToOne @JoinColumn(name = "user_id")
-    User user;
+    String url;
+    Integer position = 0;
 
 
-    Integer rating;
-    String comment;
-    Boolean isVisible = true;
-
-
-    @CreationTimestamp
-    LocalDateTime createdAt;
+    @CreationTimestamp LocalDateTime createdAt;
 }

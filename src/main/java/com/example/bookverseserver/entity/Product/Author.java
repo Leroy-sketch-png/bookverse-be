@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 import java.util.List;
 
 @Entity
+@Table(name = "author")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,6 +26,6 @@ public class Author {
     String avatarUrl;
     String nationality;
 
-    @OneToMany(mappedBy = "author")
+    @ManyToMany(mappedBy = "authors")
     List<Book> books;
 }
