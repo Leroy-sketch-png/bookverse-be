@@ -9,16 +9,16 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface UserProfileMapper {
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+//    @Mapping(target = "id", ignore = true)
+//    @Mapping(target = "user", ignore = true)
+//    @Mapping(target = "createdAt", ignore = true)
+//    @Mapping(target = "updatedAt", ignore = true)
     UserProfile toProfile(ProfileCreationRequest request);
 
-    @Mapping(target = "id", ignore = true)
-    //@Mapping(target = "user", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+//    @Mapping(target = "id", ignore = true)
+//    //@Mapping(target = "user", ignore = true)
+//    @Mapping(target = "createdAt", ignore = true)
+//    @Mapping(target = "updatedAt", ignore = true)
     ProfileResponse toprofileResponse(UserProfile profile);
 
     //@Mapping(target = "id", source = "user.id")

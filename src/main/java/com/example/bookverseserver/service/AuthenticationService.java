@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
@@ -73,16 +74,19 @@ public class AuthenticationService {
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository
-                .findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
 
-        boolean authenticated = passwordEncoder.matches(request.getPasswordHarsh(), user.getPasswordHash());
+        boolean authenticated = passwordEncoder.matches(request.getPasswordHash(), user.getPasswordHash());
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
+
         var token = generateToken(user);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
+        return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).build();
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {

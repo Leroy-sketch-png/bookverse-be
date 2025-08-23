@@ -44,10 +44,10 @@ public class UserService {
         user.setEmail(request.getEmail());
 
 
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
 
         // Convert String -> Enum trước khi query
-        Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CUSTOMER_ROLE))
+        Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CASUAL_ROLE))
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         HashSet<Role> roles = new HashSet<>();
@@ -79,7 +79,7 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         userMapper.updateUser(user, request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         // Convert List<String> -> List<RoleName>
         var roleEnums = request.getRoles().stream()

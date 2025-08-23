@@ -11,6 +11,12 @@ import com.example.bookverseserver.entity.User.User;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "adminNote", ignore = true)
+    @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "userProfile", ignore = true)
+    @Mapping(target = "enabled", constant = "true")
     User toUser(UserCreationRequest request);
 
     UserResponse toUserResponse(User user);

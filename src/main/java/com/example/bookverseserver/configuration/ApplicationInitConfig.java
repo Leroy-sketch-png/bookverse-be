@@ -45,7 +45,7 @@ public class ApplicationInitConfig {
         return args -> {
             if (userRepository.findByUsername(ADMIN_USER_NAME).isEmpty()) {
                 roleRepository.save(Role.builder()
-                        .name(RoleName.CUSTOMER)
+                        .name(RoleName.CASUAL)
                         .build());
 
                 Role adminRole = roleRepository.save(Role.builder()
@@ -57,7 +57,7 @@ public class ApplicationInitConfig {
 
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
-                        .password(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
                         .roles(roles)
                         .build();
 

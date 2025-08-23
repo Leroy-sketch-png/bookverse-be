@@ -1,6 +1,7 @@
 package com.example.bookverseserver.entity.Product;
 
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import jakarta.persistence.*;
 import lombok.*;

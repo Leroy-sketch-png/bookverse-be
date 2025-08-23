@@ -1,8 +1,11 @@
 package com.example.bookverseserver.entity.User;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -23,6 +26,7 @@ public class User {
     String username;
 
     @Column(unique = true, nullable = false)
+    @Email
     String email;
 
     @Column(name = "password_hash")
@@ -46,9 +50,11 @@ public class User {
     String adminNote;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @UpdateTimestamp
     LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

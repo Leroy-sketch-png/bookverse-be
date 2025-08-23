@@ -2,6 +2,7 @@ package com.example.bookverseserver.entity.User;
 
 import com.example.bookverseserver.entity.Product.Book;
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.enums.BookCondition;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

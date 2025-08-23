@@ -57,11 +57,7 @@ public class Book {
     )
     Set<Author> authors = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "book_category",
-            joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    Set<Category> categories = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    Category category;
 }
