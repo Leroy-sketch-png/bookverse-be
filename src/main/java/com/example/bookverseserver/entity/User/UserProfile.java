@@ -1,11 +1,8 @@
 package com.example.bookverseserver.entity.User;
 
-import com.example.bookverseserver.enums.MembershipType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,28 +15,44 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserProfile {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     User user;
 
+    @Column(name = "full_name")
     String fullName;
-    String phone;
-    LocalDate dob;
 
-    @Enumerated(EnumType.STRING)
-    MembershipType mbsType;
+    @Column(name = "phone_number")
+    String phoneNumber;
 
+    @Column(name = "avatar_url")
     String avatarUrl;
+
+    @Column
     String bio;
 
-    @CreationTimestamp
-    LocalDateTime createdAt;
+    @Column(name = "account_type")
+    String accountType;
 
-    @UpdateTimestamp
-    LocalDateTime updatedAt;
+    @Column
+    String location;
+
+    @Column(name = "rating_avg")
+    Double ratingAvg = 0.0;
+
+    @Column(name = "rating_count")
+    Integer ratingCount = 0;
+
+    @Column(name = "seller_since")
+    LocalDate sellerSince;
+
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt = LocalDateTime.now();
 }

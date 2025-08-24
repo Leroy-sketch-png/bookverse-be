@@ -1,12 +1,12 @@
-package com.example.bookverseserver.entity.Product;
+package com.example.bookverseserver.entity.Order_Payment;
 
 import com.example.bookverseserver.entity.User.User;
-import com.example.bookverseserver.entity.Product.Book;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,24 +15,22 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Review {
+public class SellerPayout {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
 
-    @ManyToOne @JoinColumn(name = "book_id")
-    Book book;
+    @ManyToOne @JoinColumn(name = "seller_id")
+    User seller;
 
 
-    @ManyToOne @JoinColumn(name = "user_id")
-    User user;
-
-
-    Integer rating;
-    String comment;
-    Boolean isVisible = true;
+    BigDecimal amount;
+    String status;
+    String method;
+    String externalReference;
 
 
     @CreationTimestamp
     LocalDateTime createdAt;
+    LocalDateTime paidAt;
 }

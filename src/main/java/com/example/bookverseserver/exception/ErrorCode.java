@@ -38,7 +38,9 @@ public enum ErrorCode {
     INVALID_KEY(1700, "Invalid key" , HttpStatus.BAD_REQUEST ),
     ROLE_NOT_FOUND(1701, "Role not found" , HttpStatus.NOT_FOUND ),
     NO_AUTHOR_FOUND(1702,"No author found" , HttpStatus.BAD_REQUEST),
-    AUTHOR_EXISTED(1703,"Author already exists" , HttpStatus.BAD_REQUEST ),;
+    AUTHOR_EXISTED(1703,"Author already exists" , HttpStatus.BAD_REQUEST ),
+    EMAIL_NOT_EXISTED(1704,"Email not existed" , HttpStatus.NOT_FOUND ),
+    ;
 
     private final int code;
     private final String message;

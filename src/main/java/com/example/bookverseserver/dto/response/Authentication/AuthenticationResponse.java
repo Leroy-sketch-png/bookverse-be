@@ -3,6 +3,8 @@ package com.example.bookverseserver.dto.response.Authentication;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -11,4 +13,6 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationResponse {
     String token;
     boolean authenticated;
+
+    LocalDateTime lastLogin;
 }

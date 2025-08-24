@@ -1,6 +1,9 @@
 package com.example.bookverseserver.dto.request.User;
-import lombok.*;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Data
@@ -9,12 +12,19 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreationRequest {
-    @Size(min = 4, message = "USERNAME_INVALID")
+
+    @NotBlank(message = "Username is required")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     String username;
 
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
     String email;
 
-    @Size(min = 8, message = "Password must have at least 8 character")
-    String password;
-    Boolean enabled;
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, max = 100, message = "Password must be at least 6 characters long")
+    String passwordHash;
+
+    @Size(max = 100, message = "Display name cannot exceed 100 characters")
+    String displayName;
 }

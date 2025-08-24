@@ -1,12 +1,14 @@
-package com.example.bookverseserver.entity.Product;
+package com.example.bookverseserver.entity.User;
 
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.Product.Book;
+import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.enums.BookCondition;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,22 +17,28 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Review {
+public class OwnedBook {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-
-
-    @ManyToOne @JoinColumn(name = "book_id")
-    Book book;
 
 
     @ManyToOne @JoinColumn(name = "user_id")
     User user;
 
 
-    Integer rating;
-    String comment;
-    Boolean isVisible = true;
+    @ManyToOne @JoinColumn(name = "book_id")
+    Book book;
+
+
+    @ManyToOne @JoinColumn(name = "listing_id")
+    Listing listing;
+
+
+    LocalDateTime acquiredAt;
+    @Enumerated(EnumType.STRING)
+    BookCondition condition;
+    Boolean isGift = false;
+    String notes;
 
 
     @CreationTimestamp

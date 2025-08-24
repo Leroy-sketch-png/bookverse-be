@@ -112,6 +112,12 @@
             <version>2.5.0</version>
         </dependency>
 
+        <!-- Email Sender -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Reactor WebFlux (if needed) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

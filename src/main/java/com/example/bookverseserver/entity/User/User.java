@@ -1,7 +1,7 @@
 package com.example.bookverseserver.entity.User;
 
-import com.example.bookverseserver.enums.RoleName;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,46 +11,60 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
-@Table(name = "users")
+@Table(name = "\"User\"")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column
     String username;
 
-    @Column(unique = true, length = 100)
+    @Column(unique = true, nullable = false)
+    @Email
     String email;
 
-    @Column(nullable = false, length = 255)
-    String password;
+    @Column(name = "password_hash")
+    String passwordHash;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false, length = 255)
-//    RoleName role;
-
-    @Builder.Default
     Boolean enabled = true;
 
+    @Column(name = "display_name")
+    String displayName;
+
+    @Column(name = "last_login")
+    LocalDateTime lastLogin;
+
+    @Column(name = "failed_login_count")
+    Integer failedLoginCount = 0;
+
+    @Column(name = "locked_until")
+    LocalDateTime lockedUntil;
+
+    @Column(name = "admin_note")
+    String adminNote;
+
+    @Column(name = "created_at", updatable = false)
     @CreationTimestamp
-    LocalDateTime createdAt;
+    LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "updated_at")
     @UpdateTimestamp
-    LocalDateTime updatedAt;
+    LocalDateTime updatedAt = LocalDateTime.now();
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    UserProfile profile;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    UserProfile userProfile;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_role",
+    @ManyToMany
+    @JoinTable(
+            name = "UserRole",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
     Set<Role> roles;
 }

@@ -1,11 +1,9 @@
 package com.example.bookverseserver.entity.Order_Payment;
 
-import com.example.bookverseserver.enums.PaymentStatus;
+import com.example.bookverseserver.entity.User.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,24 +16,25 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Payment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    String paymentMethod; // COD, CARD
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    Order order;
 
-    LocalDateTime paymentDate;
+    @ManyToOne
+    @JoinColumn(name = "payer_id")
+    User payer;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    String paymentMethod;
     BigDecimal amount;
 
-    @Column(length = 20)
-    PaymentStatus paymentStatus;
+    @Column(name = "payment_status")
+    String paymentStatus = "PENDING"; // Enum có thể tách riêng
 
-    @CreationTimestamp
+    String transactionId;
+    LocalDateTime paidAt;
     LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    LocalDateTime updatedAt;
 }
