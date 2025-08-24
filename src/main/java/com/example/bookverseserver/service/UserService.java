@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -33,32 +34,34 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class UserService {
+    EmailService emailService;
     UserRepository userRepository;
     RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
 
     public UserResponse createUser(UserCreationRequest request) {
         User user = userMapper.toUser(request);
-        user.setUsername(request.getUsername()); // đảm bảo username không null
+        user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-
-
         user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
 
-        // Convert String -> Enum trước khi query
+        // Set default role
         Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CASUAL_ROLE))
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        user.setRoles(Set.of(userRole));
+        user.setEnabled(false); // mark as inactive until OTP verified
 
-        HashSet<Role> roles = new HashSet<>();
-        roles.add(userRole);
-        user.setRoles(roles);
-
+        // Save user first
         try {
             user = userRepository.save(user);
         } catch (DataIntegrityViolationException exception) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
+
+        // Generate OTP and send email
+        otpService.generateAndSendOtp(request.getEmail());
 
         return userMapper.toUserResponse(user);
     }
