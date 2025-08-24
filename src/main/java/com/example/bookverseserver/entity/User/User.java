@@ -60,6 +60,11 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     UserProfile userProfile;
 
+    @Column(unique = true)
+    private String googleId;
+
+    private String authProvider;
+
     @ManyToMany
     @JoinTable(
             name = "UserRole",
