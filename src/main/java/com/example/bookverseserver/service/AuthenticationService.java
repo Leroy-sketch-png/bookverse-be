@@ -45,6 +45,7 @@ import org.springframework.util.CollectionUtils;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    PasswordEncoder passwordEncoder;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -72,12 +73,17 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        String input = request.getEmailOrUsername();
         var user = userRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
-
-        boolean authenticated = passwordEncoder.matches(request.getPasswordHash(), user.getPasswordHash());
+                .findByEmailOrUsername(input, input)
+                .orElseThrow(() -> {
+                    if (input.contains("@")) { // treat as email
+                        return new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+                    } else { // treat as username
+                        return new AppException(ErrorCode.USERNAME_NOT_EXISTED);
+                    }
+                });
+        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 

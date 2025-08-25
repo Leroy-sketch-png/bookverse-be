@@ -45,7 +45,7 @@ public class UserService {
         User user = userMapper.toUser(request);
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         // Set default role
         Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CASUAL_ROLE))
