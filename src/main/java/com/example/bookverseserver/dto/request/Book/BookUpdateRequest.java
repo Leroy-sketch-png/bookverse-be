@@ -22,6 +22,5 @@ public class BookUpdateRequest {
     String coverImageUrl;
     LocalDate publishedDate;
 
-    // stock nằm trong Inventory, client có thể gửi ở đây
     Integer stockQuantity;
 }

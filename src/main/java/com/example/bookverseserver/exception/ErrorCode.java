@@ -26,7 +26,6 @@ public enum ErrorCode {
     CATEGORY_EXISTED(1301, "Category already exists", HttpStatus.BAD_REQUEST),
 
     // INVENTORY
-    INVENTORY_NOT_FOUND(1400, "Inventory not found", HttpStatus.NOT_FOUND),
 
     // REVIEW
     REVIEW_NOT_FOUND(1500, "Review not found", HttpStatus.NOT_FOUND),

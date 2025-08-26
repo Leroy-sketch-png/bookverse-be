@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -112,5 +113,17 @@ public class UserService {
                 userRepository.findById(id)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
         );
+    }
+
+    public Optional<User> findByGoogleId(String googleId) {
+        return userRepository.findByGoogleId(googleId);
+    }
+
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
+
+    public User updateUser(User user) {
+        return userRepository.save(user);
     }
 }
