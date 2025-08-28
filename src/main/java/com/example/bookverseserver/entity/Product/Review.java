@@ -1,38 +1,43 @@
 package com.example.bookverseserver.entity.Product;
 
 import com.example.bookverseserver.entity.User.User;
-import com.example.bookverseserver.entity.Product.Book;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-
 @Entity
+@Table(name = "review")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Review {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_id", nullable = false)
+    BookMeta bookMeta;
 
-    @ManyToOne @JoinColumn(name = "book_id")
-    Book book;
-
-
-    @ManyToOne @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     User user;
 
-
+    @Column(nullable = false)
     Integer rating;
+
+    @Column(columnDefinition = "TEXT")
     String comment;
+
+    @Column(name = "is_visible", nullable = false)
     Boolean isVisible = true;
 
-
     @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
     LocalDateTime createdAt;
 }

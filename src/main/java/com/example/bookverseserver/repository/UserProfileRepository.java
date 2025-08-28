@@ -1,6 +1,5 @@
 package com.example.bookverseserver.repository;
 
-import com.example.bookverseserver.entity.User.Permission;
 import com.example.bookverseserver.entity.User.UserProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

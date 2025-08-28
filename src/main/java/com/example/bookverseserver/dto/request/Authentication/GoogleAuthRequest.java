@@ -10,4 +10,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class GoogleAuthRequest {
     String idToken;
+    String accessToken;   // optional
+    String refreshToken;  // optional
 }

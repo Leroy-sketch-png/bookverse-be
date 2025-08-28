@@ -9,13 +9,11 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
     Long id;
     String username;
     String email;
     Boolean enabled;
-
     Set<RoleResponse> roles;
 }

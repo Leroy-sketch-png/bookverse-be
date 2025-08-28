@@ -3,29 +3,45 @@ package com.example.bookverseserver.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Set;
 
-@Entity
-@Table(name = "author")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
+@Table(name = "author")
 public class Author {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(unique = true)
+    @Column(nullable = false)
     String name;
 
-    String biography;
+    @Column(columnDefinition = "TEXT")
+    String bio;
+
     String avatarUrl;
-    String nationality;
+
+    @Column
+    private String nationality;
 
     @ManyToMany(mappedBy = "authors")
-    List<Book> books;
+    Set<BookMeta> bookMetas;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
 }

@@ -8,6 +8,9 @@ import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
 
+import com.example.bookverseserver.dto.response.User.UserResponse;
+import com.example.bookverseserver.mapper.UserMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,6 +49,7 @@ public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -77,9 +81,9 @@ public class AuthenticationService {
         var user = userRepository
                 .findByEmailOrUsername(input, input)
                 .orElseThrow(() -> {
-                    if (input.contains("@")) { // treat as email
+                    if (input.contains("@")) {
                         return new AppException(ErrorCode.EMAIL_NOT_EXISTED);
-                    } else { // treat as username
+                    } else {
                         return new AppException(ErrorCode.USERNAME_NOT_EXISTED);
                     }
                 });
@@ -92,7 +96,9 @@ public class AuthenticationService {
 
         var token = generateToken(user);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).build();
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
+        return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).user(userResponse).build();
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
@@ -188,8 +194,6 @@ public class AuthenticationService {
         if (!CollectionUtils.isEmpty(user.getRoles()))
             user.getRoles().forEach(role -> {
                 stringJoiner.add("ROLE_" + role.getName());
-                if (!CollectionUtils.isEmpty(role.getPermissions()))
-                    role.getPermissions().forEach(permission -> stringJoiner.add(permission.getName()));
             });
 
         return stringJoiner.toString();

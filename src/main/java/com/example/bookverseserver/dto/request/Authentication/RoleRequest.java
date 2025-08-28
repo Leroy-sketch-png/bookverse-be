@@ -1,6 +1,5 @@
 package com.example.bookverseserver.dto.request.Authentication;
 
-import com.example.bookverseserver.entity.User.Permission;
 import com.example.bookverseserver.enums.RoleName;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

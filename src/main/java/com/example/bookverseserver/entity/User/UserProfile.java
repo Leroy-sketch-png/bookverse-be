@@ -3,6 +3,8 @@ package com.example.bookverseserver.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,6 +24,9 @@ public class UserProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     User user;
+
+    @Column(name = "display_name", length = 150)
+    String displayName;
 
     @Column(name = "full_name")
     String fullName;
@@ -51,8 +56,10 @@ public class UserProfile {
     LocalDate sellerSince;
 
     @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
     LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
+    @UpdateTimestamp
     LocalDateTime updatedAt = LocalDateTime.now();
 }

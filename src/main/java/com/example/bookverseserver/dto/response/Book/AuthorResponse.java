@@ -1,7 +1,5 @@
 package com.example.bookverseserver.dto.response.Book;
 
-import com.example.bookverseserver.entity.Product.Book;
-import jakarta.persistence.OneToMany;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

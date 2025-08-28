@@ -6,37 +6,48 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Entity
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
+@Table(name = "reading_log")
 public class ReadingLog {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-
-    @ManyToOne @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     User user;
 
-
-    @ManyToOne @JoinColumn(name = "owned_book_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owned_book_id", nullable = false)
     OwnedBook ownedBook;
 
-
+    @Column(name = "current_page", nullable = false)
     Integer currentPage = 0;
+
+    @Column(name = "total_pages")
     Integer totalPages;
-    BigDecimal progressPercent;
 
-
+    @Column(name = "started_at")
     LocalDateTime startedAt;
+
+    @Column(name = "finished_at")
     LocalDateTime finishedAt;
 
-
     @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt;
+
+    // Map the DB-generated column progress_percent (read-only in JPA)
+    // DB should compute it as (current_page / NULLIF(total_pages,0)) * 100
+    @Column(name = "progress_percent", insertable = false, updatable = false, precision = 5, scale = 2)
+    BigDecimal progressPercent;
 }

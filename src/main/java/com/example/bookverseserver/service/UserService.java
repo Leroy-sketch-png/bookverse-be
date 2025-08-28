@@ -48,20 +48,17 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        // Set default role
         Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CASUAL_ROLE))
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         user.setRoles(Set.of(userRole));
-        user.setEnabled(false); // mark as inactive until OTP verified
+        user.setEnabled(true);
 
-        // Save user first
         try {
             user = userRepository.save(user);
         } catch (DataIntegrityViolationException exception) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        // Generate OTP and send email
         otpService.generateAndSendOtp(request.getEmail());
 
         return userMapper.toUserResponse(user);
@@ -85,7 +82,6 @@ public class UserService {
         userMapper.updateUser(user, request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        // Convert List<String> -> List<RoleName>
         var roleEnums = request.getRoles().stream()
                 .map(RoleName::valueOf)
                 .toList();
@@ -117,6 +113,10 @@ public class UserService {
 
     public Optional<User> findByGoogleId(String googleId) {
         return userRepository.findByGoogleId(googleId);
+    }
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     public User saveUser(User user) {
