@@ -2,10 +2,12 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
+import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
 import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.AuthorMapper;
+import com.example.bookverseserver.mapper.OpenLibraryMapper;
 import com.example.bookverseserver.repository.AuthorRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -27,6 +30,41 @@ public class AuthorService {
 
     @Autowired
     AuthorMapper authorMapper;
+
+    @Autowired
+    OpenLibraryService openLibraryService;
+
+    public AuthorResponse getAuthorByOLID(String openLibraryId) {
+        if (authorRepository.existsByOpenLibraryId(openLibraryId)) {
+            Author author = authorRepository.findAuthorByOpenLibraryId(openLibraryId);
+            return authorMapper.toAuthorResponse(author);
+        }
+        else {
+            OpenLibraryResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
+            Author author = OpenLibraryMapper.toEntity(dto);
+            Author savedAuthor = authorRepository.save(author);
+            return authorMapper.toAuthorResponse(savedAuthor);
+        }
+    }
+
+    public List<AuthorResponse> getAuthorsByName(String name) {
+        List<OpenLibraryResponse> dtos = openLibraryService.getAuthorsByName(name);
+
+        List<Author> authors = dtos.stream()
+                .map(OpenLibraryMapper::toEntity)
+                .toList();
+
+        if (authors.isEmpty()) {
+            throw new AppException(ErrorCode.NO_AUTHOR_FOUND);
+        }
+
+        // Map each Author → AuthorResponse
+        return authors.stream()
+                .map(authorMapper::toAuthorResponse)
+                .toList();
+    }
+
+
 
     public List<AuthorResponse> getAllAuthors() {
         List<Author> authors = authorRepository.findAll();

@@ -15,4 +15,8 @@ public interface AuthorRepository extends JpaRepository<Author, Long> {
     List<Author> findAuthorsByNameIgnoreCase(String name);
 
     List<Author> findAuthorsByNationalityIgnoreCase(String nationality);
+
+    boolean existsByOpenLibraryId(String openLibraryId);
+
+    Author findAuthorByOpenLibraryId(String openLibraryId);
 }

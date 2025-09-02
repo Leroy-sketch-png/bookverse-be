@@ -19,8 +19,18 @@ public class Author {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @Column(name = "openlibrary_id", unique = true)
+    String openLibraryId; // this is the id of a record, keep for updating data if needed
+
     @Column(unique = true)
     String name;
+
+    String personalName;
+    String birthDate;
+    String deathDate;
+
+    String topWork;
+    Integer workCount;
 
     String biography;
     String avatarUrl;

@@ -14,11 +14,14 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthorResponse {
     Long id;
+    String openLibraryId;
 
     String name;
-    String biography;
-    String avatarUrl;
-    String nationality;
+    String topWork;
+    Integer workCount;
+//    String biography;
+//    String avatarUrl;
+//    String nationality;
 
-    List<BookResponse> books;
+//    List<BookResponse> books;
 }

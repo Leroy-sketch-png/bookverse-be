@@ -18,6 +18,20 @@ import java.util.List;
 public class AuthorController {
     AuthorService authorService;
 
+    @GetMapping({"/{id}"})
+    ApiResponse<AuthorResponse> getAuthorByOLID(@PathVariable("id") String id) {
+        return ApiResponse.<AuthorResponse>builder()
+                .result(authorService.getAuthorByOLID(id))
+                .build();
+    }
+
+    @GetMapping("/name/{name}")
+    ApiResponse<List<AuthorResponse>> getAuthorsByName(@PathVariable("name") String name) {
+        return ApiResponse.<List<AuthorResponse>>builder()
+                .result(authorService.getAuthorsByName(name))
+                .build();
+    }
+
     @GetMapping
     ApiResponse<List<AuthorResponse>> getAllAuthors() {
         return ApiResponse.<List<AuthorResponse>>builder()
@@ -31,20 +45,20 @@ public class AuthorController {
                 .result(authorService.getAllAuthorsByNationality(national))
                 .build();
     }
+//
+//    @GetMapping("/name/{name}")
+//    ApiResponse<List<AuthorResponse>> getAllAuthorsByName(@PathVariable("name") String name) {
+//        return ApiResponse.<List<AuthorResponse>>builder()
+//                .result(authorService.getAllAuthorsByName(name))
+//                .build();
+//    }
 
-    @GetMapping("/name/{name}")
-    ApiResponse<List<AuthorResponse>> getAllAuthorsByName(@PathVariable("name") String name) {
-        return ApiResponse.<List<AuthorResponse>>builder()
-                .result(authorService.getAllAuthorsByName(name))
-                .build();
-    }
-
-    @GetMapping("/{id}")
-    ApiResponse<AuthorResponse> getAuthorById(@PathVariable("id") Long id) {
-        return ApiResponse.<AuthorResponse>builder()
-                .result(authorService.getAuthorById(id))
-                .build();
-    }
+//    @GetMapping("/{id}")
+//    ApiResponse<AuthorResponse> getAuthorById(@PathVariable("id") Long id) {
+//        return ApiResponse.<AuthorResponse>builder()
+//                .result(authorService.getAuthorById(id))
+//                .build();
+//    }
 
     @PostMapping
     ApiResponse<AuthorResponse> createAuthor(@RequestBody AuthorRequest authorRequest) {

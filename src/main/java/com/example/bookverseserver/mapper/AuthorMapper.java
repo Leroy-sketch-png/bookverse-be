@@ -11,11 +11,11 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface AuthorMapper {
-    //@Mapping(target = "books", ignore = true)
+    @Mapping(target = "books", ignore = true)
     Author toAuthor(AuthorRequest author);
 
     AuthorResponse toAuthorResponse(Author author);
 
-    //@Mapping(target = "books", ignore = true)
+    @Mapping(target = "books", ignore = true)
     void updateAuthor(@MappingTarget Author author, AuthorRequest request);
 }

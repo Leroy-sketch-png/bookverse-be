@@ -13,8 +13,12 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthorRequest {
+    String openLibraryId;
+
     String name;
-    String biography;
-    String avatarUrl;
-    String nationality;
+    String topWork;
+    Integer workCount;
+//    String biography;
+//    String avatarUrl;
+//    String nationality;
 }
