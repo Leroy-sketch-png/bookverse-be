@@ -2,6 +2,7 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.service.AuthorService;
 import lombok.AccessLevel;
@@ -19,8 +20,8 @@ public class AuthorController {
     AuthorService authorService;
 
     @GetMapping({"/{id}"})
-    ApiResponse<AuthorResponse> getAuthorByOLID(@PathVariable("id") String id) {
-        return ApiResponse.<AuthorResponse>builder()
+    ApiResponse<AuthorDetailResponse> getAuthorByOLID(@PathVariable("id") String id) {
+        return ApiResponse.<AuthorDetailResponse>builder()
                 .result(authorService.getAuthorByOLID(id))
                 .build();
     }

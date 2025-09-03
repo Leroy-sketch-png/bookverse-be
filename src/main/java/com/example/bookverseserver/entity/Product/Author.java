@@ -19,21 +19,30 @@ public class Author {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(name = "openlibrary_id", unique = true)
-    String openLibraryId; // this is the id of a record, keep for updating data if needed
+    @Column(name = "openlibrary_id", unique = true, length = 50)
+    String openLibraryId; // short IDs like OL23919A
 
-    @Column(unique = true)
+    @Column(unique = true, length = 500) // names can be long
     String name;
 
+    @Column(length = 500)
     String personalName;
+
     String birthDate;
     String deathDate;
 
+    @Column(length = 500)
     String topWork;
+
     Integer workCount;
 
+    @Column(columnDefinition = "TEXT") // biography can be very long
     String biography;
+
+    @Column(length = 1000) // URL length may exceed 255
     String avatarUrl;
+
+    @Column(length = 255)
     String nationality;
 
     @ManyToMany(mappedBy = "authors")

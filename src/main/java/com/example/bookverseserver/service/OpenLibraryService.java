@@ -1,5 +1,6 @@
 package com.example.bookverseserver.service;
 
+import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,10 @@ public class OpenLibraryService {
 
     private static final String BASE_URL = "https://openlibrary.org";
 
-    public OpenLibraryResponse getAuthorByOLID(String openLibraryId) {
+    public OpenLibraryDetailAuthorResponse getAuthorByOLID(String openLibraryId) {
         String url = BASE_URL + "/authors/" + openLibraryId + ".json";
         RestTemplate restTemplate = new RestTemplate();
-        return restTemplate.getForObject(url, OpenLibraryResponse.class);
+        return restTemplate.getForObject(url, OpenLibraryDetailAuthorResponse.class);
     }
 
     public List<OpenLibraryResponse> getAuthorsByName(String name) {

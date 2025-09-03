@@ -2,6 +2,7 @@ package com.example.bookverseserver.mapper;
 
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
+import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.entity.User.User;
@@ -15,6 +16,9 @@ public interface AuthorMapper {
     Author toAuthor(AuthorRequest author);
 
     AuthorResponse toAuthorResponse(Author author);
+
+    @Mapping(target = "books", ignore = true)
+    AuthorDetailResponse toAuthorDetailResponse(Author author);
 
     @Mapping(target = "books", ignore = true)
     void updateAuthor(@MappingTarget Author author, AuthorRequest request);

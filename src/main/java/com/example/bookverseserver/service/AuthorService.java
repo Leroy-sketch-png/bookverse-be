@@ -1,7 +1,9 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
+import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
+import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
 import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.exception.AppException;
@@ -34,16 +36,16 @@ public class AuthorService {
     @Autowired
     OpenLibraryService openLibraryService;
 
-    public AuthorResponse getAuthorByOLID(String openLibraryId) {
+    public AuthorDetailResponse getAuthorByOLID(String openLibraryId) {
         if (authorRepository.existsByOpenLibraryId(openLibraryId)) {
             Author author = authorRepository.findAuthorByOpenLibraryId(openLibraryId);
-            return authorMapper.toAuthorResponse(author);
+            return authorMapper.toAuthorDetailResponse(author);
         }
         else {
-            OpenLibraryResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
-            Author author = OpenLibraryMapper.toEntity(dto);
+            OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
+            Author author = OpenLibraryMapper.toEntityDetail(dto);
             Author savedAuthor = authorRepository.save(author);
-            return authorMapper.toAuthorResponse(savedAuthor);
+            return authorMapper.toAuthorDetailResponse(savedAuthor);
         }
     }
 
