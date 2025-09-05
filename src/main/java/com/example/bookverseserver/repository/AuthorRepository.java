@@ -1,6 +1,7 @@
 package com.example.bookverseserver.repository;
 
 import com.example.bookverseserver.entity.Product.Author;
+import com.google.common.io.Files;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,4 +20,6 @@ public interface AuthorRepository extends JpaRepository<Author, Long> {
     boolean existsByOpenLibraryId(String openLibraryId);
 
     Author findAuthorByOpenLibraryId(String openLibraryId);
+
+    Optional<Author> findByOpenLibraryId(String openLibraryId);
 }

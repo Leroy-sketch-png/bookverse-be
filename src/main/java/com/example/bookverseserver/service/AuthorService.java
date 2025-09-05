@@ -1,5 +1,6 @@
 package com.example.bookverseserver.service;
 
+import com.example.bookverseserver.dto.request.Book.AuthorDetailRequest;
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
@@ -20,8 +21,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,16 +38,14 @@ public class AuthorService {
     OpenLibraryService openLibraryService;
 
     public AuthorDetailResponse getAuthorByOLID(String openLibraryId) {
-        if (authorRepository.existsByOpenLibraryId(openLibraryId)) {
-            Author author = authorRepository.findAuthorByOpenLibraryId(openLibraryId);
-            return authorMapper.toAuthorDetailResponse(author);
-        }
-        else {
-            OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
-            Author author = OpenLibraryMapper.toEntityDetail(dto);
-            Author savedAuthor = authorRepository.save(author);
-            return authorMapper.toAuthorDetailResponse(savedAuthor);
-        }
+        return authorRepository.findByOpenLibraryId(openLibraryId)
+                .map(authorMapper::toAuthorDetailResponse)
+                .orElseGet(() -> {
+                    OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
+                    Author author = OpenLibraryMapper.toEntityDetail(dto);
+                    Author savedAuthor = authorRepository.save(author);
+                    return authorMapper.toAuthorDetailResponse(savedAuthor);
+                });
     }
 
     public List<AuthorResponse> getAuthorsByName(String name) {
@@ -120,4 +119,19 @@ public class AuthorService {
         return authorMapper.toAuthorResponse(author);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    public AuthorDetailResponse updateAuthor(String OLID, AuthorDetailRequest authorRequest) {
+        Author author = authorRepository.findByOpenLibraryId(OLID)
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+        authorMapper.updateAuthor(author, authorRequest);
+        return authorMapper.toAuthorDetailResponse(authorRepository.save(author));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public AuthorDetailResponse deleteAuthor(String OLID) {
+        Author author = authorRepository.findByOpenLibraryId(OLID)
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+        authorRepository.delete(author);
+        return authorMapper.toAuthorDetailResponse(author);
+    }
 }

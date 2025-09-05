@@ -1,5 +1,6 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Book.AuthorDetailRequest;
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
@@ -65,6 +66,20 @@ public class AuthorController {
     ApiResponse<AuthorResponse> createAuthor(@RequestBody AuthorRequest authorRequest) {
         return ApiResponse.<AuthorResponse>builder()
                 .result(authorService.addAuthor(authorRequest))
+                .build();
+    }
+
+    @PutMapping("/{id}")
+    ApiResponse<AuthorDetailResponse> updateAuthor(@RequestBody AuthorDetailRequest authorRequest, @PathVariable("id") String id) {
+        return ApiResponse.<AuthorDetailResponse>builder()
+                .result(authorService.updateAuthor(id, authorRequest))
+                .build();
+    }
+
+    @DeleteMapping("/{id}")
+    ApiResponse<AuthorDetailResponse> deleteAuthor(@PathVariable("id") String id) {
+        return ApiResponse.<AuthorDetailResponse>builder()
+                .result(authorService.deleteAuthor(id))
                 .build();
     }
 }
