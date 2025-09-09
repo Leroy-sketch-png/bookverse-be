@@ -48,4 +48,14 @@ public class CategoryService {
         Category updated = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(updated);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public CategoryResponse deleteCategory(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        categoryRepository.delete(category);
+
+        return categoryMapper.toCategoryResponse(category);
+    }
 }
