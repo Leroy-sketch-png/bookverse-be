@@ -32,10 +32,10 @@ public class CategoryController {
                 .build();
     }
 
-//    @PutMapping
-//    ApiResponse<CategoryResponse> updateCategory(@RequestBody CategoryRequest categoryRequest) {
-//        return ApiResponse.<CategoryResponse>builder()
-//                .result(categoryService.updateCategory(categoryRequest))
-//                .build();
-//    }
+    @PutMapping("/{categoryId}")
+    ApiResponse<CategoryResponse> updateCategory(@PathVariable("categoryId") Long id, @RequestBody CategoryRequest categoryRequest) {
+        return ApiResponse.<CategoryResponse>builder()
+                .result(categoryService.updateCategory(id, categoryRequest))
+                .build();
+    }
 }
