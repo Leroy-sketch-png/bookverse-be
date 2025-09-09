@@ -28,5 +28,5 @@ public class AuthorDetailResponse {
 //    Integer workCount;
 
     // Optional: to show list of works from OpenLibrary
-    List<String> books;
+    List<BookResponse> books;
 }

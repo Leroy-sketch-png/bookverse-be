@@ -4,6 +4,8 @@ import com.example.bookverseserver.dto.request.Book.AuthorDetailRequest;
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
+import com.example.bookverseserver.dto.response.Book.BookResponse;
+import com.example.bookverseserver.dto.response.External.OpenLibraryAuthorWorkResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
 import com.example.bookverseserver.entity.Product.Author;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -38,14 +41,44 @@ public class AuthorService {
     OpenLibraryService openLibraryService;
 
     public AuthorDetailResponse getAuthorByOLID(String openLibraryId) {
-        return authorRepository.findByOpenLibraryId(openLibraryId)
-                .map(authorMapper::toAuthorDetailResponse)
-                .orElseGet(() -> {
-                    OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
-                    Author author = OpenLibraryMapper.toEntityDetail(dto);
-                    Author savedAuthor = authorRepository.save(author);
-                    return authorMapper.toAuthorDetailResponse(savedAuthor);
-                });
+        // 1. Fetch works directly from OpenLibrary API
+        List<BookResponse> bookResponses = getFilteredWorks(openLibraryId);
+
+        // 2. Fetch author from DB if exists, otherwise fetch from OpenLibrary and save
+        Optional<Author> optionalAuthor = authorRepository.findByOpenLibraryId(openLibraryId);
+
+        Author author;
+        if (optionalAuthor.isPresent()) {
+            author = optionalAuthor.get();
+        } else {
+            OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(openLibraryId);
+            author = OpenLibraryMapper.toEntityDetail(dto);
+            author = authorRepository.save(author);
+        }
+
+        // 3. Map to AuthorDetailResponse and set works
+        AuthorDetailResponse response = authorMapper.toAuthorDetailResponse(author);
+        response.setBooks(bookResponses); // always from OpenLibrary
+        return response;
+    }
+
+    public List<BookResponse> getFilteredWorks(String openLibraryId) {
+        var works = openLibraryService.getAuthorWorks(openLibraryId).getEntries();
+
+        works.forEach(openLibraryService::populateWorkDetails);
+
+        System.out.println("Total works from OpenLibrary: " + works.size());
+
+        return works.stream()
+                .filter(entry -> entry.getEdition_count() != null
+                        && entry.getEdition_count() > 1
+                        && entry.getDescription() != null
+                        && entry.getCovers() != null
+                        && !entry.getCovers().isEmpty())
+                .map(OpenLibraryMapper::toBookResponse) // works because entry is Entry
+                .peek(br -> System.out.println("Mapped BookResponse: " + br))
+                .toList();
+
     }
 
     public List<AuthorResponse> getAuthorsByName(String name) {

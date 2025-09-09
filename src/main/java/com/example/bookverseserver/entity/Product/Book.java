@@ -1,5 +1,7 @@
 package com.example.bookverseserver.entity.Product;
 
+import com.example.bookverseserver.utils.DescriptionDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -27,6 +29,7 @@ public class Book {
 
     String title;
     String isbn;
+    @JsonDeserialize(using = DescriptionDeserializer.class)
     String description;
     String publisher;
     LocalDate publishedDate;

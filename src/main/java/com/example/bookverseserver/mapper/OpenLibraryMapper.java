@@ -1,9 +1,15 @@
 package com.example.bookverseserver.mapper;
 
+import com.example.bookverseserver.dto.response.Book.BookResponse;
+import com.example.bookverseserver.dto.response.External.OpenLibraryAuthorWorkResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
 import com.example.bookverseserver.entity.Product.Author;
+import org.mapstruct.Mapping;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 public class OpenLibraryMapper {
@@ -47,5 +53,37 @@ public class OpenLibraryMapper {
                 .nationality("Zootopia")
                 .build();
     }
+
+    public static List<BookResponse> toBookResponsesFromWorks(OpenLibraryAuthorWorkResponse worksDto) {
+        if (worksDto == null || worksDto.getEntries() == null) return List.of();
+
+        return worksDto.getEntries().stream().map(entry -> BookResponse.builder()
+                .id(null)
+                .title(entry.getTitle())
+                .description(entry.getDescription() != null ? entry.getDescription().toString() : null)
+                .coverImageUrl(entry.getCovers() != null && !entry.getCovers().isEmpty()
+                        ? "https://covers.openlibrary.org/b/id/" + entry.getCovers().get(0) + "-L.jpg"
+                        : null)
+                .editionCount(entry.getEdition_count() != null ? entry.getEdition_count() : 0)
+                .publishedDate(
+                        entry.getFirst_publish_date() != null
+                                ? entry.getFirst_publish_date()
+                                : null
+                )
+                .build()
+        ).toList();
+    }
+
+    public static BookResponse toBookResponse(OpenLibraryAuthorWorkResponse.Entry entry) {
+        return BookResponse.builder()
+                .openLibraryId(entry.getKey())
+                .title(entry.getTitle())
+                .editionCount(entry.getEdition_count() != null ? entry.getEdition_count() : 0)
+                .description(entry.getDescription() != null ? entry.getDescription() : null)
+                .coverImageUrl(entry.getCoverImageUrl())
+                .publishedDate(entry.getFirst_publish_date())
+                .build();
+    }
+
 
 }

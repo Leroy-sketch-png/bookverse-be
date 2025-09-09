@@ -18,7 +18,6 @@ public interface AuthorMapper {
 
     AuthorResponse toAuthorResponse(Author author);
 
-    @Mapping(target = "books", ignore = true)
     AuthorDetailResponse toAuthorDetailResponse(Author author);
 
     @Mapping(target = "books", ignore = true)
