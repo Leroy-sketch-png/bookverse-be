@@ -39,13 +39,5 @@ public class OpenLibraryAuthorWorkResponse {
             String first_publish_date;
             List<String> subjects;
             String coverImageUrl;
-
-//        @Data
-//        @NoArgsConstructor
-//        @AllArgsConstructor
-//        public static class OLDescription {
-           // private String type;
-           // private String value;
-        //}
     }
 }
