@@ -45,4 +45,11 @@ public class CategoryController {
                 .result(categoryService.deleteCategory(id))
                 .build();
     }
+
+    @GetMapping
+    ApiResponse<List<CategoryResponse>> getAllCategories() {
+            return ApiResponse.<List<CategoryResponse>>builder()
+                    .result(categoryService.getAllCategories())
+                    .build();
+    }
 }

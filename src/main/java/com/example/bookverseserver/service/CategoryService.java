@@ -58,4 +58,10 @@ public class CategoryService {
 
         return categoryMapper.toCategoryResponse(category);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<CategoryResponse> getAllCategories() {
+        List<Category> categories = categoryRepository.findAll();
+        return categories.stream().map(categoryMapper::toCategoryResponse).toList();
+    }
 }
