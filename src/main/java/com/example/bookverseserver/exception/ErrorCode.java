@@ -40,7 +40,8 @@ public enum ErrorCode {
     NO_AUTHOR_FOUND(1702,"No author found" , HttpStatus.BAD_REQUEST),
     AUTHOR_EXISTED(1703,"Author already exists" , HttpStatus.BAD_REQUEST ),
     EMAIL_NOT_EXISTED(1704,"Email not existed" , HttpStatus.NOT_FOUND ),
-    USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND );
+    USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND ),
+    AUTHOR_NOT_EXISTED(1706,"Author not existed" , HttpStatus.NOT_FOUND ),;
 
     private final int code;
     private final String message;

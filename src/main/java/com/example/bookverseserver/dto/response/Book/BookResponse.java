@@ -14,26 +14,11 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookResponse {
     Long id;
+    String openLibraryId;
     String title;
-    String authorName;     // resolved from Author entity
-    Long authorId;
 
-    String categoryName;   // resolved from Category entity
-    Long categoryId;
-
-    String sellerName;
-    Long sellerId;
-
-    String isbn;
     String description;
-    BigDecimal price;
-    BigDecimal listPrice;
-    String condition;
     String coverImageUrl;
-    LocalDate publishedDate;
-    Integer stockQuantity;
-
-    // Metadata
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    String publishedDate;
+    Integer editionCount;
 }
