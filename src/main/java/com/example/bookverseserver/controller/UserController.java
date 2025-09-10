@@ -1,13 +1,9 @@
 package com.example.bookverseserver.controller;
 
-import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.service.UserService;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

@@ -1,26 +1,21 @@
 package com.example.bookverseserver.mapper;
 
 import com.example.bookverseserver.dto.request.User.ProfileCreationRequest;
+import com.example.bookverseserver.dto.request.User.ProfileUpdateRequest;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.entity.User.UserProfile;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public interface UserProfileMapper {
-//    @Mapping(target = "id", ignore = true)
-//    @Mapping(target = "user", ignore = true)
-//    @Mapping(target = "createdAt", ignore = true)
-//    @Mapping(target = "updatedAt", ignore = true)
-    UserProfile toProfile(ProfileCreationRequest request);
 
-//    @Mapping(target = "id", ignore = true)
-//    //@Mapping(target = "user", ignore = true)
-//    @Mapping(target = "createdAt", ignore = true)
-//    @Mapping(target = "updatedAt", ignore = true)
-    ProfileResponse toprofileResponse(UserProfile profile);
+    UserProfile toEntity(ProfileCreationRequest request);
 
-    //@Mapping(target = "id", source = "user.id")
-    void updateProfile(@MappingTarget UserProfile profile, ProfileCreationRequest updatedProfile);
+    ProfileResponse toResponse(UserProfile profile);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateFromDto(ProfileUpdateRequest dto, @MappingTarget UserProfile profile);
 }

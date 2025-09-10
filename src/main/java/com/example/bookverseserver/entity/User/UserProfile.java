@@ -21,6 +21,10 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    /**
+     * Keeps the existing relation: one-to-one with User (unique constraint at DB level).
+     * Repository method findByUser_Id(...) will work with this mapping.
+     */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     User user;
@@ -46,14 +50,28 @@ public class UserProfile {
     @Column
     String location;
 
+    /**
+     * Ensure Lombok builder preserves default values:
+     * use @Builder.Default so when builder is used and field omitted, default remains.
+     */
+    @Builder.Default
     @Column(name = "rating_avg")
     Double ratingAvg = 0.0;
 
+    @Builder.Default
     @Column(name = "rating_count")
     Integer ratingCount = 0;
 
     @Column(name = "seller_since")
     LocalDate sellerSince;
+
+    @Column(name = "preferences", columnDefinition = "text")
+    /**
+     * Flexible JSON blob stored as text. This is the portable option:
+     * DB-agnostic, simple to use. If you later want structured preferences,
+     * see the converter below to map to Map<String,Object>.
+     */
+            String preferences;
 
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
@@ -62,4 +80,11 @@ public class UserProfile {
     @Column(name = "updated_at")
     @UpdateTimestamp
     LocalDateTime updatedAt = LocalDateTime.now();
+
+    /**
+     * Optimistic locking to help with concurrent updates to the same profile.
+     * Add handling in the service layer to retry/handle OptimisticLockException if desired.
+     */
+    @Version
+    Integer version;
 }

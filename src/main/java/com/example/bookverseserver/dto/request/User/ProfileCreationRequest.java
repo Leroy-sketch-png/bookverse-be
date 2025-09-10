@@ -1,21 +1,22 @@
 package com.example.bookverseserver.dto.request.User;
 
-import com.example.bookverseserver.enums.MembershipType;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProfileCreationRequest {
-    String fullName;
-    String phone;
-    LocalDate dob;
-    MembershipType mbsType;
-    String avatarUrl;
-    String bio;
+    @NotBlank
+    private String fullName;
+
+    private String location;
+
+    /**
+     * accountType could be an enum; accept String for flexibility and map/validate in service if needed.
+     */
+    private String accountType;
+
+    /**
+     * preferences stored as JSON string. If you want typed preferences use a nested DTO or Map<String,Object>.
+     */
+    private String preferences;
 }

@@ -13,13 +13,13 @@ import java.util.Optional;
 
 @Mapper(componentModel = "spring")
 public interface AuthorMapper {
-    @Mapping(target = "books", ignore = true)
+//    @Mapping(target = "bookMetas", ignore = true)
     Author toAuthor(AuthorRequest author);
 
     AuthorResponse toAuthorResponse(Author author);
 
     AuthorDetailResponse toAuthorDetailResponse(Author author);
 
-    @Mapping(target = "books", ignore = true)
+//    @Mapping(target = "bookMetas", ignore = true)
     void updateAuthor(@MappingTarget Author author, AuthorDetailRequest request);
 }
