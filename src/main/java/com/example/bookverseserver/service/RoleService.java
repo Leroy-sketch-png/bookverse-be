@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.example.bookverseserver.dto.request.Authentication.RoleRequest;
 import com.example.bookverseserver.dto.response.Authentication.RoleResponse;
 import com.example.bookverseserver.mapper.RoleMapper;
-import com.example.bookverseserver.repository.PermissionRepository;
 import com.example.bookverseserver.repository.RoleRepository;
 
 import lombok.AccessLevel;
@@ -22,14 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoleService {
     RoleRepository roleRepository;
-    PermissionRepository permissionRepository;
     RoleMapper roleMapper;
 
     public RoleResponse create(RoleRequest request) {
         var role = roleMapper.toRole(request);
-
-        var permissions = permissionRepository.findAllById(request.getPermissions());
-        role.setPermissions(new HashSet<>(permissions));
 
         role = roleRepository.save(role);
         return roleMapper.toRoleResponse(role);

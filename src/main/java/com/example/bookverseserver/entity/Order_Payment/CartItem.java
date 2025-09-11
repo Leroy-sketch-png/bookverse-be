@@ -4,16 +4,21 @@ import com.example.bookverseserver.entity.Product.Listing;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "cart_item")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
+@Table(name = "cart_item",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_cart_listing", columnNames = {"cart_id", "listing_id"})
+        })
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,9 +32,10 @@ public class CartItem {
     @JoinColumn(name = "listing_id", nullable = false)
     Listing listing;
 
-    @Column
+    @Column(nullable = false)
     Integer quantity;
 
+    @CreationTimestamp
     @Column(name = "added_at", updatable = false)
-    LocalDateTime addedAt = LocalDateTime.now();
+    LocalDateTime addedAt;
 }

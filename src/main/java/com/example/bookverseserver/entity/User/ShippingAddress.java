@@ -8,32 +8,52 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-
 @Entity
+@Table(name = "shipping_address")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ShippingAddress {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-
-    @ManyToOne @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     User user;
 
-
+    @Column(name = "full_name", nullable = false, length = 100)
     String fullName;
+
+    @Column(name = "phone_number", nullable = false, length = 20)
     String phoneNumber;
+
+    @Column(name = "address_line1", nullable = false)
     String addressLine1;
+
+    @Column(name = "address_line2")
     String addressLine2;
+
+    @Column(nullable = false, length = 100)
     String city;
+
+    @Column(name = "postal_code", length = 20)
     String postalCode;
+
+    @Column(nullable = false, length = 100)
     String country;
+
+    @Column(name = "is_default", nullable = false)
     Boolean isDefault = false;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
+    LocalDateTime createdAt;
 
-    @CreationTimestamp LocalDateTime createdAt;
-    @UpdateTimestamp LocalDateTime updatedAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    LocalDateTime updatedAt;
 }

@@ -10,6 +10,7 @@ public enum ErrorCode {
     INVALID_INPUT(1001, "Invalid input data", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1003, "You do not have permission", HttpStatus.FORBIDDEN),
+    INVALID_REQUEST(1004, "Invalid request", HttpStatus.BAD_REQUEST ),
 
     // USER
     USER_EXISTED(1100, "User already exists", HttpStatus.BAD_REQUEST),
@@ -39,7 +40,10 @@ public enum ErrorCode {
     NO_AUTHOR_FOUND(1702,"No author found" , HttpStatus.BAD_REQUEST),
     AUTHOR_EXISTED(1703,"Author already exists" , HttpStatus.BAD_REQUEST ),
     EMAIL_NOT_EXISTED(1704,"Email not existed" , HttpStatus.NOT_FOUND ),
-    AUTHOR_NOT_EXISTED(1705,"Author not existed" , HttpStatus.NOT_FOUND ),;
+    USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND ),
+    PROFILE_ALREADY_EXISTS(1706, "Profile already exists" , HttpStatus.BAD_REQUEST ),
+    PROFILE_NOT_FOUND(1707,"Profile not found" , HttpStatus.NOT_FOUND ),
+    AUTHOR_NOT_EXISTED(1708,"Author not existed" , HttpStatus.NOT_FOUND ),;
 
     private final int code;
     private final String message;

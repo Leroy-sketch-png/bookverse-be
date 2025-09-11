@@ -41,7 +41,7 @@ public class OpenLibraryService {
                 JsonNode entries = response.get("entries");
                 work.setEdition_count(entries.size());
 
-                if (entries.size() > 0) {
+                if (!entries.isEmpty()) {
                     JsonNode firstEdition = entries.get(0);
 
                     // Description
@@ -72,28 +72,6 @@ public class OpenLibraryService {
             }
         } catch (Exception e) {
             work.setEdition_count(0);
-        }
-    }
-
-    // Populate covers if missing
-    public void populateCovers(OpenLibraryAuthorWorkResponse.Entry work) {
-        if (work.getCovers() == null || work.getCovers().isEmpty()) {
-            try {
-                String key = work.getKey().startsWith("/works/") ? work.getKey().substring(7) : work.getKey();
-                String url = BASE_URL + "/works/" + key + ".json";
-
-                JsonNode response = restTemplate.getForObject(url, JsonNode.class);
-                if (response != null && response.has("covers")) {
-                    JsonNode coversNode = response.get("covers");
-                    if (coversNode.isArray()) {
-                        List<Integer> covers = new ArrayList<>();
-                        coversNode.forEach(n -> covers.add(n.asInt()));
-                        work.setCovers(covers);
-                    }
-                }
-            } catch (Exception e) {
-                // leave covers empty if fetch fails
-            }
         }
     }
 

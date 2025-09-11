@@ -11,63 +11,62 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
-@Table(name = "\"User\"")
+@Table(name = "\"user\"") // Match lowercase table name as in schema
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column
+    @Column(length = 50)
     String username;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 100)
     @Email
     String email;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", length = 255)
     String passwordHash;
 
+    @Column(nullable = false)
     Boolean enabled = true;
-
-    @Column(name = "display_name")
-    String displayName;
 
     @Column(name = "last_login")
     LocalDateTime lastLogin;
 
-    @Column(name = "failed_login_count")
+    @Column(name = "failed_login_count", nullable = false)
     Integer failedLoginCount = 0;
 
     @Column(name = "locked_until")
     LocalDateTime lockedUntil;
 
-    @Column(name = "admin_note")
+    @Column(name = "admin_note", columnDefinition = "TEXT")
     String adminNote;
 
-    @Column(name = "created_at", updatable = false)
     @CreationTimestamp
-    LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
     @UpdateTimestamp
-    LocalDateTime updatedAt = LocalDateTime.now();
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     UserProfile userProfile;
 
     @Column(unique = true)
-    private String googleId;
+    String googleId;
 
-    private String authProvider;
+    String authProvider;
 
     @ManyToMany
     @JoinTable(
-            name = "UserRole",
+            name = "user_role",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )

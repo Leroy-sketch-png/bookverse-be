@@ -4,30 +4,32 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Set;
-
 
 @Entity
+@Table(name = "book_image") // Mapped to book_image table
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookImage {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne @JoinColumn(name = "book_id")
-    Book book;
+    @ManyToOne(fetch = FetchType.LAZY) // Use LAZY fetch to optimize performance
+    @JoinColumn(name = "book_id", nullable = false) // Book_id is NOT NULL in SQL
+    BookMeta bookMeta;
 
+    @Column(nullable = false) // URL is NOT NULL in SQL
     String url;
     String altText;
     Boolean isCover = false;
     Integer position = 0;
 
-
-    @CreationTimestamp LocalDateTime createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false) // Align with column name and updatable setting
+    LocalDateTime createdAt;
 }

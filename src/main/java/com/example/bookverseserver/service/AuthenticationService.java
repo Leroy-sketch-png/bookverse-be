@@ -8,6 +8,9 @@ import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
 
+import com.example.bookverseserver.dto.response.User.UserResponse;
+import com.example.bookverseserver.mapper.UserMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,6 +48,8 @@ import org.springframework.util.CollectionUtils;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -72,12 +77,17 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        String input = request.getEmailOrUsername();
         var user = userRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_EXISTED));
-
-        boolean authenticated = passwordEncoder.matches(request.getPasswordHash(), user.getPasswordHash());
+                .findByEmailOrUsername(input, input)
+                .orElseThrow(() -> {
+                    if (input.contains("@")) {
+                        return new AppException(ErrorCode.EMAIL_NOT_EXISTED);
+                    } else {
+                        return new AppException(ErrorCode.USERNAME_NOT_EXISTED);
+                    }
+                });
+        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
@@ -86,7 +96,9 @@ public class AuthenticationService {
 
         var token = generateToken(user);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).build();
+        UserResponse userResponse = userMapper.toUserResponse(user);
+
+        return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).user(userResponse).build();
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
@@ -182,8 +194,6 @@ public class AuthenticationService {
         if (!CollectionUtils.isEmpty(user.getRoles()))
             user.getRoles().forEach(role -> {
                 stringJoiner.add("ROLE_" + role.getName());
-                if (!CollectionUtils.isEmpty(role.getPermissions()))
-                    role.getPermissions().forEach(permission -> stringJoiner.add(permission.getName()));
             });
 
         return stringJoiner.toString();

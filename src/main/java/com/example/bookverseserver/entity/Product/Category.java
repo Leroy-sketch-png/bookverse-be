@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -25,14 +26,24 @@ public class Category {
     @Column(unique = true, nullable = false, length = 100)
     String name;
 
+    @Column(columnDefinition = "TEXT") // Use columnDefinition for TEXT type
     String description;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    Set<Book> books;
+    // This should be a ManyToMany mapped relationship, not OneToMany.
+    // A category can have many books, and a book can have many categories.
+    @ManyToMany(mappedBy = "categories")
+    Set<BookMeta> bookMetas;
+
+    List<String> tags;
+
+//    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+//    Set<BookMeta> books;
 
     @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     LocalDateTime updatedAt;
 }

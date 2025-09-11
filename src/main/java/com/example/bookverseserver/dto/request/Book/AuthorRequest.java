@@ -1,11 +1,7 @@
 package com.example.bookverseserver.dto.request.Book;
 
-import com.example.bookverseserver.entity.Product.Book;
-import jakarta.persistence.OneToMany;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

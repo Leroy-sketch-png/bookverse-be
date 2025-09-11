@@ -1,29 +1,26 @@
 package com.example.bookverseserver.controller;
 
 import java.text.ParseException;
-
 import com.example.bookverseserver.dto.request.Authentication.*;
 import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
-import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.service.GoogleAuthService;
-import com.example.bookverseserver.service.UserService;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.example.bookverseserver.service.SignupRequestService;
+import com.nimbusds.jose.JOSEException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.example.bookverseserver.dto.response.Authentication.AuthenticationResponse;
 import com.example.bookverseserver.dto.response.Authentication.IntrospectResponse;
 import com.example.bookverseserver.service.AuthenticationService;
-import com.nimbusds.jose.JOSEException;
-
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,12 +29,19 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationController {
     AuthenticationService authenticationService;
     GoogleAuthService googleAuthService;
-    UserService userService;
+    SignupRequestService signupRequestService;
+    PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest request) {
-        return ApiResponse.<UserResponse>builder()
-                .result(userService.createUser(request))
+    ApiResponse<String> createUser(@RequestBody @Valid UserCreationRequest request) {
+        String passwordHash = passwordEncoder.encode(request.getPassword());
+        signupRequestService.createSignupRequest(
+                request.getEmail(),
+                request.getUsername(),
+                passwordHash
+        );
+        return ApiResponse.<String>builder()
+                .result("OTP sent to email")
                 .build();
     }
 
@@ -68,25 +72,24 @@ public class AuthenticationController {
     }
 
     @PostMapping("/google")
-    public ApiResponse<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest googleIdTokenString) {
+    ApiResponse<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest googleIdTokenString) {
         try {
-            // Delegate the entire Google authentication process to the service
             AuthenticationResponse response = googleAuthService.authenticateGoogleUser(googleIdTokenString);
-
             return ApiResponse.<AuthenticationResponse>builder()
                     .result(response)
                     .build();
-
-        } catch (Exception e) { // Catch all exceptions from the service for error handling
-            // Log the detailed error for debugging purposes
-            System.err.println("Google authentication failed: " + e.getMessage());
-            e.printStackTrace(); // Print stack trace for debugging
-
-            // Return a consistent error response with an appropriate HTTP status code
+        } catch (Exception e) {
+            logError(e);
             return ApiResponse.<AuthenticationResponse>builder()
-                    .code(HttpStatus.UNAUTHORIZED.value()) // Use UNAUTHORIZED for authentication failures
-                    .message("Authentication failed: " + e.getMessage()) // Provide specific error message
+                    .code(HttpStatus.UNAUTHORIZED.value())
+                    .message("Authentication failed: " + e.getMessage())
                     .build();
         }
+    }
+
+    private void logError(Exception e) {
+        // Simple logging; integrate with your logger if preferred
+        System.err.println("Google authentication failed: " + e.getMessage());
+        e.printStackTrace();
     }
 }
