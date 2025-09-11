@@ -8,9 +8,6 @@ import com.example.bookverseserver.service.CategoryService;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.bookverseserver.dto.response.ApiResponse;
-import com.example.bookverseserver.dto.request.Authentication.PermissionRequest;
-import com.example.bookverseserver.dto.response.Authentication.PermissionResponse;
-import com.example.bookverseserver.service.PermissionService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

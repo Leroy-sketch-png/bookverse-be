@@ -33,10 +33,11 @@ public class Category {
     // A category can have many books, and a book can have many categories.
     @ManyToMany(mappedBy = "categories")
     Set<BookMeta> bookMetas;
+
     List<String> tags;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    Set<BookMeta> books;
+//    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+//    Set<BookMeta> books;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

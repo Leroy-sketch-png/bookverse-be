@@ -68,7 +68,7 @@ public class OpenLibraryMapper {
                 .publishedDate(
                         entry.getFirst_publish_date() != null
                                 ? entry.getFirst_publish_date()
-                                : null
+                                : "Unknown"
                 )
                 .build()
         ).toList();
@@ -84,6 +84,4 @@ public class OpenLibraryMapper {
                 .publishedDate(entry.getFirst_publish_date())
                 .build();
     }
-
-
 }
