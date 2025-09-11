@@ -1,5 +1,5 @@
 package com.example.bookverseserver.enums;
 
 public enum BookCondition {
-    NEW, OLD
+    NEW, LIKE_NEW, VERY_GOOD, GOOD, ACCEPTABLE
 }

@@ -3,8 +3,12 @@ package com.example.bookverseserver.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "author")
@@ -46,5 +50,13 @@ public class Author {
     String nationality;
 
     @ManyToMany(mappedBy = "authors")
-    List<Book> books;
+    Set<BookMeta> bookMetas;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
 }

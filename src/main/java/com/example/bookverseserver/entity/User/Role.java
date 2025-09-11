@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 import java.util.Set;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "role")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,10 +23,4 @@ public class Role {
     @Enumerated(EnumType.STRING)
     @Column(unique = true, nullable = false, length = 50)
     RoleName name;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "role_permission",
-            joinColumns = @JoinColumn(name = "role_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id"))
-    Set<Permission> permissions;
 }

@@ -1,9 +1,11 @@
 package com.example.bookverseserver.entity.Order_Payment;
 
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,25 +18,36 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Payment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
     Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "payer_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payer_id", nullable = false)
     User payer;
 
+    @Column(name = "payment_method", nullable = false, length = 50)
     String paymentMethod;
+
+    @Column(nullable = false, precision = 12, scale = 2)
     BigDecimal amount;
 
-    @Column(name = "payment_status")
-    String paymentStatus = "PENDING"; // Enum có thể tách riêng
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 20)
+    PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Column(name = "transaction_id", unique = true, length = 255)
     String transactionId;
+
+    @Column(name = "paid_at")
     LocalDateTime paidAt;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
     LocalDateTime createdAt;
 }
