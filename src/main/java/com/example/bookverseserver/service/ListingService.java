@@ -53,4 +53,20 @@ public class ListingService {
             throw new AppException(ErrorCode.DO_NOT_HAVE_PERMISSION);
         }
     }
+
+    public String hardDeleteListing (Long listingId, Authentication authentication) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+
+        Long currentUserId = securityUtils.getCurrentUserId(authentication);
+
+        if(listing.getSeller().getId().equals(currentUserId)){
+            listingRepository.delete(listing);
+            return "Successfully deleted listing";
+        } else {
+            throw new AppException(ErrorCode.DO_NOT_HAVE_PERMISSION);
+        }
+    }
+
+
 }

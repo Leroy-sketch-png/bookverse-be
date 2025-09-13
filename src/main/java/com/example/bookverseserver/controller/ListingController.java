@@ -34,4 +34,13 @@ public class ListingController {
                 .result(listingService.updateListing(id, request, authentication))
                 .build();
     }
+
+    @DeleteMapping("/delete")
+    public ApiResponse<String> delete(@RequestParam("id") Long id, Authentication authentication) {
+        return ApiResponse.<String>builder()
+                .result(listingService.hardDeleteListing(id, authentication))
+                .build();
+    }
+
+
 }

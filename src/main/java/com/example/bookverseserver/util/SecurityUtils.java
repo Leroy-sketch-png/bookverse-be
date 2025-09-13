@@ -83,8 +83,8 @@ public class SecurityUtils {
         if (usernameOrEmail == null) return null;
         Optional<User> byEmail = userRepository.findByEmail(usernameOrEmail);
         if (byEmail.isPresent()) return byEmail.get().getId();
-        //Optional<User> byUsername = userRepository.findByUsername(usernameOrEmail);
-        //if (byUsername.isPresent()) return byUsername.get().getId();
+        Optional<User> byUsername = userRepository.findByUsername(usernameOrEmail);
+        if (byUsername.isPresent()) return byUsername.get().getId();
         return null;
     }
 }
