@@ -43,7 +43,8 @@ public enum ErrorCode {
     USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND ),
     PROFILE_ALREADY_EXISTS(1706, "Profile already exists" , HttpStatus.BAD_REQUEST ),
     PROFILE_NOT_FOUND(1707,"Profile not found" , HttpStatus.NOT_FOUND ),
-    AUTHOR_NOT_EXISTED(1708,"Author not existed" , HttpStatus.NOT_FOUND ),;
+    AUTHOR_NOT_EXISTED(1708,"Author not existed" , HttpStatus.NOT_FOUND ),
+    DO_NOT_HAVE_PERMISSION(1709, "You do not have this permission!" , HttpStatus.FORBIDDEN ),;
 
     private final int code;
     private final String message;
