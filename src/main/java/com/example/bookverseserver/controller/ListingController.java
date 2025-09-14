@@ -52,4 +52,14 @@ public class ListingController {
                 .result(listingService.softDeleteListing(id, authentication))
                 .build();
     }
+
+    @PutMapping("/toggle-like")
+    public ApiResponse<ListingResponse> toggleListingLike(
+            @RequestParam("id") Long id,
+            Authentication authentication
+    ) {
+        return ApiResponse.<ListingResponse>builder()
+                .result(listingService.toggleListingLike(id, authentication))
+                .build();
+    }
 }
