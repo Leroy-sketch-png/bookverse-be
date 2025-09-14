@@ -37,6 +37,7 @@ public class ListingUpdateResponse {
     Integer soldCount;
 
     LocalDateTime createdAt;
+    LocalDateTime deletedAt;
     LocalDateTime updatedAt;
 
     List<String> photoUrls;

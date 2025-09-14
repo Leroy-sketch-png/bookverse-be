@@ -1,5 +1,6 @@
 package com.example.bookverseserver.mapper;
 
+import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
@@ -28,7 +29,7 @@ public interface ListingMapper {
 //    @Mapping(target = "views", source = "views")
 //    @Mapping(target = "likes", source = "likes")
 //    @Mapping(target = "soldCount", source = "soldCount")
-//    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "createdAt", source = "createdAt")
 //    @Mapping(target = "updatedAt", source = "updatedAt")
     ListingUpdateResponse toListingUpdateResponse(Listing listing);
 

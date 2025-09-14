@@ -1,10 +1,12 @@
 package com.example.bookverseserver.service;
 
+import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.ListingMapper;
@@ -17,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -68,5 +72,22 @@ public class ListingService {
         }
     }
 
+    public ListingUpdateResponse softDeleteListing(Long listingId, Authentication authentication) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
 
+        Long currentUserId = securityUtils.getCurrentUserId(authentication);
+
+        if (!listing.getSeller().getId().equals(currentUserId)) {
+            throw new AppException(ErrorCode.DO_NOT_HAVE_PERMISSION);
+        }
+
+        listing.setDeletedAt(LocalDateTime.now());
+        listing.setDeletedBy(currentUserId);
+        listing.setStatus(ListingStatus.REMOVED);
+        listing.setVisibility(false);
+
+        listing = listingRepository.save(listing);
+        return listingMapper.toListingUpdateResponse(listing);
+    }
 }

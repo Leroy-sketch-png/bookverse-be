@@ -1,5 +1,6 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
@@ -42,5 +43,13 @@ public class ListingController {
                 .build();
     }
 
-
+    @PutMapping("/soft-delete")
+    public ApiResponse<ListingUpdateResponse> softDelete(
+            @RequestParam("id") Long id,
+            @RequestBody ListingDeleteRequest request,
+            Authentication authentication) {
+        return ApiResponse.<ListingUpdateResponse>builder()
+                .result(listingService.softDeleteListing(id, authentication))
+                .build();
+    }
 }
