@@ -6,6 +6,7 @@ import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
+import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.service.ListingService;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.AccessLevel;
@@ -22,6 +23,13 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class ListingController {
     ListingService listingService;
+
+    @GetMapping("/{id}")
+    public ApiResponse<ListingResponse> getListingById(@PathVariable("id") Long listingId, Authentication authentication) {
+        return ApiResponse.<ListingResponse>builder()
+                .result(listingService.getListingById(listingId, authentication))
+                .build();
+    }
 
     @PutMapping("/update")
     public ApiResponse<ListingUpdateResponse> update(

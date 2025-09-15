@@ -129,4 +129,16 @@ public class ListingService {
         listingRepository.save(listing);
         return listingMapper.toListingResponse(listing);
     }
+
+    public ListingResponse getListingById (Long listingId, Authentication authentication) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
+
+        if(!listing.getSeller().getId().equals(securityUtils.getCurrentUserId(authentication))){
+            listing.setViews(listing.getViews() + 1);
+            listingRepository.save(listing);
+        }
+
+        return listingMapper.toListingResponse(listing);
+    }
 }
