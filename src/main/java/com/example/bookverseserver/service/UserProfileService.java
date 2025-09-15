@@ -2,12 +2,16 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.User.ProfileCreationRequest;
 import com.example.bookverseserver.dto.request.User.ProfileUpdateRequest;
+import com.example.bookverseserver.dto.request.User.UpgradeToSellerRequest;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
+import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
+import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.UserProfileMapper;
+import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import lombok.AccessLevel;
@@ -16,6 +20,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -28,6 +33,8 @@ public class UserProfileService {
     UserProfileRepository userProfileRepository;
     UserRepository userRepository;
     UserProfileMapper userProfileMapper;
+    CloudStorageService cloudStorageService;
+    RoleRepository roleRepository;
 
     @Transactional
     public ProfileResponse createProfileForUser(Long userId, ProfileCreationRequest request) {
@@ -71,5 +78,36 @@ public class UserProfileService {
         UserProfile profile = userProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
         userProfileRepository.delete(profile);
+    }
+
+    @Transactional
+    public String updateAvatar(Long userId, MultipartFile file) {
+        UserProfile profile = userProfileRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
+        String avatarUrl = cloudStorageService.uploadFile(file);
+        profile.setAvatarUrl(avatarUrl);
+        userProfileRepository.save(profile);
+        return avatarUrl;
+    }
+
+    @Transactional
+    public void upgradeToSeller(Long userId, UpgradeToSellerRequest request) {
+        if (!request.isAcceptTerms()) {
+            throw new AppException(ErrorCode.TERMS_NOT_ACCEPTED);
+        }
+
+        UserProfile profile = userProfileRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
+
+        User user = profile.getUser();
+
+        Role casualRole = roleRepository.findByName(RoleName.CASUAL)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
+        user.getRoles().add(casualRole);
+        profile.setAccountType("CASUAL");
+
+        userRepository.save(user);
+        userProfileRepository.save(profile);
     }
 }

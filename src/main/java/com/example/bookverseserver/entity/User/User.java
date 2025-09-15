@@ -34,12 +34,14 @@ public class User {
     String passwordHash;
 
     @Column(nullable = false)
+    @lombok.Builder.Default
     Boolean enabled = true;
 
     @Column(name = "last_login")
     LocalDateTime lastLogin;
 
     @Column(name = "failed_login_count", nullable = false)
+    @lombok.Builder.Default
     Integer failedLoginCount = 0;
 
     @Column(name = "locked_until")

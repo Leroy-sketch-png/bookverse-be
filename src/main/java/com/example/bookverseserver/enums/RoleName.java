@@ -1,5 +1,9 @@
 package com.example.bookverseserver.enums;
 
 public enum RoleName {
-    ADMIN, STAFF, PRO, CASUAL
+    ADMIN,
+    MODERATOR,
+    PRO,
+    CASUAL,
+    BUYER
 }
