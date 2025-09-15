@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/listing")
 @RequiredArgsConstructor
@@ -23,6 +25,13 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class ListingController {
     ListingService listingService;
+
+    @GetMapping
+    public ApiResponse<List<ListingResponse>> getAllListings() {
+        return ApiResponse.<List<ListingResponse>>builder()
+                .result(listingService.getAllListings())
+                .build();
+    }
 
     @GetMapping("/{id}")
     public ApiResponse<ListingResponse> getListingById(@PathVariable("id") Long listingId, Authentication authentication) {

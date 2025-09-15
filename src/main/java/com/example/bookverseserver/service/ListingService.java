@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -140,5 +141,16 @@ public class ListingService {
         }
 
         return listingMapper.toListingResponse(listing);
+    }
+
+    public List<ListingResponse> getAllListings() {
+        List<Listing> listings = listingRepository.findAll();
+        if(listings.isEmpty()){
+            throw new AppException(ErrorCode.NO_LISTING_FOUND);
+        }
+
+        return listings.stream()
+                .map(listingMapper::toListingResponse)
+                .toList();
     }
 }

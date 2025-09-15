@@ -46,7 +46,8 @@ public enum ErrorCode {
     AUTHOR_NOT_EXISTED(1708,"Author not existed" , HttpStatus.NOT_FOUND ),
     DO_NOT_HAVE_PERMISSION(1709, "You do not have this permission!" , HttpStatus.FORBIDDEN ),
     LISTING_NOT_EXISTED(1710, "Listing not existed" , HttpStatus.NOT_FOUND ),
-    TERMS_NOT_ACCEPTED(1711, "Terms not accepted", HttpStatus.BAD_REQUEST),;
+    TERMS_NOT_ACCEPTED(1711, "Terms not accepted", HttpStatus.BAD_REQUEST),
+    NO_LISTING_FOUND(1712, "No listing found" , HttpStatus.BAD_REQUEST ),;
 
     private final int code;
     private final String message;
