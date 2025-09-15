@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.request.Product;
 
+import com.example.bookverseserver.dto.request.Book.BookMetaCreationRequest;
 import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
@@ -15,8 +16,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ListingRequest {
 
+    // Option 1: use bookMetaId if the Book is already there
     Long bookMetaId;
-    //Long sellerId;
+
+    // Option 2: payload to create a new bookMeta on the fly
+    BookMetaCreationRequest bookMeta;
 
     String titleOverride;
     BigDecimal price;
@@ -33,6 +37,5 @@ public class ListingRequest {
     BigDecimal suggestedPriceLow;
     BigDecimal suggestedPriceHigh;
 
-    // photo URLs or upload identifiers
-    List<String> photoUrls;
+    List<ListingPhotoRequest> photos;
 }

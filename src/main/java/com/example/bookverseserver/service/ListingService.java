@@ -1,20 +1,20 @@
 package com.example.bookverseserver.service;
 
-import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
-import com.example.bookverseserver.dto.request.Product.ListingRequest;
-import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
+import com.example.bookverseserver.dto.request.Product.*;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
+import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Likes;
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.entity.Product.ListingPhoto;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
+import com.example.bookverseserver.mapper.BookMetaMapper;
 import com.example.bookverseserver.mapper.ListingMapper;
-import com.example.bookverseserver.repository.LikesRepository;
-import com.example.bookverseserver.repository.ListingRepository;
-import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.mapper.ListingPhotoMapper;
+import com.example.bookverseserver.repository.*;
 import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -34,17 +34,50 @@ import java.util.List;
 @Slf4j
 public class ListingService {
     ListingRepository listingRepository;
+    ListingPhotoRepository listingPhotoRepository;
     LikesRepository likesRepository;
     UserRepository userRepository;
-    SecurityUtils securityUtils;
+    BookMetaRepository bookMetaRepository;
+    BookMetaMapper bookMetaMapper;
     ListingMapper listingMapper;
+    ListingPhotoMapper listingPhotoMapper;
+    SecurityUtils securityUtils;
 
     @PreAuthorize("hasRole('PRO')")
-    public ListingResponse createListing (ListingRequest request) {
-        Listing listing = listingMapper.toListing(request);
-        listingRepository.save(listing);
+    @Transactional
+    public ListingResponse createListing(ListingCreationRequest request, Authentication authentication) {
+        BookMeta bookMeta;
+
+        if (request.getBookMetaId() != null) {
+            // Dùng bookMeta có sẵn
+            bookMeta = bookMetaRepository.findById(request.getBookMetaId())
+                    .orElseThrow(() -> new AppException(ErrorCode.BOOK_META_NOT_FOUND));
+        } else if (request.getBookMetaPayload() != null) {
+            // Tạo bookMeta mới
+            bookMeta = bookMetaMapper.toBookMeta(request.getBookMetaPayload());
+            bookMeta = bookMetaRepository.save(bookMeta);
+        } else {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Must provide either bookMetaId or bookMetaPayload");
+        }
+
+        // Tạo listing
+        Listing listing = listingMapper.toListing(request.getListing());
+        listing.setBookMeta(bookMeta);
+        listing.setSeller(userRepository.getReferenceById(securityUtils.getCurrentUserId(authentication)));
+        listing = listingRepository.save(listing);
+
+        // Tạo photos
+        if (request.getPhotos() != null) {
+            for (ListingPhotoRequest p : request.getPhotos()) {
+                ListingPhoto photo = listingPhotoMapper.toListingPhoto(p);
+                photo.setListing(listing);
+                listingPhotoRepository.save(photo);
+            }
+        }
+
         return listingMapper.toListingResponse(listing);
     }
+
 
     //@PreAuthorize("hasRole('PRO')")
     public ListingUpdateResponse updateListing (Long listingId, ListingUpdateRequest request, Authentication authentication) {
@@ -134,7 +167,6 @@ public class ListingService {
     public ListingResponse getListingById (Long listingId, Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
-
         if(!listing.getSeller().getId().equals(securityUtils.getCurrentUserId(authentication))){
             listing.setViews(listing.getViews() + 1);
             listingRepository.save(listing);

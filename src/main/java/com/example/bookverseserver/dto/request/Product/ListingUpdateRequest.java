@@ -30,5 +30,5 @@ public class ListingUpdateRequest {
     BigDecimal suggestedPriceHigh;
 
     // photo URLs or upload identifiers
-    List<String> photoUrls;
+    //List<ListingPhotoRequest> photos;
 }

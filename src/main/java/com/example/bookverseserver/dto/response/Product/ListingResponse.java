@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.response.Product;
 
+import com.example.bookverseserver.entity.Product.ListingPhoto;
 import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
@@ -46,5 +47,5 @@ public class ListingResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 
-    List<String> photoUrls;
-}
+    List<ListingPhotoResponse> photos;
+    }

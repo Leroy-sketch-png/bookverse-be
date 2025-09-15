@@ -1,7 +1,6 @@
 package com.example.bookverseserver.dto.request.Product;
 
-import com.example.bookverseserver.enums.BookCondition;
-import com.example.bookverseserver.enums.ListingStatus;
+import com.example.bookverseserver.dto.request.Book.BookMetaCreationRequest;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,6 +12,10 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ListingViewUpdateRequest {
-    Integer views;
+public class ListingCreationRequest {
+    Long bookMetaId;
+    BookMetaCreationRequest bookMetaPayload;
+    ListingRequest listing;
+    List<ListingPhotoRequest> photos;
 }
+

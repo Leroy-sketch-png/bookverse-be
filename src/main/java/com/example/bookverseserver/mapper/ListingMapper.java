@@ -12,25 +12,12 @@ import org.mapstruct.*;
 public interface ListingMapper {
     Listing toListing(ListingRequest request);
 
+    @Mapping(source = "bookMeta.id", target = "bookMetaId")
+    @Mapping(source = "bookMeta.title", target = "bookTitle")
+    @Mapping(source = "seller.id", target = "sellerId")
+    @Mapping(source = "seller.username", target = "sellerName")
     ListingResponse toListingResponse(Listing listing);
 
-//    @Mapping(target = "id", source = "id")
-//    @Mapping(target = "titleOverride", source = "titleOverride")
-//    @Mapping(target = "price", source = "price")
-//    @Mapping(target = "currency", source = "currency")
-//    @Mapping(target = "condition", source = "condition")
-//    @Mapping(target = "quantity", source = "quantity")
-//    @Mapping(target = "location", source = "location")
-//    @Mapping(target = "status", source = "status")
-//    @Mapping(target = "visibility", source = "visibility")
-//    @Mapping(target = "platformFeePercent", source = "platformFeePercent")
-//    @Mapping(target = "suggestedPriceLow", source = "suggestedPriceLow")
-//    @Mapping(target = "suggestedPriceHigh", source = "suggestedPriceHigh")
-//    @Mapping(target = "views", source = "views")
-//    @Mapping(target = "likes", source = "likes")
-//    @Mapping(target = "soldCount", source = "soldCount")
-//    @Mapping(target = "createdAt", source = "createdAt")
-//    @Mapping(target = "updatedAt", source = "updatedAt")
     ListingUpdateResponse toListingUpdateResponse(Listing listing);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

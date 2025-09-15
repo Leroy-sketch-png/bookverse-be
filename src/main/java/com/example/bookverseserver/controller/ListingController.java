@@ -1,5 +1,6 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Product.ListingCreationRequest;
 import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
@@ -37,6 +38,13 @@ public class ListingController {
     public ApiResponse<ListingResponse> getListingById(@PathVariable("id") Long listingId, Authentication authentication) {
         return ApiResponse.<ListingResponse>builder()
                 .result(listingService.getListingById(listingId, authentication))
+                .build();
+    }
+
+    @PostMapping("/create")
+    public ApiResponse<ListingResponse> createListing(@RequestBody ListingCreationRequest request, Authentication authentication) {
+        return ApiResponse.<ListingResponse>builder()
+                .result(listingService.createListing(request, authentication))
                 .build();
     }
 

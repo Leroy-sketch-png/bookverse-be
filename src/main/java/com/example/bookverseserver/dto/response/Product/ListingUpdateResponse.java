@@ -40,5 +40,5 @@ public class ListingUpdateResponse {
     LocalDateTime deletedAt;
     LocalDateTime updatedAt;
 
-    List<String> photoUrls;
+    List<ListingPhotoResponse> photos;
 }
