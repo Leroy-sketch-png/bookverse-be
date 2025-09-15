@@ -29,7 +29,7 @@ public interface ListingMapper {
 //    @Mapping(target = "views", source = "views")
 //    @Mapping(target = "likes", source = "likes")
 //    @Mapping(target = "soldCount", source = "soldCount")
-    @Mapping(target = "createdAt", source = "createdAt")
+//    @Mapping(target = "createdAt", source = "createdAt")
 //    @Mapping(target = "updatedAt", source = "updatedAt")
     ListingUpdateResponse toListingUpdateResponse(Listing listing);
 

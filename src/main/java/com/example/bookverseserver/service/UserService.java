@@ -12,7 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.example.bookverseserver.constant.PredefinedRole;
 import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.User.UserResponse;
@@ -48,7 +47,7 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        Role userRole = roleRepository.findByName(RoleName.valueOf(PredefinedRole.CASUAL_ROLE))
+        Role userRole = roleRepository.findByName(RoleName.BUYER)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         user.setRoles(Set.of(userRole));
         user.setEnabled(true);
