@@ -225,4 +225,24 @@ public class ListingService {
                 .map(listingMapper::toListingResponse)
                 .toList();
     }
+
+    public ListingResponse updateListingSoldCount(Long listingId, Integer purchaseQuantity, Authentication authentication) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
+
+        if(listing.getSeller().getId().equals(securityUtils.getCurrentUserId(authentication))){
+            throw new AppException(ErrorCode.DO_NOT_HAVE_PERMISSION);
+        }
+        else {
+            if(purchaseQuantity > listing.getQuantity()) {
+                throw new AppException(ErrorCode.NOT_ENOUGH_LISTING);
+            }
+            else {
+                listing.setSoldCount(listing.getSoldCount() + purchaseQuantity);
+                listing.setQuantity(listing.getQuantity() - purchaseQuantity);
+                listingRepository.save(listing);
+            }
+        }
+        return listingMapper.toListingResponse(listing);
+    }
 }

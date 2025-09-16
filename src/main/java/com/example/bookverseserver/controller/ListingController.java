@@ -48,6 +48,13 @@ public class ListingController {
                 .build();
     }
 
+    @PutMapping("/sell/{quantity}")
+    public ApiResponse<ListingResponse> updateListingSoldCount(@RequestParam("id") Long id, @PathVariable("quantity") Integer quantity, Authentication authentication) {
+        return ApiResponse.<ListingResponse>builder()
+                .result(listingService.updateListingSoldCount(id, quantity, authentication))
+                .build();
+    }
+
     @PutMapping("/update")
     public ApiResponse<ListingUpdateResponse> update(
             @RequestParam("id") Long id,
