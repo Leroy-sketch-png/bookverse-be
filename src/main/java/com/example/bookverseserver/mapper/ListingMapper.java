@@ -10,6 +10,10 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface ListingMapper {
+    @Mapping(source = "condition", target = "condition")
+    @Mapping(target = "likes", ignore = true)
+    @Mapping(target = "views", ignore = true)
+    @Mapping(target = "soldCount", ignore = true)
     Listing toListing(ListingRequest request);
 
     @Mapping(source = "bookMeta.id", target = "bookMetaId")

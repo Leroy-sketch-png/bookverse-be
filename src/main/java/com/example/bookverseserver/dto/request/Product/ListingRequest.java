@@ -17,11 +17,8 @@ import java.util.List;
 public class ListingRequest {
 
     // Option 1: use bookMetaId if the Book is already there
-    Long bookMetaId;
 
     // Option 2: payload to create a new bookMeta on the fly
-    BookMetaCreationRequest bookMeta;
-
     String titleOverride;
     BigDecimal price;
     String currency;
@@ -36,6 +33,4 @@ public class ListingRequest {
     BigDecimal platformFeePercent;
     BigDecimal suggestedPriceLow;
     BigDecimal suggestedPriceHigh;
-
-    List<ListingPhotoRequest> photos;
 }

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -43,41 +44,80 @@ public class ListingService {
     ListingPhotoMapper listingPhotoMapper;
     SecurityUtils securityUtils;
 
-    @PreAuthorize("hasRole('PRO')")
+    //@PreAuthorize("hasRole('PRO')")
+//    @Transactional
+//    public ListingResponse createListing(ListingCreationRequest request, Authentication authentication) {
+//        BookMeta bookMeta;
+//
+//        if (request.getBookMetaId() != null) {
+//            // Use existing bookMeta
+//            bookMeta = bookMetaRepository.findById(request.getBookMetaId())
+//                    .orElseThrow(() -> new AppException(ErrorCode.BOOK_META_NOT_FOUND));
+//        } else if (request.getBookMetaPayload() != null) {
+//            System.out.println("Payload received: " + request.getBookMetaPayload());
+//            // Create new bookMeta
+//            bookMeta = bookMetaMapper.toBookMeta(request.getBookMetaPayload());
+//            System.out.println("Payload received: " + request.getBookMetaPayload());
+//
+//            System.out.println("Title after mapping: " + bookMeta.getTitle());
+//
+//            System.out.println("BookMeta object ID after save: " + bookMeta.getId());            bookMeta = bookMetaRepository.save(bookMeta);
+//        } else {
+//            throw new AppException(ErrorCode.INVALID_REQUEST, "Must provide either bookMetaId or bookMetaPayload");
+//        }
+//
+//        // Create listing
+//        Listing listing = listingMapper.toListing(request.getListing());
+//        listing.setBookMeta(bookMeta);
+//        listing.setSeller(userRepository.getReferenceById(securityUtils.getCurrentUserId(authentication)));
+//        listing = listingRepository.save(listing);
+//
+//        // Create photos
+//        if (request.getPhotos() != null && !request.getPhotos().isEmpty()) {
+//            List<ListingPhoto> photos = new ArrayList<>();
+//            for (ListingPhotoRequest p : request.getPhotos()) {
+//                ListingPhoto photo = listingPhotoMapper.toListingPhoto(p);
+//                photo.setListing(listing);
+//                photos.add(listingPhotoRepository.save(photo));
+//            }
+//            listing.setPhotos(photos);
+//        }
+//
+//        return listingMapper.toListingResponse(listing);
+//    }
+
     @Transactional
     public ListingResponse createListing(ListingCreationRequest request, Authentication authentication) {
-        BookMeta bookMeta;
-
-        if (request.getBookMetaId() != null) {
-            // Dùng bookMeta có sẵn
-            bookMeta = bookMetaRepository.findById(request.getBookMetaId())
-                    .orElseThrow(() -> new AppException(ErrorCode.BOOK_META_NOT_FOUND));
-        } else if (request.getBookMetaPayload() != null) {
-            // Tạo bookMeta mới
-            bookMeta = bookMetaMapper.toBookMeta(request.getBookMetaPayload());
-            bookMeta = bookMetaRepository.save(bookMeta);
-        } else {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Must provide either bookMetaId or bookMetaPayload");
+        if (request.getBookMetaId() == null) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "A listing must be associated with an existing book. Please provide a bookMetaId.");
         }
 
-        // Tạo listing
+        // Use existing bookMeta
+        BookMeta bookMeta = bookMetaRepository.findById(request.getBookMetaId())
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_META_NOT_FOUND));
+
+        // Create listing
         Listing listing = listingMapper.toListing(request.getListing());
         listing.setBookMeta(bookMeta);
+        listing.setViews(0);
+        listing.setLikes(0);
+        listing.setSoldCount(0);
         listing.setSeller(userRepository.getReferenceById(securityUtils.getCurrentUserId(authentication)));
         listing = listingRepository.save(listing);
 
-        // Tạo photos
-        if (request.getPhotos() != null) {
+        // Create photos
+        if (request.getPhotos() != null && !request.getPhotos().isEmpty()) {
+            List<ListingPhoto> photos = new ArrayList<>();
             for (ListingPhotoRequest p : request.getPhotos()) {
                 ListingPhoto photo = listingPhotoMapper.toListingPhoto(p);
                 photo.setListing(listing);
-                listingPhotoRepository.save(photo);
+                photos.add(listingPhotoRepository.save(photo));
             }
+            listing.setPhotos(photos);
         }
 
         return listingMapper.toListingResponse(listing);
     }
-
 
     //@PreAuthorize("hasRole('PRO')")
     public ListingUpdateResponse updateListing (Long listingId, ListingUpdateRequest request, Authentication authentication) {

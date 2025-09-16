@@ -8,6 +8,7 @@ import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface ListingPhotoMapper {
+
     ListingPhoto toListingPhoto(ListingPhotoRequest request);
     ListingPhotoResponse toListingPhotoResponse(ListingPhoto entity);
 }
