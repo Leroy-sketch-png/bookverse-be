@@ -49,7 +49,8 @@ public enum ErrorCode {
     TERMS_NOT_ACCEPTED(1711, "Terms not accepted", HttpStatus.BAD_REQUEST),
     NO_LISTING_FOUND(1712, "No listing found" , HttpStatus.BAD_REQUEST ),
     BOOK_META_NOT_FOUND(1713, "Book meta not found" , HttpStatus.NOT_FOUND ),
-    NOT_ENOUGH_LISTING(1714, "Not enough listing" , HttpStatus.BAD_REQUEST ),;
+    NOT_ENOUGH_LISTING(1714, "Not enough listing" , HttpStatus.BAD_REQUEST ),
+    BOOK_NOT_FOUND_IN_OPEN_LIBRARY(1715, "Book not found in open library" , HttpStatus.NOT_FOUND ),;
 
     private final int code;
     private final String message;

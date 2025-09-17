@@ -17,5 +17,8 @@ public class CategoryResponse {
     String description;
     List<String> tags;
     LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    public CategoryResponse(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }

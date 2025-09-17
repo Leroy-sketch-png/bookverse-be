@@ -59,7 +59,7 @@ class UserProfileControllerTest {
         String requestBody = "{\"fullName\":\"New User\", \"location\":\"New Location\"}";
 
         // Act & Assert
-        mockMvc.perform(post("/users/profile")
+        mockMvc.perform(post("/api/me")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -81,7 +81,7 @@ class UserProfileControllerTest {
         when(userProfileService.getProfileForUser(TEST_USER_ID)).thenReturn(profileResponse);
 
         // Act & Assert
-        mockMvc.perform(get("/users/profile"))
+        mockMvc.perform(get("/api/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.fullName", is("Test User")))
                 .andExpect(jsonPath("$.result.location", is("Test Location")));
@@ -103,7 +103,7 @@ class UserProfileControllerTest {
                 .thenReturn(profileResponse);
 
         // Act & Assert
-        mockMvc.perform(put("/users/profile")
+        mockMvc.perform(put("/api/me")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))

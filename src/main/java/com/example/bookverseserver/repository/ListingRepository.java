@@ -1,6 +1,7 @@
 package com.example.bookverseserver.repository;
 
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.enums.ListingStatus;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 @Repository
 public interface ListingRepository extends JpaRepository<Listing, Long> {
+    List<Listing> findByBookMetaAndStatusAndVisibility(com.example.bookverseserver.entity.Product.BookMeta bookMeta, ListingStatus status, boolean visibility);
     @NotNull
     @Query("""
     SELECT l 

@@ -21,5 +21,8 @@ public class AuthorResponse {
 //    String avatarUrl;
 //    String nationality;
 
-//    List<BookResponse> books;
+public AuthorResponse(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }

@@ -1,24 +1,23 @@
 package com.example.bookverseserver.dto.response.Book;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class BookResponse {
-    Long id;
-    String openLibraryId;
-    String title;
-
-    String description;
-    String coverImageUrl;
-    String publishedDate;
-    Integer editionCount;
+    private Long id;
+    private String title;
+    private String isbn;
+    private List<AuthorResponse> authors;
+    private List<CategoryResponse> categories;
+    private String cover_url;
+    private Map<String, Object> cheapest_listing_preview;
 }

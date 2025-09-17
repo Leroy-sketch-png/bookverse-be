@@ -7,26 +7,18 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Set;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
 @Table(name = "book_meta")
-@Data
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(exclude = {"authors", "categories"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -73,6 +65,7 @@ public class BookMeta {
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "author_id")
     )
+    @JsonManagedReference
     Set<Author> authors = new HashSet<>();
 
     // Many-to-Many relationship for categories
@@ -83,4 +76,11 @@ public class BookMeta {
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     Set<Category> categories = new HashSet<>();
+
+    public String getCoverImageUrl() {
+        if (images != null && !images.isEmpty()) {
+            return images.get(0).getUrl();
+        }
+        return null;
+    }
 }

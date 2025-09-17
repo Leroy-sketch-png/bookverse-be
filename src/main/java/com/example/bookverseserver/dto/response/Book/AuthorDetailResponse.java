@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.response.Book;
 
+import com.example.bookverseserver.dto.response.External.OpenLibraryBookResponse;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -28,5 +29,5 @@ public class AuthorDetailResponse {
 //    Integer workCount;
 
     // Optional: to show list of works from OpenLibrary
-    List<BookResponse> books;
+    List<OpenLibraryBookResponse> books;
 }

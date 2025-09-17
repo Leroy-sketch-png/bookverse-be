@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import com.example.bookverseserver.dto.request.Book.CategoryRequest;
 import com.example.bookverseserver.dto.response.Book.CategoryResponse;
@@ -63,5 +64,17 @@ public class CategoryService {
     public List<CategoryResponse> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return categories.stream().map(categoryMapper::toCategoryResponse).toList();
+    }
+
+    public Category getOrCreateCategory(String categoryName) {
+        Optional<Category> existingCategory = categoryRepository.findByName(categoryName);
+        if (existingCategory.isPresent()) {
+            return existingCategory.get();
+        }
+
+        Category newCategory = Category.builder()
+                .name(categoryName)
+                .build();
+        return categoryRepository.save(newCategory);
     }
 }

@@ -1,6 +1,6 @@
 package com.example.bookverseserver.mapper;
 
-import com.example.bookverseserver.dto.response.Book.BookResponse;
+import com.example.bookverseserver.dto.response.External.OpenLibraryBookResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryAuthorWorkResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
 import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
@@ -54,10 +54,10 @@ public class OpenLibraryMapper {
                 .build();
     }
 
-    public static List<BookResponse> toBookResponsesFromWorks(OpenLibraryAuthorWorkResponse worksDto) {
+    public static List<OpenLibraryBookResponse> toBookResponsesFromWorks(OpenLibraryAuthorWorkResponse worksDto) {
         if (worksDto == null || worksDto.getEntries() == null) return List.of();
 
-        return worksDto.getEntries().stream().map(entry -> BookResponse.builder()
+        return worksDto.getEntries().stream().map(entry -> OpenLibraryBookResponse.builder()
                 .id(null)
                 .title(entry.getTitle())
                 .description(entry.getDescription() != null ? entry.getDescription().toString() : null)
@@ -74,8 +74,8 @@ public class OpenLibraryMapper {
         ).toList();
     }
 
-    public static BookResponse toBookResponse(OpenLibraryAuthorWorkResponse.Entry entry) {
-        return BookResponse.builder()
+    public static OpenLibraryBookResponse toBookResponse(OpenLibraryAuthorWorkResponse.Entry entry) {
+        return OpenLibraryBookResponse.builder()
                 .openLibraryId(entry.getKey())
                 .title(entry.getTitle())
                 .editionCount(entry.getEdition_count() != null ? entry.getEdition_count() : 0)

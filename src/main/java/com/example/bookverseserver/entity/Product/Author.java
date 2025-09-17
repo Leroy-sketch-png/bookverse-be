@@ -1,5 +1,6 @@
 package com.example.bookverseserver.entity.Product;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +13,10 @@ import java.util.Set;
 
 @Entity
 @Table(name = "author")
-@Data
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(exclude = "bookMetas")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -50,6 +54,7 @@ public class Author {
     String nationality;
 
     @ManyToMany(mappedBy = "authors")
+    @JsonBackReference
     Set<BookMeta> bookMetas;
 
     @CreationTimestamp

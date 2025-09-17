@@ -4,10 +4,7 @@ import com.example.bookverseserver.dto.request.Book.AuthorDetailRequest;
 import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
-import com.example.bookverseserver.dto.response.Book.BookResponse;
-import com.example.bookverseserver.dto.response.External.OpenLibraryAuthorWorkResponse;
-import com.example.bookverseserver.dto.response.External.OpenLibraryDetailAuthorResponse;
-import com.example.bookverseserver.dto.response.External.OpenLibraryResponse;
+import com.example.bookverseserver.dto.response.External.*;
 import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
@@ -24,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -42,7 +38,7 @@ public class AuthorService {
 
     public AuthorDetailResponse getAuthorByOLID(String openLibraryId) {
         // 1. Fetch works directly from OpenLibrary API
-        List<BookResponse> bookResponses = getFilteredWorks(openLibraryId);
+        List<OpenLibraryBookResponse> bookResponses = getFilteredWorks(openLibraryId);
 
         // 2. Fetch author from DB if exists, otherwise fetch from OpenLibrary and save
         Optional<Author> optionalAuthor = authorRepository.findByOpenLibraryId(openLibraryId);
@@ -62,7 +58,7 @@ public class AuthorService {
         return response;
     }
 
-    public List<BookResponse> getFilteredWorks(String openLibraryId) {
+    public List<OpenLibraryBookResponse> getFilteredWorks(String openLibraryId) {
         var works = openLibraryService.getAuthorWorks(openLibraryId).getEntries();
 
         works.forEach(openLibraryService::populateWorkDetails);
@@ -166,5 +162,37 @@ public class AuthorService {
                 .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
         authorRepository.delete(author);
         return authorMapper.toAuthorDetailResponse(author);
+    }
+
+    public Author getOrCreateAuthor(String name, String openLibraryKey) {
+        // Try to find by OpenLibrary ID first
+        if (openLibraryKey != null && !openLibraryKey.isEmpty()) {
+            String olKey = openLibraryKey.replace("/authors/", "");
+            Optional<Author> existingAuthor = authorRepository.findByOpenLibraryId(olKey);
+            if (existingAuthor.isPresent()) {
+                return existingAuthor.get();
+            }
+        }
+
+        // If not found by OpenLibrary ID, try to find by name
+        if (name != null && !name.isEmpty()) {
+            Optional<Author> existingAuthor = authorRepository.findByName(name);
+            if (existingAuthor.isPresent()) {
+                // If found by name, update the OpenLibrary ID if it's missing
+                Author author = existingAuthor.get();
+                if (author.getOpenLibraryId() == null && openLibraryKey != null && !openLibraryKey.isEmpty()) {
+                    author.setOpenLibraryId(openLibraryKey.replace("/authors/", ""));
+                    return authorRepository.save(author);
+                }
+                return author;
+            }
+        }
+
+        // If author does not exist, create a new one
+        Author newAuthor = Author.builder()
+                .name(name)
+                .openLibraryId(openLibraryKey != null ? openLibraryKey.replace("/authors/", "") : null)
+                .build();
+        return authorRepository.save(newAuthor);
     }
 }
