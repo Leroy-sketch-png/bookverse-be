@@ -27,7 +27,7 @@ import java.util.List;
 public class ListingController {
     ListingService listingService;
 
-    @GetMapping
+    @GetMapping("/all")
     public ApiResponse<List<ListingResponse>> getAllListings() {
         return ApiResponse.<List<ListingResponse>>builder()
                 .result(listingService.getAllListings())

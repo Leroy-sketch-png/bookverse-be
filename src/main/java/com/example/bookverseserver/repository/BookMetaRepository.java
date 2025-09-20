@@ -15,9 +15,8 @@ import java.util.Optional;
 @Repository
 public interface BookMetaRepository extends JpaRepository<BookMeta, String>, JpaSpecificationExecutor<BookMeta> {
 
-    @Override
     @EntityGraph(attributePaths = {"authors", "categories", "images"})
-    Optional<BookMeta> findById(String id);
+    Optional<BookMeta> findById(Long id);
 
     @Override
     @EntityGraph(attributePaths = {"authors", "categories", "images"})
