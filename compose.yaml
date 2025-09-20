@@ -18,13 +18,16 @@ services:
 
   bvs-api:
     container_name: bvs-api
-    image: bvs/bvs:0.0.1
+    image: votrungtin/bvs-api:latest
     restart: always
     ports:
       - "8080:8080"
     environment:
       ACTIVE_PROFILE: dev
+      # Explicitly pass DB credentials to the application container
       DB_URL: jdbc:postgresql://postgres-sql-bvs:5432/bookversedb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       SPRING_MAIL_HOST: ${MAIL_HOST}
       SPRING_MAIL_PORT: ${MAIL_PORT}
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
