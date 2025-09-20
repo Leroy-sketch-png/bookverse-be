@@ -1,15 +1,21 @@
 name: Bookverse Backend API Pipeline
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - src/**
+      - docker/**
+      - 'docker-compose.yml'
+      - .github/workflows/*-backend.yml
   pull_request:
     branches: [main]
-  paths:
-    - src/**
-    - docker/**
-    - 'docker-compose.yml'
-    - .github/workflows/*-backend.yml
+    paths:
+      - src/**
+      - docker/**
+      - 'docker-compose.yml'
+      - .github/workflows/*-backend.yml
 
 jobs:
   compile:
