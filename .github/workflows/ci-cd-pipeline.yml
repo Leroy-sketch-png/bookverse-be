@@ -25,6 +25,7 @@ jobs:
 
       - name: Compile Project
         run: |
+          chmod +x mvnw
           ./mvnw clean compile
 
   unit-tests:
@@ -44,6 +45,7 @@ jobs:
 
       - name: Running unit tests
         run: |
+          chmod +x mvnw
           ./mvnw clean test
 
   build:
@@ -64,6 +66,7 @@ jobs:
 
       - name: Build backend
         run: |
+          chmod +x mvnw
           ./mvnw clean package
 
   build-image:
@@ -85,6 +88,7 @@ jobs:
       - name: Extract project version
         id: extract_version
         run: |
+          chmod +x mvnw
           version=$(./mvnw help:evaluate -q -Dexpression=project.version -DforceStdout)
           echo "VERSION=$version" >> $GITHUB_OUTPUT
 
