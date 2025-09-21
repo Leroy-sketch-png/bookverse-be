@@ -37,3 +37,25 @@ jobs:
 
       - name: Run tests
         run: mvn test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build-test
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t votrungtin/bvs-api:latest -f ./docker/Dockerfile .
+
+      - name: Push Docker image
+        run: |
+          docker push votrungtin/bvs-api:latest
