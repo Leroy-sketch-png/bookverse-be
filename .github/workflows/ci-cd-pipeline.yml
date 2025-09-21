@@ -1,4 +1,4 @@
-name: Java Maven Build & Publish Artifact
+name: Spring Boot CI/CD
 
 on:
   push:
@@ -7,172 +7,112 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  setup:
+    name: Setup Environment
     runs-on: ubuntu-latest
-    container:
-      image: maven:3.9.2-eclipse-temurin-21
-
+    outputs:
+      cache-key: ${{ steps.cache-maven.outputs.cache-hit }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and test with Maven
-        run: mvn -B package --file pom.xml
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          name: my-maven-artifact
-          path: target/*.jar
+          java-version: '21'
+          distribution: 'temurin'
 
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
 
-      # This is where your actual publish or deployment logic would go.
-      # For example, you could add steps here to deploy the JAR to a Maven repository
-      # or to a cloud service. The file is now available in the 'staging' directory.
+      - name: Cache Maven packages
+        id: cache-maven
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
+  compile:
+    name: Compile Code
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#name: Bookverse Backend API Pipeline
-#
-#on:
-#  workflow_dispatch:
-#  push:
-#    branches: [main]
-#  pull_request:
-#    branches: [main]
-#
-#jobs:
-#  compile:
-#    runs-on: ubuntu-latest
-#    name: Compile backend
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Compile code
+        run: ./mvnw compile
+
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    needs: compile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Run tests
+        run: ./mvnw test
+
+  build:
+    name: Build JAR
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Build JAR
+        run: ./mvnw clean package
+
+#      - name: Upload JAR artifact
+#        if: github.repository != ''
+#        uses: actions/upload-artifact@v3
 #        with:
-#          fetch-depth: 0
-#
-#      - name: Setup JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: 21
-#          distribution: 'corretto'
-#
-#      - name: Compile Project
-#        run: |
-#          chmod +x mvnw
-#          ./mvnw clean compile
-#
-#  unit-tests:
-#    runs-on: ubuntu-latest
-#    name: Unit tests
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Setup JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: 21
-#          distribution: 'corretto'
-#
-#      - name: Running unit tests
-#        env:
-#          DB_URL: ${{ secrets.DB_URL }}
-#          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-#          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-#          JWT_SIGNER_KEY: ${{ secrets.JWT_SIGNER_KEY }}
-#          JWT_VALID_DURATION: ${{ secrets.JWT_VALID_DURATION }}
-#          JWT_REFRESHABLE_DURATION: ${{ secrets.JWT_REFRESHABLE_DURATION }}
-#          MAIL_HOST: ${{ secrets.MAIL_HOST }}
-#          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-#          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-#        run: |
-#          chmod +x mvnw
-#          ./mvnw clean test -e -X
-#
-#  build:
-#    runs-on: ubuntu-latest
-#    name: Build backend
-#    needs: [compile, unit-tests]
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Setup JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: 21
-#          distribution: 'corretto'
-#
-#      - name: Build backend
-#        run: |
-#          chmod +x mvnw
-#          ./mvnw clean package
-#
-#  build-image:
-#    name: Build docker image
-#    runs-on: ubuntu-latest
-#    needs: [build]
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Setup JDK
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: 21
-#          distribution: 'corretto'
-#
-#      - name: Extract project version
-#        id: extract_version
-#        run: |
-#          chmod +x mvnw
-#          version=$(./mvnw help:evaluate -q -Dexpression=project.version -DforceStdout)
-#          echo "VERSION=$version" >> $GITHUB_OUTPUT
-#
-#      - name: Login to Dockerhub
-#        uses: docker/login-action@v3
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-#      - name: Build & Push to DockerHub
-#        uses: docker/build-push-action@v5
-#        with:
-#          context: .
-#          file: docker/Dockerfile
-#          push: true
-#          platforms: linux/amd64
-#          tags: |
-#            ${{ secrets.DOCKERHUB_USERNAME }}/bvs-api:${{ steps.extract_version.outputs.VERSION }}
-#            ${{ secrets.DOCKERHUB_USERNAME }}/bvs-api:latest
-#          build-args: |
-#            PROFILE=dev
-#            APP_VERSION=${{ steps.extract_version.outputs.VERSION }}
-#
-#  deploy:
-#    name: Deploy Backend
-#    runs-on: ubuntu-latest
-#    needs: [build-image]
-#    steps:
-#      - name: Create deployment folder
-#        run: ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_VPS_IP }} "mkdir -p ci-cd"
-#
-#      - name: Copy docker-compose file
-#        run: scp docker-compose.yml ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_VPS_IP }}:ci-cd/docker-compose.yml
-#
-#      - name: Set ENV variable and deploy
-#        run: |
-#          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_VPS_IP }} << 'EOF'
-#            export EMAIL_HOSTNAME=${{ secrets.EMAIL_HOSTNAME }}
-#            export EMAIL_USER_NAME=${{ secrets.EMAIL_USER_NAME }}
-#            export EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
-#            cd ci-cd
-#            docker-compose -f docker-compose.yml pull -q
-#            docker-compose -f docker-compose.yml up -d
-#          EOF
+#          name: springboot-jar
+#          path: target/*.jar
+
+  deploy:
+    name: Deploy to Render
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render (action)
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
