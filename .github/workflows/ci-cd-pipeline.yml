@@ -59,3 +59,14 @@ jobs:
       - name: Push Docker image
         run: |
           docker push votrungtin/bvs-api:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker-build
+
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json"
