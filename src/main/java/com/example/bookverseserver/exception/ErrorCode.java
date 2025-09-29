@@ -9,6 +9,7 @@ public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_INPUT(1001, "Invalid input data", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
+    INVALID_SUBJECT_IN_JWT(1005, "Invalid subject in JWT", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1003, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_REQUEST(1004, "Invalid request", HttpStatus.BAD_REQUEST ),
 
@@ -41,8 +42,8 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(1700, "File upload failed", HttpStatus.BAD_REQUEST),
     FILE_DELETE_FAILED(1701, "File delete failed", HttpStatus.BAD_REQUEST),
 
-    INVALID_KEY(1700, "Invalid key" , HttpStatus.BAD_REQUEST ),
-    ROLE_NOT_FOUND(1701, "Role not found" , HttpStatus.NOT_FOUND ),
+    INVALID_KEY(1720, "Invalid key" , HttpStatus.BAD_REQUEST ),
+    ROLE_NOT_FOUND(1721, "Role not found" , HttpStatus.NOT_FOUND ),
     NO_AUTHOR_FOUND(1702,"No author found" , HttpStatus.BAD_REQUEST),
     EMAIL_NOT_EXISTED(1704,"Email not existed" , HttpStatus.NOT_FOUND ),
     USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND ),

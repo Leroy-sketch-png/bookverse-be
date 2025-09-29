@@ -35,10 +35,10 @@ import java.util.Optional;
 @Slf4j
 public class GoogleAuthService {
     final UserService userService;
-    final AuthenticationService authenticationService;
     final AuthProviderRepository authProviderRepository;
     final UserMapper userMapper;
     final NoOpTokenEncryptionService tokenEncryptionService;
+    final NimbusJwtService jwtService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     String clientID;
@@ -102,7 +102,7 @@ public class GoogleAuthService {
         authProviderRepository.save(authProvider);
 
         // Issue application JWT (short-lived) and build response
-        String jwt = authenticationService.generateToken(user);
+        String jwt = jwtService.generateToken(user);
 
         return AuthenticationResponse.builder()
                 .token(jwt)

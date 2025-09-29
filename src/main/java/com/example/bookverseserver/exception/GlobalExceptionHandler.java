@@ -34,6 +34,7 @@ public class GlobalExceptionHandler {
 
         response.setCode(errorCode.getCode());
         response.setMessage(errorCode.getMessage());
+        log.error("AppException occurred: {}", ex.getMessage(), ex); // Add this line
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(response);
