@@ -19,7 +19,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -99,7 +98,7 @@ public class AuthorService {
     public List<AuthorResponse> getAllAuthors() {
         List<Author> authors = authorRepository.findAll();
         if (authors.isEmpty()) {
-            throw new AppException(ErrorCode.NO_AUTHOR_FOUND);
+            throw new AppException(ErrorCode.AUTHOR_NOT_FOUND);
         }
         return authors.stream()
                 .map(authorMapper::toAuthorResponse)
@@ -129,7 +128,7 @@ public class AuthorService {
 
     public AuthorResponse getAuthorById(Long id) {
          Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_FOUND));
         return authorMapper.toAuthorResponse(author);
     }
 
@@ -151,7 +150,7 @@ public class AuthorService {
     @PreAuthorize("hasRole('ADMIN')")
     public AuthorDetailResponse updateAuthor(String OLID, AuthorDetailRequest authorRequest) {
         Author author = authorRepository.findByOpenLibraryId(OLID)
-                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_FOUND));
         authorMapper.updateAuthor(author, authorRequest);
         return authorMapper.toAuthorDetailResponse(authorRepository.save(author));
     }
@@ -159,7 +158,7 @@ public class AuthorService {
     @PreAuthorize("hasRole('ADMIN')")
     public AuthorDetailResponse deleteAuthor(String OLID) {
         Author author = authorRepository.findByOpenLibraryId(OLID)
-                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_FOUND));
         authorRepository.delete(author);
         return authorMapper.toAuthorDetailResponse(author);
     }
