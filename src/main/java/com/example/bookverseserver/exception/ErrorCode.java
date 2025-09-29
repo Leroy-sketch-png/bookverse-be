@@ -26,19 +26,24 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(1300, "Category not found", HttpStatus.NOT_FOUND),
     CATEGORY_EXISTED(1301, "Category already exists", HttpStatus.BAD_REQUEST),
 
-    // INVENTORY
+    // AUTHOR
+    AUTHOR_NOT_FOUND(1400, "Author not found", HttpStatus.NOT_FOUND),
+    AUTHOR_EXISTED(1401, "Author already exists", HttpStatus.BAD_REQUEST),
+
+    // LISTING
+    LISTING_NOT_FOUND(1500, "Listing not found", HttpStatus.NOT_FOUND),
+    LISTING_EXISTED(1501, "Listing already exists", HttpStatus.BAD_REQUEST),
 
     // REVIEW
-    REVIEW_NOT_FOUND(1500, "Review not found", HttpStatus.NOT_FOUND),
+    REVIEW_NOT_FOUND(1600, "Review not found", HttpStatus.NOT_FOUND),
 
     // GENERAL FILE/UPLOAD
-    FILE_UPLOAD_FAILED(1600, "File upload failed", HttpStatus.BAD_REQUEST),
-    FILE_DELETE_FAILED(1601, "File delete failed", HttpStatus.BAD_REQUEST),
+    FILE_UPLOAD_FAILED(1700, "File upload failed", HttpStatus.BAD_REQUEST),
+    FILE_DELETE_FAILED(1701, "File delete failed", HttpStatus.BAD_REQUEST),
 
     INVALID_KEY(1700, "Invalid key" , HttpStatus.BAD_REQUEST ),
     ROLE_NOT_FOUND(1701, "Role not found" , HttpStatus.NOT_FOUND ),
     NO_AUTHOR_FOUND(1702,"No author found" , HttpStatus.BAD_REQUEST),
-    AUTHOR_EXISTED(1703,"Author already exists" , HttpStatus.BAD_REQUEST ),
     EMAIL_NOT_EXISTED(1704,"Email not existed" , HttpStatus.NOT_FOUND ),
     USERNAME_NOT_EXISTED(1705,"Username not existed" , HttpStatus.NOT_FOUND ),
     PROFILE_ALREADY_EXISTS(1706, "Profile already exists" , HttpStatus.BAD_REQUEST ),

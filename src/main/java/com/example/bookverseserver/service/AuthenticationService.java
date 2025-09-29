@@ -10,9 +10,7 @@ import java.util.UUID;
 
 import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.mapper.UserMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -131,7 +129,7 @@ public class AuthenticationService {
         var username = signedJWT.getJWTClaimsSet().getSubject();
 
         var user =
-                userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+                userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         var token = generateToken(user);
 
