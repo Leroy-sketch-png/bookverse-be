@@ -3,6 +3,7 @@ import java.security.SecureRandom;
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import lombok.AccessLevel;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
     private final JavaMailSender mailSender;
 
+    @Async
     public void sendOtpEmail(String to, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -39,4 +41,6 @@ public class EmailService {
         }
         return otp.toString();
     }
+
+
 }

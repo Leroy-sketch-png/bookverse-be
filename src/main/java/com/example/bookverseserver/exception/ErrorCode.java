@@ -50,7 +50,13 @@ public enum ErrorCode {
     NO_LISTING_FOUND(1712, "No listing found" , HttpStatus.BAD_REQUEST ),
     BOOK_META_NOT_FOUND(1713, "Book meta not found" , HttpStatus.NOT_FOUND ),
     NOT_ENOUGH_LISTING(1714, "Not enough listing" , HttpStatus.BAD_REQUEST ),
-    BOOK_NOT_FOUND_IN_OPEN_LIBRARY(1715, "Book not found in open library" , HttpStatus.NOT_FOUND ),;
+    BOOK_NOT_FOUND_IN_OPEN_LIBRARY(1715, "Book not found in open library" , HttpStatus.NOT_FOUND ),
+    PASSWORDS_MISMATCH(1716,"Passwords mismatch" ,HttpStatus.BAD_REQUEST ),
+    OTP_NOT_FOUND(1717,"Invalid changing password request" ,HttpStatus.BAD_REQUEST ),
+    INVALID_OTP(1718,"Invalid OTP" , HttpStatus.BAD_REQUEST ),
+    OTP_EXPIRED(1719,"OTP expired" , HttpStatus.BAD_REQUEST ),
+    ;
+
 
     private final int code;
     private final String message;

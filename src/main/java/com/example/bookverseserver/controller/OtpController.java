@@ -31,7 +31,7 @@ public class OtpController {
     @PostMapping("/verify-otp")
     public ApiResponse<String> verifyOtp(@RequestBody EmailVerificationRequest request) {
         try {
-            User created = signupRequestService.verifyOtpAndCreateUser(request.getEmail(), request.getOtp());
+            signupRequestService.verifyOtpAndCreateUser(request.getEmail(), request.getOtp());
             return ApiResponse.<String>builder()
                     .result("Email verified and account created")
                     .build();

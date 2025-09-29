@@ -8,18 +8,20 @@ import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
 
+import com.example.bookverseserver.dto.request.Authentication.*;
 import com.example.bookverseserver.dto.response.User.UserResponse;
+import com.example.bookverseserver.entity.User.ForgotPasswordOtpStorage;
+import com.example.bookverseserver.entity.User.SignupRequest;
 import com.example.bookverseserver.mapper.UserMapper;
+import com.example.bookverseserver.repository.ForgotPasswordRepository;
+import com.example.bookverseserver.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.example.bookverseserver.dto.request.Authentication.AuthenticationRequest;
-import com.example.bookverseserver.dto.request.Authentication.IntrospectRequest;
-import com.example.bookverseserver.dto.request.Authentication.LogoutRequest;
-import com.example.bookverseserver.dto.request.Authentication.RefreshRequest;
 import com.example.bookverseserver.dto.response.Authentication.AuthenticationResponse;
 import com.example.bookverseserver.dto.response.Authentication.IntrospectResponse;
 import com.example.bookverseserver.entity.User.InvalidatedToken;
@@ -50,6 +52,9 @@ public class AuthenticationService {
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
     UserMapper userMapper;
+    SignupRequestService signupRequestService;
+    ForgotPasswordRepository forgotPasswordRepository;
+    EmailService emailService;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -62,6 +67,10 @@ public class AuthenticationService {
     @NonFinal
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
+
+    @NonFinal
+    @Value("${app.otp.ttl-seconds:600}")
+    private long otpTtlSeconds;
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
@@ -198,4 +207,72 @@ public class AuthenticationService {
 
         return stringJoiner.toString();
     }
+
+    public String forgotPasswordOtp(String email) {
+        String otp = signupRequestService.generateOtpCode();
+        String otpHash = signupRequestService.hmacOtp(otp);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plusSeconds(otpTtlSeconds);
+
+        forgotPasswordRepository.findByEmail(email).ifPresent(existing -> {
+            forgotPasswordRepository.delete(existing);
+            log.info("Replaced existing signup request for {}", email);
+        });
+
+        ForgotPasswordOtpStorage request =  new ForgotPasswordOtpStorage();
+        request.setOtpHash(otpHash);
+        request.setExpiresAt(expiresAt);
+        request.setEmail(email);
+        request.setCreatedAt(Instant.now());
+
+        forgotPasswordRepository.save(request);
+        emailService.sendOtpEmail(email, otp);
+
+        return otp;
+    }
+
+    public UserResponse  verifyOtpAndChangePassword(ForgotPasswordRequest forgotPasswordRequest) {
+            // 1. Xác thực Mật khẩu
+            if (!forgotPasswordRequest.getPassword().equals(forgotPasswordRequest.getConfirmPassword())) {
+                throw new AppException(ErrorCode.PASSWORDS_MISMATCH);
+            }
+
+            // 2. Tìm kiếm và Xác minh OTP
+            // Phương thức findByEmail là hợp lý nhất, vì người dùng gửi yêu cầu quên mật khẩu bằng email
+            // và ta cần tìm bản ghi OTP dựa trên email đó.
+            ForgotPasswordOtpStorage request = forgotPasswordRepository.findByEmail(forgotPasswordRequest.getEmail())
+                    .orElseThrow(() -> new AppException(ErrorCode.OTP_NOT_FOUND));
+
+            // 3. Xác minh tính hợp lệ của OTP và thời gian hết hạn
+            // Kiểm tra OTP đã nhập có khớp với OTP đã hash trong database không
+            String inputOtpHash = signupRequestService.hmacOtp(forgotPasswordRequest.getOtp());
+
+            if (!inputOtpHash.equals(request.getOtpHash())) {
+                throw new AppException(ErrorCode.INVALID_OTP);
+            }
+
+            // Kiểm tra OTP đã hết hạn chưa
+            if (request.getExpiresAt().isBefore(Instant.now())) {
+                // Sau khi hết hạn, ta nên xóa bản ghi OTP cũ
+                forgotPasswordRepository.delete(request);
+                throw new AppException(ErrorCode.OTP_EXPIRED);
+            }
+
+            // 4. Cập nhật Mật khẩu
+            // Tìm kiếm thông tin người dùng dựa trên email đã lưu
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+            // Cập nhật mật khẩu mới (cần dùng passwordEncoder để mã hóa mật khẩu)
+            user.setPasswordHash(passwordEncoder.encode(forgotPasswordRequest.getPassword()));
+            userRepository.save(user);
+
+            // 5. Dọn dẹp
+            // Xóa bản ghi OTP sau khi đã sử dụng thành công
+            forgotPasswordRepository.delete(request);
+
+            log.info("Password successfully changed for user {}", request.getEmail());
+
+            return userMapper.toUserResponse(user);
+        }
 }
