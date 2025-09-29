@@ -1,15 +1,14 @@
 package com.example.bookverseserver.dto.request.Authentication;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class GoogleAuthRequest {
-    String idToken;
-    String accessToken;   // optional
-    String refreshToken;  // optional
+    private String code;
 }

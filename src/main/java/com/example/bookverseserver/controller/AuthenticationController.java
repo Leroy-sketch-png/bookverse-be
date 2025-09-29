@@ -52,29 +52,30 @@ public class AuthenticationController {
     }
 
     @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request)
+    ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request)
             throws ParseException, JOSEException {
         var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder().result(result).build();
     }
 
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+    ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshRequest request)
             throws ParseException, JOSEException {
         var result = authenticationService.refreshToken(request);
         return ApiResponse.<AuthenticationResponse>builder().result(result).build();
     }
 
     @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
         authenticationService.logout(request);
         return ApiResponse.<Void>builder().build();
     }
 
     @PostMapping("/google")
-    ApiResponse<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest googleIdTokenString) {
+    ApiResponse<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest request) {
         try {
-            AuthenticationResponse response = googleAuthService.authenticateGoogleUser(googleIdTokenString);
+            AuthenticationResponse response = googleAuthService.authenticateGoogleUser(request);
             return ApiResponse.<AuthenticationResponse>builder()
                     .result(response)
                     .build();
@@ -88,7 +89,6 @@ public class AuthenticationController {
     }
 
     private void logError(Exception e) {
-        // Simple logging; integrate with your logger if preferred
         System.err.println("Google authentication failed: " + e.getMessage());
         e.printStackTrace();
     }
