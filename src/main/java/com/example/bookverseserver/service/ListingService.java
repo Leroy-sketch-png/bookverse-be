@@ -123,7 +123,7 @@ public class ListingService {
         log.info(">>> Entered updateListing with listingId={}", listingId);
 
         Listing listing = listingRepository.findById(listingId)
-            .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+            .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
 
         Long currentUserId = securityUtils.getCurrentUserId(authentication);
 
@@ -140,7 +140,7 @@ public class ListingService {
 
     public String hardDeleteListing (Long listingId, Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new AppException(ErrorCode.AUTHOR_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
 
         Long currentUserId = securityUtils.getCurrentUserId(authentication);
 
@@ -189,7 +189,7 @@ public class ListingService {
         } else {
             // not yet liked → like
             User currentUser = userRepository.findById(currentUserId)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
             Likes like = new Likes();
             like.setListing(listing);

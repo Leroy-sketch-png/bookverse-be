@@ -69,7 +69,7 @@ public class UserService {
         String name = context.getAuthentication().getName();
 
         User user = userRepository.findByUsername(name)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         return userMapper.toUserResponse(user);
     }
@@ -77,7 +77,7 @@ public class UserService {
     @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse updateUser(Long userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         userMapper.updateUser(user, request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
@@ -107,7 +107,7 @@ public class UserService {
     public UserResponse getUser(Long id) {
         return userMapper.toUserResponse(
                 userRepository.findById(id)
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND))
         );
     }
 

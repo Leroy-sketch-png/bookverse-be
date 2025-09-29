@@ -46,9 +46,6 @@ public class GoogleAuthService {
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
     String clientSecret;
 
-    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
-    String redirectUri;
-
     GoogleIdTokenVerifier verifier;
 
     @PostConstruct
@@ -139,7 +136,7 @@ public class GoogleAuthService {
                     clientID,
                     clientSecret,
                     code,
-                    redirectUri
+                    "postmessage"
             ).execute();
         } catch (Exception e) {
             log.error("Failed to exchange code for tokens with Google", e);
