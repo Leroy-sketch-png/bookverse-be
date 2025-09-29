@@ -1,17 +1,18 @@
 package com.example.bookverseserver.service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import lombok.AccessLevel;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.User.UserResponse;
@@ -23,11 +24,11 @@ import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.UserMapper;
 import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserRepository;
-
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +40,7 @@ public class UserService {
     RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
-    private final OtpService otpService;
+    OtpService otpService;
 
     public UserResponse createUser(UserCreationRequest request) {
         User user = userMapper.toUser(request);
@@ -66,7 +67,7 @@ public class UserService {
     public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
-//
+
         User user = userRepository.findByUsername(name)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
@@ -123,6 +124,27 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        return userRepository.save(user);
+    }
+
+    /**
+     * Create or update a user identity for the Google provider.
+     * Token persistence is handled in AuthProvider.
+     */
+    public User createOrUpdateGoogleUser(String googleId, String email) {
+        User user = findByGoogleId(googleId)
+                .or(() -> findByEmail(email))
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setGoogleId(googleId);
+                    newUser.setEmail(email);
+                    newUser.setUsername(email);
+                    newUser.setAuthProvider("GOOGLE");
+                    newUser.setEnabled(true);
+                    return newUser;
+                });
+
+        user.setLastLogin(LocalDateTime.now());
         return userRepository.save(user);
     }
 }

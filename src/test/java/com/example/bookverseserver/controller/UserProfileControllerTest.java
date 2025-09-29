@@ -4,7 +4,7 @@ import com.example.bookverseserver.dto.request.User.ProfileUpdateRequest;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.UserProfileService;
-import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,19 +2,19 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Authentication.GoogleAuthRequest;
 import com.example.bookverseserver.dto.response.Authentication.AuthenticationResponse;
-import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.entity.User.AuthProvider;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.UserMapper;
 import com.example.bookverseserver.repository.AuthProviderRepository;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.AccessLevel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -25,32 +25,31 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
+
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Slf4j
 public class GoogleAuthService {
-
-    @Autowired
     final UserService userService;
-
-    @Autowired
     final AuthenticationService authenticationService;
-
-    @Autowired
     final AuthProviderRepository authProviderRepository;
-
-    @Autowired
     final UserMapper userMapper;
+    final NoOpTokenEncryptionService tokenEncryptionService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientID;
+    String clientID;
 
-    private GoogleIdTokenVerifier verifier;
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    String clientSecret;
+
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    String redirectUri;
+
+    GoogleIdTokenVerifier verifier;
 
     @PostConstruct
     public void init() throws GeneralSecurityException, IOException {
@@ -62,88 +61,57 @@ public class GoogleAuthService {
     }
 
     /**
-     * Authenticate or register a user using Google ID token.
-     * @param request GoogleAuthRequest containing idToken (and optionally accessToken/refreshToken)
-     * @return AuthenticationResponse containing your app JWT and user info
+     * Orchestrate code exchange, token verification, user linking and token persistence.
      */
     public AuthenticationResponse authenticateGoogleUser(GoogleAuthRequest request)
             throws GeneralSecurityException, IOException {
 
-        if (request == null || request.getIdToken() == null) {
+        if (request == null || request.getCode() == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        GoogleIdToken.Payload payload = verifyToken(request.getIdToken());
+        // Exchange authorization code for tokens
+        GoogleTokenResponse tokenResponse = exchangeCodeForTokens(request.getCode());
+        String idTokenString = tokenResponse.getIdToken();
+        String accessToken = tokenResponse.getAccessToken();
+        String refreshToken = tokenResponse.getRefreshToken();
 
+        // Verify ID token
+        GoogleIdToken.Payload payload = verifyToken(idTokenString);
         String provider = "GOOGLE";
-        String providerUserId = payload.getSubject(); // google sub
+        String providerUserId = payload.getSubject();
         String providerEmail = payload.getEmail();
-        String displayName = (String) payload.get("name");
-        String pictureUrl = (String) payload.get("picture"); // optional
 
-        Optional<AuthProvider> existingProviderOpt = authProviderRepository
-                .findByProviderAndProviderUserId(provider, providerUserId);
+        // Create or update user identity (UserService handles identity only)
+        User user = userService.createOrUpdateGoogleUser(providerUserId, providerEmail);
 
-        User user;
+        // Persist or update AuthProvider (store tokens here; encrypt refresh token)
+        Optional<AuthProvider> opt = authProviderRepository.findByProviderAndProviderUserId(provider, providerUserId);
+        AuthProvider authProvider = opt.orElseGet(() -> AuthProvider.builder()
+                .user(user)
+                .provider(provider)
+                .providerUserId(providerUserId)
+                .providerEmail(providerEmail)
+                .build());
 
-        if (existingProviderOpt.isPresent()) {
-            AuthProvider existingProvider = existingProviderOpt.get();
-            user = existingProvider.getUser();
-
-            boolean providerChanged = false;
-            if (request.getAccessToken() != null) {
-                existingProvider.setAccessToken(request.getAccessToken());
-                providerChanged = true;
-            }
-            if (request.getRefreshToken() != null) {
-                existingProvider.setRefreshToken(request.getRefreshToken());
-                providerChanged = true;
-            }
-            if (providerChanged) {
-                authProviderRepository.save(existingProvider);
-            }
-
-        } else {
-            user = userService.findByGoogleId(providerUserId)
-                    .orElseGet(() -> userService.findByEmail(providerEmail).orElse(null));
-
-            if (user == null) {
-                User newUser = new User();
-                newUser.setGoogleId(providerUserId);
-                newUser.setEmail(providerEmail);
-                newUser.setUsername(providerEmail); // safe default
-                newUser.setAuthProvider("GOOGLE");
-                newUser.setEnabled(true);
-
-                user = userService.saveUser(newUser);
-            }
-
-            AuthProvider authProvider = AuthProvider.builder()
-                    .user(user)
-                    .provider(provider)
-                    .providerUserId(providerUserId)
-                    .providerEmail(providerEmail)
-                    .accessToken(request.getAccessToken())
-                    .refreshToken(request.getRefreshToken())
-                    .expiresAt(null)
-                    .build();
-
-            authProviderRepository.save(authProvider);
+        if (accessToken != null) {
+            authProvider.setAccessToken(accessToken);
         }
+        if (refreshToken != null) {
+            String cipher = tokenEncryptionService.encrypt(refreshToken);
+            authProvider.setRefreshToken(cipher);
+        }
+        authProvider.setExpiresAt(null); // optionally set using tokenResponse.getExpiresInSeconds()
+        authProviderRepository.save(authProvider);
 
-        user.setEmail(providerEmail != null ? providerEmail : user.getEmail());
-        user.setLastLogin(LocalDateTime.now());
-        user = userService.updateUser(user);
-
+        // Issue application JWT (short-lived) and build response
         String jwt = authenticationService.generateToken(user);
-
-        UserResponse userResponse = userMapper.toUserResponse(user);
 
         return AuthenticationResponse.builder()
                 .token(jwt)
                 .authenticated(true)
                 .lastLogin(user.getLastLogin())
-                .user(userResponse)
+                .user(userMapper.toUserResponse(user))
                 .build();
     }
 
@@ -160,5 +128,22 @@ public class GoogleAuthService {
         if (token == null) return "null";
         int keep = Math.min(10, token.length());
         return token.substring(0, keep) + "...";
+    }
+
+    private GoogleTokenResponse exchangeCodeForTokens(String code) {
+        try {
+            return new GoogleAuthorizationCodeTokenRequest(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    JacksonFactory.getDefaultInstance(),
+                    "https://oauth2.googleapis.com/token",
+                    clientID,
+                    clientSecret,
+                    code,
+                    redirectUri
+            ).execute();
+        } catch (Exception e) {
+            log.error("Failed to exchange code for tokens with Google", e);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
     }
 }

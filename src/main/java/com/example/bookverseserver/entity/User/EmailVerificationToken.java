@@ -3,6 +3,7 @@ package com.example.bookverseserver.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -28,5 +29,6 @@ public class EmailVerificationToken {
     LocalDateTime expiryDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     LocalDateTime createdAt;
 }
