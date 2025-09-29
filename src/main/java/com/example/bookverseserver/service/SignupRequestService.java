@@ -7,6 +7,7 @@ import com.example.bookverseserver.repository.SignupRequestRepository;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +55,7 @@ public class SignupRequestService {
         return String.valueOf(code);
     }
 
-    private String hmacOtp(String otp) {
+    public String hmacOtp(String otp) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec key = new SecretKeySpec(otpSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
