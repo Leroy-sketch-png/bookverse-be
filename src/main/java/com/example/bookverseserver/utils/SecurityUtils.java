@@ -1,6 +1,8 @@
 package com.example.bookverseserver.utils;
 
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.exception.AppException;
+import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,7 +24,7 @@ public class SecurityUtils {
     public Long getCurrentUserId(Authentication auth) {
         Authentication authentication = auth != null ? auth : SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalArgumentException("Unauthenticated");
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         Object principal = authentication.getPrincipal();
@@ -31,7 +33,7 @@ public class SecurityUtils {
             try {
                 return Long.parseLong(jwt.getSubject()); // always user.id
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid subject in JWT");
+                throw new AppException(ErrorCode.INVALID_SUBJECT_IN_JWT);
             }
         }
 
@@ -51,6 +53,6 @@ public class SecurityUtils {
         return userRepository.findByEmail(usernameOrEmail)
                 .or(() -> userRepository.findByUsername(usernameOrEmail))
                 .map(User::getId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found for: " + usernameOrEmail));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }
