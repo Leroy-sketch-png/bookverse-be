@@ -14,7 +14,7 @@ import com.example.bookverseserver.entity.User.ForgotPasswordOtpStorage;
 import com.example.bookverseserver.entity.User.SignupRequest;
 import com.example.bookverseserver.mapper.UserMapper;
 import com.example.bookverseserver.repository.ForgotPasswordRepository;
-import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -151,18 +151,18 @@ public class AuthenticationService {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
+                .subject(String.valueOf(user.getId()))  // always sub = internal user.id
                 .issuer("bookverse.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", buildScope(user))
+                .claim("username", user.getUsername())   // optional convenience
+                .claim("email", user.getEmail())         // optional convenience
+                .claim("scope", buildScope(user))        // your existing roles/scopes
                 .build();
 
-        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        JWSObject jwsObject = new JWSObject(header, payload);
+        JWSObject jwsObject = new JWSObject(header, new Payload(jwtClaimsSet.toJSONObject()));
 
         try {
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));

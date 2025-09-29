@@ -6,7 +6,7 @@ import com.example.bookverseserver.dto.request.User.UpgradeToSellerRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.service.UserProfileService;
-import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
