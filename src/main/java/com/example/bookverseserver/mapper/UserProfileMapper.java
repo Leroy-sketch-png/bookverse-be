@@ -9,7 +9,19 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface UserProfileMapper {
 
-    UserProfile toEntity(ProfileCreationRequest request);
+    default UserProfile toEntity(ProfileCreationRequest request) {
+        if (request == null) return null;
+
+        return UserProfile.builder()
+                .displayName(request.getDisplayName())
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .bio(request.getBio())
+                .accountType(request.getAccountType())
+                .location(request.getLocation())
+                .preferences(request.getPreferences())
+                .build();
+    }
 
 //    @Mapping(target = "userId", expression = "java(profile.getUser() != null ? profile.getUser().getId() : null)")
 //    @Mapping(source = "displayName", target = "displayName")
