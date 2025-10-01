@@ -14,10 +14,12 @@ import com.example.bookverseserver.mapper.UserProfileMapper;
 import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +37,7 @@ public class UserProfileService {
     UserProfileMapper userProfileMapper;
     CloudStorageService cloudStorageService;
     RoleRepository roleRepository;
+    SecurityUtils securityUtils;
 
     @Transactional
     public ProfileResponse createProfileForUser(Long userId, ProfileCreationRequest request) {
@@ -64,7 +67,8 @@ public class UserProfileService {
     }
 
     @Transactional
-    public ProfileResponse updateProfileForUser(Long userId, ProfileUpdateRequest request) {
+    public ProfileResponse updateProfileForUser(Authentication authentication, ProfileUpdateRequest request) {
+        Long userId = securityUtils.getCurrentUserId(authentication);
         UserProfile profile = userProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
         // MapStruct will ignore nulls so only provided fields are updated
