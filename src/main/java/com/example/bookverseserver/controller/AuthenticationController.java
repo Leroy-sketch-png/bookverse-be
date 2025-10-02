@@ -4,8 +4,8 @@ import java.text.ParseException;
 import com.example.bookverseserver.dto.request.Authentication.*;
 import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.Authentication.RefreshResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.service.GoogleAuthService;
 import com.example.bookverseserver.service.SignupRequestService;
 import com.nimbusds.jose.JOSEException;
@@ -65,10 +65,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> refresh(@RequestBody RefreshRequest request)
+    ApiResponse<RefreshResponse> refresh(@RequestBody RefreshRequest request)
             throws ParseException, JOSEException {
         var result = authenticationService.refreshToken(request);
-        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+        return ApiResponse.<RefreshResponse>builder().result(result).build();
     }
 
     @PostMapping("/logout")

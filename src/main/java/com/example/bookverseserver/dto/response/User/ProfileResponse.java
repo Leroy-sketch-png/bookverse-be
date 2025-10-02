@@ -1,6 +1,8 @@
 package com.example.bookverseserver.dto.response.User;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -17,9 +19,16 @@ public class ProfileResponse {
     private String accountType;
     private Double ratingAvg;
     private Integer ratingCount;
-    private LocalDate sellerSince;
     private String preferences;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate sellerSince;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
     private Integer version;
 }

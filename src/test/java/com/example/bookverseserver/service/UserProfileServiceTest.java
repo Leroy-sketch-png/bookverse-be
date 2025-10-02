@@ -6,11 +6,13 @@ import com.example.bookverseserver.entity.User.UserProfile;
 import com.example.bookverseserver.mapper.UserProfileMapper;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.utils.SecurityUtils; // Added import
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication; // Added import
 
 import java.util.Optional;
 
@@ -26,6 +28,7 @@ class UserProfileServiceTest {
     private UserProfileRepository userProfileRepository;
     @Mock private UserRepository userRepository;
     @Mock private UserProfileMapper userProfileMapper;
+    @Mock private SecurityUtils securityUtils; // Added mock
 
     @InjectMocks
     private UserProfileService service;
@@ -35,6 +38,10 @@ class UserProfileServiceTest {
         Long userId = 11L;
         ProfileUpdateRequest req = new ProfileUpdateRequest();
         req.setLocation("Hanoi");
+
+        // Mock Authentication and SecurityUtils
+        Authentication mockAuthentication = mock(Authentication.class); // Mock Authentication
+        when(securityUtils.getCurrentUserId(mockAuthentication)).thenReturn(userId); // Configure SecurityUtils
 
         UserProfile existing = new UserProfile();
         existing.setId(1L);
@@ -60,7 +67,7 @@ class UserProfileServiceTest {
         resp.setLocation("Hanoi");
         when(userProfileMapper.toResponse(saved)).thenReturn(resp);
 
-        ProfileResponse out = service.updateProfileForUser(userId, req);
+        ProfileResponse out = service.updateProfileForUser(mockAuthentication, req); // Updated call
 
         assertNotNull(out);
         assertEquals("Hanoi", out.getLocation());
@@ -68,5 +75,6 @@ class UserProfileServiceTest {
         verify(userProfileRepository).findByUser_Id(userId);
         verify(userProfileMapper).updateFromDto(req, existing);
         verify(userProfileRepository).save(existing);
+        verify(securityUtils).getCurrentUserId(mockAuthentication); // Added verify
     }
 }

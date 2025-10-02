@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,7 @@ public class UserService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     OtpService otpService;
+    SecurityUtils securityUtils;
 
     public UserResponse createUser(UserCreationRequest request) {
         User user = userMapper.toUser(request);
@@ -64,11 +67,11 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    public UserResponse getMyInfo() {
+    public UserResponse getMyInfo(Authentication authentication) {
         var context = SecurityContextHolder.getContext();
-        String name = context.getAuthentication().getName();
+        Long userId = securityUtils.getCurrentUserId(authentication);
 
-        User user = userRepository.findByUsername(name)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         return userMapper.toUserResponse(user);
