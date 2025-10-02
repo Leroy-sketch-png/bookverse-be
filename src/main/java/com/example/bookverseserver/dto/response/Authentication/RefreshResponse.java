@@ -1,0 +1,13 @@
+package com.example.bookverseserver.dto.response.Authentication;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class RefreshResponse {
+    String token;
+}

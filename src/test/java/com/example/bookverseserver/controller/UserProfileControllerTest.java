@@ -7,6 +7,7 @@ import com.example.bookverseserver.service.UserProfileService;
 import com.example.bookverseserver.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -99,8 +100,9 @@ class UserProfileControllerTest {
         ProfileResponse profileResponse = new ProfileResponse();
         profileResponse.setLocation("Updated Location");
 
-        when(userProfileService.updateProfileForUser(eq(TEST_USER_ID), any(ProfileUpdateRequest.class)))
-                .thenReturn(profileResponse);
+        Authentication authentication = Mockito.mock(Authentication.class);
+        when(securityUtils.getCurrentUserId(any(Authentication.class))).thenReturn(TEST_USER_ID);
+
 
         // Act & Assert
         mockMvc.perform(put("/api/me")

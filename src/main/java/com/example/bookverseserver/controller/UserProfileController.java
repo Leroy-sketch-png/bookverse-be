@@ -51,7 +51,7 @@ public class UserProfileController {
             Authentication authentication
     ) {
         Long userId = securityUtils.getCurrentUserId(authentication);
-        ProfileResponse resp = userProfileService.updateProfileForUser(userId, request);
+        ProfileResponse resp = userProfileService.updateProfileForUser(authentication, request);
         return ApiResponse.<ProfileResponse>builder().result(resp).build();
     }
 

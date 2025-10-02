@@ -4,6 +4,7 @@ import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.service.UserService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,9 +36,9 @@ public class UserController {
     }
 
     @GetMapping("/my-info")
-    ApiResponse<UserResponse> getMyInfo() {
+    ApiResponse<UserResponse> getMyInfo(Authentication authentication) {
         return ApiResponse.<UserResponse>builder()
-                .result(userService.getMyInfo())
+                .result(userService.getMyInfo(authentication))
                 .build();
     }
 
