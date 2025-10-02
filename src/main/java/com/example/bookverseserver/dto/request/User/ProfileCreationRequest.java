@@ -11,7 +11,6 @@ public class ProfileCreationRequest {
     private String displayName;
     private String phoneNumber;
     private String location;
-
     /**
      * accountType could be an enum; accept String for flexibility and map/validate in service if needed.
      */
