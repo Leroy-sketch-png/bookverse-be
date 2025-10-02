@@ -10,7 +10,6 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BookMetaMapper {
 
-    //@Mapping(source = "title", target = "title")
     BookMeta toBookMeta(BookMetaCreationRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

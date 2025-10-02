@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class ProfileUpdateRequest {
-    // all fields optional for partial update
     private String fullName;
+    private String displayName;
     private String phoneNumber;
     private String location;
     private String bio;
