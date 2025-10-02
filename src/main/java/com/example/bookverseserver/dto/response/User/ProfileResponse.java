@@ -10,26 +10,25 @@ import java.time.LocalDateTime;
 public class ProfileResponse {
     private Long id;
     private Long userId;
-
     private String displayName;
     private String fullName;
     private String phoneNumber;
     private String avatarUrl;
     private String bio;
-    private String accountType;
     private String location;
-
+    private String accountType;
     private Double ratingAvg;
     private Integer ratingCount;
+    private String preferences;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate sellerSince;
-
-    private String preferences;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
+    private Integer version;
 }

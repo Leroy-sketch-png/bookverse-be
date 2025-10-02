@@ -6,7 +6,6 @@ import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Authentication.RefreshResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.service.GoogleAuthService;
 import com.example.bookverseserver.service.SignupRequestService;
 import com.nimbusds.jose.JOSEException;

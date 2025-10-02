@@ -7,8 +7,9 @@ import lombok.Data;
 public class ProfileCreationRequest {
     @NotBlank
     private String fullName;
+    private String avatarUrl;
     private String displayName;
-
+    private String phoneNumber;
     private String location;
 
     /**
@@ -20,7 +21,5 @@ public class ProfileCreationRequest {
      * preferences stored as JSON string. If you want typed preferences use a nested DTO or Map<String,Object>.
      */
     private String preferences;
-
     private String bio;
-    private String phoneNumber;
 }
