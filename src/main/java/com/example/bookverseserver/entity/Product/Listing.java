@@ -48,13 +48,16 @@ public class Listing {
     BookCondition condition;
 
     @Column(nullable = false)
+    @Builder.Default
     Integer quantity = 1;
     String location;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     ListingStatus status = ListingStatus.DRAFT;
 
+    @Builder.Default
     Boolean visibility = true;
 
     @Column(name = "platform_fee_percent")
@@ -66,10 +69,13 @@ public class Listing {
     @Column(name = "suggested_price_high")
     BigDecimal suggestedPriceHigh;
 
+    @Builder.Default
     Integer views = 0;
+    @Builder.Default
     Integer likes = 0;
 
     @Column(name = "sold_count")
+    @Builder.Default
     Integer soldCount = 0;
 
     @Column(name = "deleted_at")
@@ -87,5 +93,6 @@ public class Listing {
     LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     List<ListingPhoto> photos = new ArrayList<>();
 }

@@ -102,7 +102,7 @@ class UserProfileControllerTest {
 
         Authentication authentication = Mockito.mock(Authentication.class);
         when(securityUtils.getCurrentUserId(any(Authentication.class))).thenReturn(TEST_USER_ID);
-
+        when(userProfileService.updateProfileForUser(any(Authentication.class), any(ProfileUpdateRequest.class))).thenReturn(profileResponse);
 
         // Act & Assert
         mockMvc.perform(put("/api/me")

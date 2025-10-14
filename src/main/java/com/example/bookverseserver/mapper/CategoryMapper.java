@@ -10,17 +10,17 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface CategoryMapper {
 
-//    @Mapping(target = "id", ignore = true)
-//    @Mapping(target = "bookMetas", ignore = true)
-//    @Mapping(target = "createdAt", ignore = true)
-//    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "bookMetas", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Category toCategory(CategoryRequest request);
 
     CategoryResponse toCategoryResponse(Category category);
 
-//    @Mapping(target = "id", ignore = true)
-//    @Mapping(target = "bookMetas", ignore = true)
-//    @Mapping(target = "createdAt", ignore = true)
-//    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "bookMetas", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     void updateCategory(@MappingTarget Category category, CategoryRequest request);
 }

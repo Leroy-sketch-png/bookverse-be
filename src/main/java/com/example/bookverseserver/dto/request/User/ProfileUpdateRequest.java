@@ -9,12 +9,10 @@ import lombok.Data;
 @Data
 public class ProfileUpdateRequest {
     private String fullName;
+    private String displayName;
+    private String avatarUrl;
     private String phoneNumber;
     private String location;
     private String bio;
     private String preferences;
-
-    // thêm các field từ entity
-    private String displayName;
-    private String avatarUrl;
 }

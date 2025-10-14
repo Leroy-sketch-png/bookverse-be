@@ -9,7 +9,7 @@ import com.example.bookverseserver.entity.User.Role;
 
 @Mapper(componentModel = "spring")
 public interface RoleMapper {
-    //@Mapping(target = "permissions", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Role toRole(RoleRequest request);
 
     RoleResponse toRoleResponse(Role role);
