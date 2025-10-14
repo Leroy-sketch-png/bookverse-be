@@ -1,10 +1,8 @@
 package com.example.bookverseserver.service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
@@ -30,8 +28,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
-
-
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -51,9 +47,11 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
+        // ✅ Chỉ 1 role duy nhất
         Role userRole = roleRepository.findByName(RoleName.BUYER)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRoles(Set.of(userRole));
+        user.setRole(userRole);
+
         user.setEnabled(true);
 
         try {
@@ -85,12 +83,13 @@ public class UserService {
         userMapper.updateUser(user, request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        var roleEnums = request.getRoles().stream()
-                .map(RoleName::valueOf)
-                .toList();
-
-        var roles = roleRepository.findAllByNameIn(roleEnums);
-        user.setRoles(new HashSet<>(roles));
+        // ✅ Gán 1 role duy nhất
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            RoleName roleName = RoleName.valueOf(request.getRoles().get(0)); // lấy role đầu tiên
+            Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+            user.setRole(role);
+        }
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
@@ -132,7 +131,6 @@ public class UserService {
 
     /**
      * Create or update a user identity for the Google provider.
-     * Token persistence is handled in AuthProvider.
      */
     public User createOrUpdateGoogleUser(String googleId, String email) {
         User user = findByGoogleId(googleId)
@@ -144,6 +142,11 @@ public class UserService {
                     newUser.setUsername(email);
                     newUser.setAuthProvider("GOOGLE");
                     newUser.setEnabled(true);
+
+                    // ✅ Role mặc định
+                    Role casualRole = roleRepository.findByName(RoleName.CASUAL)
+                            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+                    newUser.setRole(casualRole);
                     return newUser;
                 });
 

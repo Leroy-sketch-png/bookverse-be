@@ -1,13 +1,17 @@
 package com.example.bookverseserver.service;
 
+import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.SignupRequest;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
+import com.example.bookverseserver.enums.RoleName;
+import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.SignupRequestRepository;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +22,8 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +34,7 @@ public class SignupRequestService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final EmailService emailService;
+    private final RoleRepository roleRepository;
 
     @Value("${app.otp.secret}")
     private String otpSecret;
@@ -42,11 +49,13 @@ public class SignupRequestService {
     public SignupRequestService(SignupRequestRepository signupRequestRepository,
                                 UserRepository userRepository,
                                 UserProfileRepository userProfileRepository,
+                                RoleRepository roleRepository,
                                 EmailService emailService) {
         this.signupRequestRepository = signupRequestRepository;
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.emailService = emailService;
+        this.roleRepository = roleRepository;
     }
 
     public String generateOtpCode() {
@@ -126,33 +135,37 @@ public class SignupRequestService {
             throw new IllegalArgumentException("Invalid OTP");
         }
 
-
         if (userRepository.findByEmail(email).isPresent()) {
             signupRequestRepository.delete(req);
             throw new IllegalStateException("User already exists with this email");
         }
 
+        Role buyerRole = roleRepository.findByName(RoleName.BUYER)
+                .orElseThrow(() -> new RuntimeException("BUYER role not found"));
 
         User user = new User();
         user.setEmail(req.getEmail());
         user.setUsername(req.getUsername());
         user.setPasswordHash(req.getPasswordHash());
+        user.setRole(buyerRole);  // gán role đã được lưu trong DB
         user.setEnabled(true);
+
         userRepository.save(user);
 
 
+        // ✅ Tạo user profile
         UserProfile profile = new UserProfile();
         profile.setUser(user);
+        profile.setAccountType("BUYER");
         profile.setDisplayName(req.getUsername() != null ? req.getUsername() : user.getEmail());
         userProfileRepository.save(profile);
 
         signupRequestRepository.delete(req);
 
         log.info("Signup verified and created user id={} email={}", user.getId(), user.getEmail());
-
-
         return user;
     }
+
 
     private boolean constantTimeEquals(String a, String b) {
         if (a == null || b == null) return false;

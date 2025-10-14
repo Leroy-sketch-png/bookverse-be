@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
-import java.util.HashSet;
 
 @Configuration
 @RequiredArgsConstructor
@@ -36,7 +35,7 @@ public class ApplicationInitConfig {
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository) {
         log.info("Initializing application.....");
         return args -> {
-            // Initialize roles
+            // Tạo các role nếu chưa tồn tại
             Arrays.stream(RoleName.values()).forEach(roleName -> {
                 if (roleRepository.findByName(roleName).isEmpty()) {
                     roleRepository.save(Role.builder().name(roleName).build());
@@ -44,25 +43,24 @@ public class ApplicationInitConfig {
                 }
             });
 
-            // Create admin user if not exists
+            // Tạo user admin mặc định nếu chưa có
             if (userRepository.findByUsername(ADMIN_USER_NAME).isEmpty()) {
                 Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                         .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
-
-                var roles = new HashSet<Role>();
-                roles.add(adminRole);
 
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .email("admin@bookverse.com")
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
-                        .roles(roles)
+                        .role(adminRole) // chỉ 1 role duy nhất
+                        .enabled(true)
                         .build();
 
                 userRepository.save(user);
-                log.warn("admin user has been created with default password: admin, please change it");
+                log.warn("Admin user created with default password: 'admin' — please change it.");
             }
-            log.info("Application initialization completed .....");
+
+            log.info("Application initialization completed.");
         };
     }
 }

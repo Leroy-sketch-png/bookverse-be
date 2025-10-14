@@ -108,7 +108,7 @@ public class UserProfileService {
         Role casualRole = roleRepository.findByName(RoleName.CASUAL)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-        user.getRoles().add(casualRole);
+        user.setRole(casualRole);
         profile.setAccountType("CASUAL");
 
         userRepository.save(user);

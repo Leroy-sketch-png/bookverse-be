@@ -15,13 +15,11 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.StringJoiner;
 import java.util.UUID;
 
 @Service
@@ -46,15 +44,15 @@ public class NimbusJwtService {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(String.valueOf(user.getId()))  // always sub = internal user.id
+                .subject(String.valueOf(user.getId()))  // user.id làm subject
                 .issuer("bookverse.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("username", user.getUsername())   // optional convenience
-                .claim("email", user.getEmail())         // optional convenience
-                .claim("scope", buildScope(user))        // your existing roles/scopes
+                .claim("username", user.getUsername())
+                .claim("email", user.getEmail())
+                .claim("scope", buildScope(user))
                 .build();
 
         JWSObject jwsObject = new JWSObject(header, new Payload(jwtClaimsSet.toJSONObject()));
@@ -84,19 +82,15 @@ public class NimbusJwtService {
 
         var verified = signedJWT.verify(verifier);
 
-        if (!(verified && expiryTime.after(new Date()))) throw new AppException(ErrorCode.UNAUTHENTICATED);
-
-        // Note: InvalidatedTokenRepository is not available here.
-        // This check should be done in AuthenticationService or a dedicated TokenValidationService.
-        // For now, we'll assume the token is valid if it passes signature and expiry checks.
-        // The invalidated token check will remain in AuthenticationService for now.
+        if (!(verified && expiryTime.after(new Date())))
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         return signedJWT;
     }
 
     public boolean introspectToken(String token) throws JOSEException, ParseException {
         try {
-            verifyToken(token, false); // Use the verifyToken logic
+            verifyToken(token, false);
             return true;
         } catch (AppException e) {
             return false;
@@ -104,13 +98,7 @@ public class NimbusJwtService {
     }
 
     private String buildScope(User user) {
-        StringJoiner stringJoiner = new StringJoiner(" ");
-
-        if (!CollectionUtils.isEmpty(user.getRoles()))
-            user.getRoles().forEach(role -> {
-                stringJoiner.add("ROLE_" + role.getName());
-            });
-
-        return stringJoiner.toString();
+        if (user.getRole() == null) return "";
+        return "ROLE_" + user.getRole().getName();
     }
 }
