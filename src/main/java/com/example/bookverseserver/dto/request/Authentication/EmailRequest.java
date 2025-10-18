@@ -1,6 +1,14 @@
 package com.example.bookverseserver.dto.request.Authentication;
 
-import lombok.*;
+import java.util.List;
+
+import com.example.bookverseserver.dto.request.Authentication.Recipient;
+import com.example.bookverseserver.dto.request.Authentication.Sender;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @Data
@@ -9,5 +17,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmailRequest {
-    String email;
+    Sender sender;
+    List<Recipient> to;
+    String subject;
+    String htmlContent;
 }

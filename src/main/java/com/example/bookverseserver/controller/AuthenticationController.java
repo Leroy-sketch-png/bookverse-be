@@ -94,14 +94,14 @@ public class AuthenticationController {
         }
     }
 
-    @PostMapping("/forgot-password")
-    ApiResponse<String> forgotPassword(@RequestBody EmailRequest request) {
-        String email = request.getEmail();
-        authenticationService.forgotPasswordOtp(email);
-        return ApiResponse.<String>builder()
-                .result("Mã xác minh (OTP) đã được gửi đến địa chỉ email: " + email)
-                .build();
-    }
+//    @PostMapping("/forgot-password")
+//    ApiResponse<String> forgotPassword(@RequestBody EmailRequest request) {
+//        String email = request.getEmail();
+//        authenticationService.forgotPasswordOtp(email);
+//        return ApiResponse.<String>builder()
+//                .result("Mã xác minh (OTP) đã được gửi đến địa chỉ email: " + email)
+//                .build();
+//    }
 
     @PostMapping("/change-forgot-password")
     ApiResponse<UserResponse> verifyOtpAndChangePassword(@RequestBody ForgotPasswordRequest request) {

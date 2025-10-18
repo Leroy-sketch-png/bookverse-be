@@ -2,7 +2,7 @@ package com.example.bookverseserver.repository;
 
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.enums.ListingStatus;
-import org.jetbrains.annotations.NotNull;
+import com.google.firebase.database.annotations.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

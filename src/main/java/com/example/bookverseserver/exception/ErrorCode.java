@@ -61,7 +61,7 @@ public enum ErrorCode {
     OTP_NOT_FOUND(1717,"Invalid changing password request" ,HttpStatus.BAD_REQUEST ),
     INVALID_OTP(1718,"Invalid OTP" , HttpStatus.BAD_REQUEST ),
     OTP_EXPIRED(1719,"OTP expired" , HttpStatus.BAD_REQUEST ),
-    ;
+    CANNOT_SEND_EMAIL(1720,"Cannot send email" ,HttpStatus.BAD_REQUEST );
 
 
     private final int code;

@@ -37,12 +37,12 @@ public class Voucher {
 
     @Column(name = "min_order_value", precision = 10, scale = 2)
     BigDecimal minOrderValue;
-
-    @Column(name = "applies_to", length = 20)
-    String appliesTo;
-
-    @Column(name = "applies_to_id")
-    Long appliesToId;
+//
+//    @Column(name = "applies_to", length = 20)
+//    String appliesTo;
+//
+//    @Column(name = "applies_to_id")
+//    Long appliesToId;
 
     @Column(name = "is_active", nullable = false)
     Boolean isActive = true;
