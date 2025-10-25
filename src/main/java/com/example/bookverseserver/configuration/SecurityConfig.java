@@ -30,7 +30,8 @@ public class SecurityConfig {
             "/api/auth/**",
             "/api/author/name/{name}",
             "/api/books",
-            "/api/books/**"
+            "/api/books/**",
+            "/api/vouchers/{code}"
     };
 
     @Autowired
