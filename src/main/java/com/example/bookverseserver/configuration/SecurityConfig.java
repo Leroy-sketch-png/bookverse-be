@@ -40,7 +40,7 @@ public class SecurityConfig {
             "/api/author/name/{name}",
             "/api/books",
             "/api/books/**",
-            "/api/vouchers/{code}",z
+            "/api/vouchers/{code}",
             "/error"  // Added error endpoint
     };
 
