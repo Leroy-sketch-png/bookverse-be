@@ -1,5 +1,6 @@
 package com.example.bookverseserver.exception;
 
+import jakarta.validation.Valid;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -61,7 +62,18 @@ public enum ErrorCode {
     OTP_NOT_FOUND(1717,"Invalid changing password request" ,HttpStatus.BAD_REQUEST ),
     INVALID_OTP(1718,"Invalid OTP" , HttpStatus.BAD_REQUEST ),
     OTP_EXPIRED(1719,"OTP expired" , HttpStatus.BAD_REQUEST ),
-    CANNOT_SEND_EMAIL(1720,"Cannot send email" ,HttpStatus.BAD_REQUEST );
+    CANNOT_SEND_EMAIL(1720,"Cannot send email" ,HttpStatus.BAD_REQUEST ),
+
+    //VOUCHER
+    VOUCHER_ALREADY_EXISTS(1800, "Voucher code already exists.", HttpStatus.CONFLICT),
+    VOUCHER_NOT_FOUND(1801, "Invalid voucher code (incorrect, expired, or disabled).", HttpStatus.NOT_FOUND),
+    VOUCHER_CODE_REQUIRED(1802, "Voucher code is required.", HttpStatus.BAD_REQUEST),
+    VOUCHER_DISCOUNT_TYPE_REQUIRED(1803, "Discount type is required.", HttpStatus.BAD_REQUEST),
+    VOUCHER_DISCOUNT_TYPE_INVALID(1804, "Discount type must be FIXED_AMOUNT or PERCENTAGE or BOGO.", HttpStatus.BAD_REQUEST),
+    VOUCHER_DISCOUNT_VALUE_REQUIRED(1805, "Discount value is required.", HttpStatus.BAD_REQUEST),
+    VOUCHER_DISCOUNT_VALUE_INVALID(1806, "Discount value must be positive.", HttpStatus.BAD_REQUEST),
+    VOUCHER_VALID_TO_REQUIRED(1807, "Valid to date is required.", HttpStatus.BAD_REQUEST),
+    VOUCHER_MIN_ORDER_VALUE_INVALID(1808, "Minimum order value must be positive.", HttpStatus.BAD_REQUEST);
 
 
     private final int code;
