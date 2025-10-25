@@ -11,8 +11,9 @@ import java.math.RoundingMode;
  * Ví dụ: Mua 1 tặng 1 - discountValue = 100 (giảm 100% cho sản phẩm thứ 2)
  *        Mua 1 giảm 50% sản phẩm thứ 2 - discountValue = 50
  *
- * Logic: Giảm discountValue% cho 50% giá trị đơn hàng
- * (giả định rằng có ít nhất 2 sản phẩm với giá bằng nhau)
+  * Lưu ý: Đây là một phép xấp xỉ đơn giản hóa cho logic BOGO thực tế.
+ * Logic này giả định rằng có ít nhất 2 sản phẩm với giá bằng nhau và áp dụng discountValue% cho 50% giá trị đơn hàng.
+ * Không phải là triển khai BOGO thực sự ở cấp độ từng sản phẩm. Nếu cần logic BOGO chính xác, hãy triển khai ở cấp độ từng sản phẩm.
  */
 @Component("BOGO")
 @Slf4j
