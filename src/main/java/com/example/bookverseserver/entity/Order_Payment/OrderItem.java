@@ -70,4 +70,19 @@ public class OrderItem {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     LocalDateTime createdAt;
+
+    // Helper to convert Items from Cart to Order
+    public static OrderItem fromCartItem(CartItem cartItem, Order order) {
+        Listing listing = cartItem.getListing();
+
+        return OrderItem.builder()
+                .order(order)
+                .listing(listing)
+                .bookMeta(listing.getBookMeta())
+                .seller(listing.getSeller())
+                .quantity(cartItem.getQuantity())
+                .pricePerItem(listing.getPrice())
+                .itemStatus(OrderItemStatus.PENDING)
+                .build();
+    }
 }
