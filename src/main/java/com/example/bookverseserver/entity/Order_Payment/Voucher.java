@@ -44,6 +44,9 @@ public class Voucher {
 //    @Column(name = "applies_to_id")
 //    Long appliesToId;
 
+    @Column(name = "max_usage_per_user", nullable = false)
+    Integer maxUsagePerUser;
+
     @Column(name = "is_active", nullable = false)
     Boolean isActive = true;
 
