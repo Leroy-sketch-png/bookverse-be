@@ -44,4 +44,10 @@ public class Cart {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "voucher_id")
     Voucher voucher;
+
+    @Column(name = "total_price")
+    Double totalPrice;
+
+    @Column(name = "discount_amount")
+    Double discount;
 }

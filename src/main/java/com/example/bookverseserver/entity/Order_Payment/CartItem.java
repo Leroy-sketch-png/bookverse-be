@@ -38,4 +38,7 @@ public class CartItem {
     @CreationTimestamp
     @Column(name = "added_at", updatable = false)
     LocalDateTime addedAt;
+
+    @Column(name = "sub_total_price")
+    Double subTotalPrice;
 }
