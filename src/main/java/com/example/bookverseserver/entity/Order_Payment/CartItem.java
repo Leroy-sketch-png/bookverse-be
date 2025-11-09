@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -38,4 +39,26 @@ public class CartItem {
     @CreationTimestamp
     @Column(name = "added_at", updatable = false)
     LocalDateTime addedAt;
+
+    public BigDecimal getSubTotalPrice() {
+        if (listing == null || listing.getPrice() == null || quantity == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal itemPrice = listing.getPrice();
+//        if (listing.getPlatformFeePercent() != null) {
+//            BigDecimal fee = itemPrice.multiply(listing.getPlatformFeePercent()).divide(new BigDecimal("100"));
+//            itemPrice = itemPrice.add(fee);
+//        }
+
+        return itemPrice.multiply(new BigDecimal(quantity));
+    }
+
+    public BigDecimal getTotalPrice() {
+        return this.cart.getTotalPrice();
+    }
+
+    public BigDecimal getDiscountInCart() {
+        return this.cart.getVoucher().getDiscountValue()
+    }
 }
