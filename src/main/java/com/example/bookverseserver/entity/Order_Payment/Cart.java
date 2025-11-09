@@ -1,12 +1,14 @@
 package com.example.bookverseserver.entity.Order_Payment;
 
 import com.example.bookverseserver.entity.User.User;
+import com.google.type.Decimal;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,6 +38,10 @@ public class Cart {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
+    @Column(name = "total_price", precision = 12, scale = 2)
+    @Builder.Default
+    BigDecimal totalPrice = BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<CartItem> cartItems = new HashSet<>();
 
@@ -44,4 +50,19 @@ public class Cart {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "voucher_id")
     Voucher voucher;
+
+    public BigDecimal getDiscount() {
+        if (voucher == null || totalPrice == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal discountValue = voucher.getDiscountValue();
+        if (voucher.getDiscountType().equals("PERCENTAGE")) {
+            return totalPrice.multiply(discountValue).divide(new BigDecimal("100"));
+        } else if (voucher.getDiscountType().equals("FIXED")) {
+            return discountValue;
+        } else {
+            return BigDecimal.ZERO;
+        }
+    }
 }
