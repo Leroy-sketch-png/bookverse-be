@@ -73,8 +73,10 @@ public enum ErrorCode {
     VOUCHER_DISCOUNT_VALUE_REQUIRED(1805, "Discount value is required.", HttpStatus.BAD_REQUEST),
     VOUCHER_DISCOUNT_VALUE_INVALID(1806, "Discount value must be positive.", HttpStatus.BAD_REQUEST),
     VOUCHER_VALID_TO_REQUIRED(1807, "Valid to date is required.", HttpStatus.BAD_REQUEST),
-    VOUCHER_MIN_ORDER_VALUE_INVALID(1808, "Minimum order value must be positive.", HttpStatus.BAD_REQUEST);
+    VOUCHER_MIN_ORDER_VALUE_INVALID(1808, "Minimum order value must be positive.", HttpStatus.BAD_REQUEST),
 
+    //Cart
+    CART_NOT_FOUND(1900, "Cart not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;
