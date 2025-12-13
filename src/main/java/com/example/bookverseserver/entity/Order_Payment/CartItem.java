@@ -40,7 +40,7 @@ public class CartItem {
     @Column(name = "added_at", updatable = false)
     LocalDateTime addedAt;
 
-    public BigDecimal getSubTotalPrice() {
+    public BigDecimal getSubtotalPrice() {
         if (listing == null || listing.getPrice() == null || quantity == null) {
             return BigDecimal.ZERO;
         }
@@ -54,11 +54,4 @@ public class CartItem {
         return itemPrice.multiply(new BigDecimal(quantity));
     }
 
-    public BigDecimal getTotalPrice() {
-        return this.cart.getTotalPrice();
-    }
-
-    public BigDecimal getDiscountInCart() {
-        return this.cart.getVoucher().getDiscountValue()
-    }
 }

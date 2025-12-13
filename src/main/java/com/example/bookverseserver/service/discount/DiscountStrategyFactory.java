@@ -1,5 +1,6 @@
 package com.example.bookverseserver.service.discount;
 
+import com.example.bookverseserver.enums.DiscountType;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +25,13 @@ public class DiscountStrategyFactory {
      * @return DiscountStrategy tương ứng
      * @throws AppException nếu loại giảm giá không hợp lệ
      */
-    public DiscountStrategy getStrategy(String discountType) {
-        if (discountType == null || discountType.isBlank()) {
+    public DiscountStrategy getStrategy(DiscountType discountType) {
+        if (discountType == null) {
             log.error("Discount type is null or blank");
             throw new AppException(ErrorCode.VOUCHER_DISCOUNT_TYPE_REQUIRED);
         }
 
-        DiscountStrategy strategy = strategies.get(discountType);
+        DiscountStrategy strategy = strategies.get(discountType.name());
 
         if (strategy == null) {
             log.error("No strategy found for discount type: {}", discountType);

@@ -1,7 +1,6 @@
 package com.example.bookverseserver.dto.request.Voucher;
 
 import com.example.bookverseserver.enums.DiscountType;
-import com.example.bookverseserver.validator.ValueOfEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -16,9 +15,8 @@ public class VoucherRequest {
     @NotBlank(message = "VOUCHER_CODE_REQUIRED")
     String code;
 
-    @NotBlank(message = "VOUCHER_DISCOUNT_TYPE_REQUIRED")
-    @ValueOfEnum(enumClass = DiscountType.class, message = "VOUCHER_DISCOUNT_TYPE_INVALID")
-    String discountType;
+    @NotNull(message = "VOUCHER_DISCOUNT_TYPE_REQUIRED")
+    DiscountType discountType;
 
     @NotNull(message = "VOUCHER_DISCOUNT_VALUE_REQUIRED")
     @Positive(message = "VOUCHER_DISCOUNT_VALUE_INVALID")
@@ -31,4 +29,8 @@ public class VoucherRequest {
 
     @NotNull(message = "VOUCHER_VALID_TO_REQUIRED")
     LocalDateTime validTo;
+
+    @NotNull(message = "VOUCHER_MAX_USAGE_PER_USER_REQUIRED")
+    @Positive(message = "VOUCHER_MAX_USAGE_PER_USER_INVALID")
+    Integer maxUsagePerUser;
 }

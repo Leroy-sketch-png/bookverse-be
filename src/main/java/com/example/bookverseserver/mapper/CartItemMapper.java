@@ -3,6 +3,7 @@ package com.example.bookverseserver.mapper;
 import com.example.bookverseserver.dto.request.CartItem.CartItemRequest;
 import com.example.bookverseserver.dto.response.CartItem.CartItemForCartResponse;
 import com.example.bookverseserver.dto.response.CartItem.CartItemResponse;
+import com.example.bookverseserver.entity.Order_Payment.Cart;
 import com.example.bookverseserver.entity.Order_Payment.CartItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

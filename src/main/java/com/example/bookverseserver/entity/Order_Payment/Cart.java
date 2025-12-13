@@ -51,18 +51,4 @@ public class Cart {
     @JoinColumn(name = "voucher_id")
     Voucher voucher;
 
-    public BigDecimal getDiscount() {
-        if (voucher == null || totalPrice == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal discountValue = voucher.getDiscountValue();
-        if (voucher.getDiscountType().equals("PERCENTAGE")) {
-            return totalPrice.multiply(discountValue).divide(new BigDecimal("100"));
-        } else if (voucher.getDiscountType().equals("FIXED")) {
-            return discountValue;
-        } else {
-            return BigDecimal.ZERO;
-        }
-    }
 }
