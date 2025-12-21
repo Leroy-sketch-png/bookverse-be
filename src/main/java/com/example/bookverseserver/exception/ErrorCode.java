@@ -73,8 +73,30 @@ public enum ErrorCode {
     VOUCHER_DISCOUNT_VALUE_REQUIRED(1805, "Discount value is required.", HttpStatus.BAD_REQUEST),
     VOUCHER_DISCOUNT_VALUE_INVALID(1806, "Discount value must be positive.", HttpStatus.BAD_REQUEST),
     VOUCHER_VALID_TO_REQUIRED(1807, "Valid to date is required.", HttpStatus.BAD_REQUEST),
-    VOUCHER_MIN_ORDER_VALUE_INVALID(1808, "Minimum order value must be positive.", HttpStatus.BAD_REQUEST);
+    VOUCHER_MIN_ORDER_VALUE_INVALID(1808, "Minimum order value must be positive.", HttpStatus.BAD_REQUEST),
+    VOUCHER_MAX_USAGE_PER_USER_REQUIRED(1809, "Max usage per user is required.", HttpStatus.BAD_REQUEST),
+    VOUCHER_MAX_USAGE_PER_USER_INVALID(1810, "Max usage per user must be positive.", HttpStatus.BAD_REQUEST),
+    VOUCHER_MIN_ORDER_VALUE_NOT_MET(1811, "Order value does not meet the minimum requirement for this voucher.", HttpStatus.BAD_REQUEST),
 
+    //Cart
+    CART_NOT_FOUND(1900, "Cart not found", HttpStatus.NOT_FOUND),
+
+    //Cart Item
+    CART_ITEM_NOT_FOUND(1901, "Cart item not found", HttpStatus.NOT_FOUND),
+    INVALID_QUANTITY(1902, "Invalid quantity", HttpStatus.BAD_REQUEST),
+
+    //Shipping Address
+    SHIPPING_ADDRESS_NOT_FOUND(2000, "Shipping address not found", HttpStatus.NOT_FOUND),
+    SHIPPING_ADDRESS_FULL_NAME_REQUIRED(2001, "Full name is required", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_FULL_NAME_TOO_LONG(2002, "Full name must not exceed 100 characters", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_PHONE_REQUIRED(2003, "Phone number is required", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_PHONE_INVALID(2004, "Phone number must be exactly 10 digits", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_LINE1_REQUIRED(2005, "Address line 1 is required", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_CITY_REQUIRED(2006, "City is required", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_CITY_TOO_LONG(2007, "City must not exceed 100 characters", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_POSTAL_CODE_TOO_LONG(2008, "Postal code must not exceed 20 characters", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_COUNTRY_REQUIRED(2009, "Country is required", HttpStatus.BAD_REQUEST),
+    SHIPPING_ADDRESS_COUNTRY_TOO_LONG(2010, "Country must not exceed 100 characters", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

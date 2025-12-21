@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.response.Voucher;
 
+import com.example.bookverseserver.enums.DiscountType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,7 +19,7 @@ public class VoucherResponse {
 
     String code;
 
-    String discountType;
+    DiscountType discountType;
 
     BigDecimal discountValue;
 
@@ -27,4 +28,6 @@ public class VoucherResponse {
     String description;
 
     LocalDateTime validTo;
+
+    Integer maxUsagePerUser;
 }

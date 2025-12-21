@@ -1,5 +1,6 @@
 package com.example.bookverseserver.entity.Order_Payment;
 
+import com.example.bookverseserver.enums.DiscountType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -29,8 +30,9 @@ public class Voucher {
     @Column(columnDefinition = "TEXT")
     String description;
 
-    @Column(name = "discount_type", nullable = false, length = 20)
-    String discountType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discount_type", nullable = false)
+    DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false, precision = 10, scale = 2)
     BigDecimal discountValue;
