@@ -15,6 +15,7 @@ import com.example.bookverseserver.repository.TransactionRepository; // PaymentR
 import com.example.bookverseserver.repository.UserRepository;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +44,7 @@ public class TransactionService {
     private String stripePublishableKey;
 
     @Transactional
-    public PaymentIntentResponse createPaymentIntent(CreatePaymentIntentRequest request, Long userId) {
+    public PaymentIntentResponse createPaymentIntent(CreatePaymentIntentRequest request, Long userId, String idempotencyKey) {
         // 1. Lấy User từ DB
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -57,6 +59,13 @@ public class TransactionService {
             throw new RuntimeException("Unauthorized: Order does not belong to this user");
         }
 
+        boolean isAlreadyPaid = order.getPayments().stream()
+                .anyMatch(p -> p.getStatus() == PaymentStatus.PAID);
+
+        if (isAlreadyPaid) {
+            throw new RuntimeException("Đơn hàng này đã được thanh toán rồi!");
+        }
+
         // 4. Lấy số tiền thực tế từ Order
         BigDecimal amount = order.getTotalAmount();
         long amountInCents = amount.multiply(new BigDecimal(100)).longValue();
@@ -65,21 +74,31 @@ public class TransactionService {
             // 5. Tạo Stripe Payment Intent
             PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                     .setAmount(amountInCents)
-                    .setCurrency("VND")
+                    .setCurrency("VND") // Lưu ý: Stripe Account phải support VND, nếu không thì dùng USD
                     .setAutomaticPaymentMethods(
                             PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build()
                     )
-                    // Metadata giúp tracking trên Dashboard Stripe dễ hơn
                     .putMetadata("order_id", String.valueOf(order.getId()))
                     .putMetadata("user_id", String.valueOf(user.getId()))
                     .build();
 
-            PaymentIntent intent = PaymentIntent.create(params);
+            // --- LOGIC IDEMPOTENCY ---
+            // Nếu Client không gửi key lên, ta tự tạo UUID để ít nhất bảo vệ được việc gọi Stripe bị lặp
+            if (idempotencyKey == null || idempotencyKey.isEmpty()) {
+                idempotencyKey = "req_" + UUID.randomUUID().toString();
+            }
 
-            // 6. Lưu Payment vào DB (Map Entity quan hệ)
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey) // <--- Đã có biến để truyền vào
+                    .build();
+
+            // QUAN TRỌNG: Phải truyền 'options' vào đây thì Idempotency mới có tác dụng!
+            PaymentIntent intent = PaymentIntent.create(params, options);
+
+            // 6. Lưu Payment vào DB
             Payment payment = Payment.builder()
-                    .order(order)   // Set quan hệ ManyToOne
-                    .user(user)     // Set quan hệ ManyToOne
+                    .order(order)
+                    .user(user)
                     .paymentIntentId(intent.getId())
                     .amount(amount)
                     .status(PaymentStatus.PENDING)
@@ -92,7 +111,7 @@ public class TransactionService {
                     .paymentIntentId(intent.getId())
                     .clientSecret(intent.getClientSecret())
                     .amount(amountInCents)
-                    .currency("usd")
+                    .currency("vnd") // Sửa lại cho khớp với params ở trên
                     .status(intent.getStatus())
                     .publishableKey(stripePublishableKey)
                     .build();

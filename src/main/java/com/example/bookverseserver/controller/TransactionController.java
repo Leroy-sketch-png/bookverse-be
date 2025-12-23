@@ -34,6 +34,7 @@ public class TransactionController {
     @PostMapping("/intent")
     public ApiResponse<PaymentIntentResponse> createPaymentIntent(
             @RequestBody CreatePaymentIntentRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Authentication authentication
     ) {
         try {
@@ -42,7 +43,7 @@ public class TransactionController {
             Long userId = 4L;
 
             // 2. Gọi Service xử lý logic
-            PaymentIntentResponse response = transactionService.createPaymentIntent(request, userId);
+            PaymentIntentResponse response = transactionService.createPaymentIntent(request, userId, idempotencyKey);
 
             // 3. Trả về kết quả thành công
             return ApiResponse.<PaymentIntentResponse>builder()
