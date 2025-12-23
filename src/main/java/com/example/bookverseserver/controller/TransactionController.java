@@ -1,8 +1,10 @@
 package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Transaction.CreatePaymentIntentRequest;
+import com.example.bookverseserver.dto.request.Transaction.VerifyPaymentRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentIntentResponse;
+import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationResponse;
 import com.example.bookverseserver.service.TransactionService;
 import com.example.bookverseserver.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,29 @@ public class TransactionController {
             // 4. Xử lý lỗi (Exception từ Service hoặc Stripe)
             return ApiResponse.<PaymentIntentResponse>builder()
                     .code(400) // Hoặc code lỗi tương ứng
+                    .message(e.getMessage())
+                    .build();
+        }
+    }
+
+    @Operation(summary = "Verify Payment", description = "Verify payment status with Stripe")
+    @PostMapping("/verify")
+    public ApiResponse<PaymentVerificationResponse> verifyPayment(
+            @RequestBody VerifyPaymentRequest request
+    ) {
+        try {
+            PaymentVerificationResponse response = transactionService.verifyPayment(request);
+
+            return ApiResponse.<PaymentVerificationResponse>builder()
+                    .code(200)
+                    .message("Payment verified successfully")
+                    .result(response)
+                    .build();
+
+        } catch (Exception e) {
+            e.printStackTrace(); // Log lỗi server
+            return ApiResponse.<PaymentVerificationResponse>builder()
+                    .code(400)
                     .message(e.getMessage())
                     .build();
         }

@@ -1,10 +1,13 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Transaction.CreatePaymentIntentRequest;
+import com.example.bookverseserver.dto.request.Transaction.VerifyPaymentRequest;
 import com.example.bookverseserver.dto.response.Transaction.PaymentIntentResponse;
+import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationResponse;
 import com.example.bookverseserver.entity.Order_Payment.Order;
 import com.example.bookverseserver.entity.Order_Payment.Payment;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.enums.PaymentStatus;
 import com.example.bookverseserver.repository.OrderRepository;
 import com.example.bookverseserver.repository.TransactionRepository; // PaymentRepository đổi tên thành TransactionRepository?
@@ -92,6 +95,60 @@ public class TransactionService {
         } catch (StripeException e) {
             log.error("Stripe Create Intent Error", e);
             throw new RuntimeException("Failed to create payment intent: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public PaymentVerificationResponse verifyPayment(VerifyPaymentRequest request) {
+        try {
+            // 1. Tìm Payment trong DB (Nếu không thấy thì lỗi luôn)
+            Payment payment = transactionRepository.findByPaymentIntentId(request.getPaymentIntentId())
+                    .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+            // 2. Validate Order ID khớp nhau (Tránh trường hợp Payment của đơn A mà verify cho đơn B)
+            if (!payment.getOrder().getId().equals(request.getOrderId())) {
+                throw new RuntimeException("Payment does not match the provided Order ID");
+            }
+
+            // 3. Gọi Stripe kiểm tra trạng thái thực tế
+            PaymentIntent intent = PaymentIntent.retrieve(request.getPaymentIntentId());
+
+            // 4. Kiểm tra kết quả từ Stripe
+            if ("succeeded".equals(intent.getStatus())) {
+
+                // Chỉ update nếu trạng thái DB chưa là PAID (tránh update thừa)
+                if (payment.getStatus() != PaymentStatus.PAID) {
+
+                    // A. Update trạng thái thanh toán
+                    payment.setStatus(PaymentStatus.PAID);
+                    payment.setPaidAt(LocalDateTime.now());
+                    payment.setTransactionId(intent.getLatestCharge());
+                    transactionRepository.save(payment);
+
+                    // B. Xử lý trạng thái Đơn Hàng (Order)
+                    // Vì enum OrderStatus của bạn chỉ có: PENDING, SHIPPED, DELIVERED, CANCELLED
+                    // Nên ta giữ nguyên là PENDING (Hiểu là: Đã thanh toán, chờ ship).
+                    // Nếu sau này bạn thêm OrderStatus.PROCESSING, hãy uncomment dòng dưới:
+
+                    // Order order = payment.getOrder();
+                    // order.setOrderStatus(OrderStatus.PROCESSING);
+                    // orderRepository.save(order);
+                }
+
+                return PaymentVerificationResponse.builder()
+                        .orderId(String.valueOf(payment.getOrder().getId()))
+                        .paymentStatus("PAID") // Trạng thái của Payment
+                        .transactionId(payment.getTransactionId())
+                        .paidAt(payment.getPaidAt())
+                        .build();
+
+            } else {
+                throw new RuntimeException("Payment not successful. Status: " + intent.getStatus());
+            }
+
+        } catch (StripeException e) {
+            log.error("Stripe Verify Error", e);
+            throw new RuntimeException("Stripe verification failed");
         }
     }
 }
