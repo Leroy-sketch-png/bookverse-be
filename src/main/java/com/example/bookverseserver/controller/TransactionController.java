@@ -3,6 +3,7 @@ package com.example.bookverseserver.controller;
 import com.example.bookverseserver.dto.request.Transaction.CreatePaymentIntentRequest;
 import com.example.bookverseserver.dto.request.Transaction.VerifyPaymentRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.Transaction.PaymentAuditResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentIntentResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationResponse;
 import com.example.bookverseserver.service.TransactionService;
@@ -12,12 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -81,6 +80,30 @@ public class TransactionController {
                     .code(400)
                     .message(e.getMessage())
                     .build();
+        }
+    }
+
+    @Operation(summary = "Get Payment History")
+    @GetMapping("/history")
+    public ApiResponse<Page<PaymentAuditResponse>> getPaymentHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            Authentication authentication
+    ) {
+        try {
+            // Lấy User thật từ Token
+            Long userId = securityUtils.getCurrentUserId(authentication);
+
+            Page<PaymentAuditResponse> history = transactionService.getUserPaymentAudit(userId, page, limit);
+
+            return ApiResponse.<Page<PaymentAuditResponse>>builder()
+                    .code(200)
+                    .message("History retrieved successfully")
+                    .result(history)
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.<Page<PaymentAuditResponse>>builder()
+                    .code(400).message(e.getMessage()).build();
         }
     }
 }

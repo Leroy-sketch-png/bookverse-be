@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Transaction.CreatePaymentIntentRequest;
 import com.example.bookverseserver.dto.request.Transaction.VerifyPaymentRequest;
+import com.example.bookverseserver.dto.response.Transaction.PaymentAuditResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentIntentResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationResponse;
 import com.example.bookverseserver.entity.Order_Payment.Order;
@@ -18,6 +19,10 @@ import com.stripe.param.PaymentIntentCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -150,5 +155,26 @@ public class TransactionService {
             log.error("Stripe Verify Error", e);
             throw new RuntimeException("Stripe verification failed");
         }
+    }
+
+    public Page<PaymentAuditResponse> getUserPaymentAudit(Long userId, int page, int limit) {
+        // 1. Tạo Pageable: Sắp xếp giảm dần theo ngày tạo (Mới nhất lên đầu)
+        Pageable pageable = PageRequest.of(page, limit, Sort.by("createdAt").descending());
+
+        // 2. Gọi Repo lấy dữ liệu
+        Page<Payment> paymentPage = transactionRepository.findByUserId(userId, pageable);
+
+        // 3. Map Entity -> DTO Response
+        return paymentPage.map(payment -> PaymentAuditResponse.builder()
+                .id(payment.getId())
+                .orderId(payment.getOrder().getId()) // Lấy ID từ object Order
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .status(payment.getStatus())
+                .paymentMethod(payment.getPaymentMethod())
+                .transactionId(payment.getTransactionId())
+                .paidAt(payment.getPaidAt())
+                .createdAt(payment.getCreatedAt())
+                .build());
     }
 }
