@@ -8,7 +8,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthorDetailRequest {
+public class
+AuthorDetailRequest {
     String openLibraryId;   // e.g. "OL23919A"
     String name;            // e.g. "J. K. Rowling"
     String personalName;    // e.g. "Joanne Rowling"
