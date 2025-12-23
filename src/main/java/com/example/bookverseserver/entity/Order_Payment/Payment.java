@@ -6,48 +6,61 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payment")
+@Table(name = "payments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Payment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    // QUAN TRỌNG: Map ngược lại với biến "items" trong Order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     Order order;
 
+    // Map với User (giả sử User cũng dùng Long ID)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payer_id", nullable = false)
-    User payer;
+    @JoinColumn(name = "user_id", nullable = false)
+    User user;
 
-    @Column(name = "payment_method", nullable = false, length = 50)
-    String paymentMethod;
+    @Column(name = "payment_intent_id", unique = true)
+    String paymentIntentId;
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(nullable = false)
     BigDecimal amount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 20)
-    PaymentStatus paymentStatus = PaymentStatus.PENDING;
+    @Column(length = 3)
+    @Builder.Default
+    String currency = "USD";
 
-    @Column(name = "transaction_id", unique = true, length = 255)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    PaymentStatus status = PaymentStatus.PENDING;
+
+    @Column(name = "payment_method")
+    String paymentMethod;
+
+    @Column(name = "transaction_id")
     String transactionId;
+
+    @Column(name = "receipt_url", columnDefinition = "TEXT")
+    String receiptUrl;
 
     @Column(name = "paid_at")
     LocalDateTime paidAt;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false, nullable = false)
+    @Column(name = "created_at", updatable = false)
     LocalDateTime createdAt;
 }

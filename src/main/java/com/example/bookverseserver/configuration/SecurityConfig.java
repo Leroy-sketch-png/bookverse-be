@@ -41,6 +41,7 @@ public class SecurityConfig {
             "/api/books",
             "/api/books/**",
             "/api/vouchers/{code}",
+            "/api/v1/transactions/**",
             "/error"  // Added error endpoint
     };
 
