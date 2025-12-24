@@ -9,6 +9,7 @@ import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.CartItemMapper;
+import com.example.bookverseserver.repository.CartItemRepository;
 import com.example.bookverseserver.repository.CartRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import com.example.bookverseserver.repository.VoucherRepository;
@@ -18,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -31,6 +33,7 @@ public class CartService {
     CartRepository cartRepository;
     UserRepository userRepository;
     DiscountStrategyFactory discountStrategyFactory;
+    CartItemRepository cartItemRepository;
     CartItemMapper cartItemMapper;
     VoucherRepository voucherRepository;
 
@@ -151,5 +154,22 @@ public class CartService {
                 .voucher(getVoucher(savedCart))
                 .cartItems(getCartItems(savedCart))
                 .build();
+    }
+
+    @Transactional
+    public void clearCart(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
+
+        // 1. Xóa items trong DB
+        cartItemRepository.deleteAllByCartId(cart.getId());
+
+        // 2. Reset cart state
+        cart.getCartItems().clear(); // Clear list trong memory
+        cart.setTotalPrice(BigDecimal.ZERO);
+        cart.setVoucher(null); // Clear voucher khi clear cart
+
+        // 3. Save cart rỗng
+        cartRepository.save(cart);
     }
 }
