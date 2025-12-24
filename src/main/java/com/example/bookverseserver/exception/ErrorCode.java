@@ -102,7 +102,9 @@ public enum ErrorCode {
     AUTHOR_EXISTED(409, "Author already exists", HttpStatus.CONFLICT),
     LISTING_EXISTED(409, "Listing already exists", HttpStatus.CONFLICT),
 
-    VOUCHER_ALREADY_EXISTS(409, "Voucher code already exists", HttpStatus.CONFLICT);
+    VOUCHER_ALREADY_EXISTS(409, "Voucher code already exists", HttpStatus.CONFLICT),
+    VOUCHER_EXPIRED(409, "Voucher code expired", HttpStatus.CONFLICT ),
+    ;
 
     private final int code;
     private final String message;
