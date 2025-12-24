@@ -6,7 +6,9 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "wishlist", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "book_id"})
@@ -29,6 +31,10 @@ public class Wishlist {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id", nullable = false)
     BookMeta bookMeta;
+
+    // Added to support Price Tracking logic
+    @Column(name = "price_at_addition", nullable = false)
+    BigDecimal priceAtAddition;
 
     @CreationTimestamp
     @Column(name = "added_at", updatable = false, nullable = false)
