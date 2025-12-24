@@ -54,6 +54,13 @@ public class CartItemService {
         Listing listing = listingRepository.findById(cartItemRequest.listingId())
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
 
+        int quantityToAdd = cartItemRequest.quantity();
+        int currentStock = listing.getQuantity();
+
+        if (quantityToAdd > currentStock) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+
         // 3. Lấy hoặc tạo cart
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
