@@ -110,6 +110,12 @@ public class CartItemService {
         CartItem cartItem = cartItemRepository.findByCartUserIdAndListingId(userId, listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.CART_ITEM_NOT_FOUND));
 
+        int currentStock = cartItem.getListing().getQuantity();
+
+        // Kiểm tra xem số lượng muốn update có vượt quá tồn kho không
+        if (quantity > currentStock) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
         // Cập nhật tổng giá của giỏ hàng
         BigDecimal currentTotal = cartItem.getCart().getTotalPrice() != null
                 ? cartItem.getCart().getTotalPrice() : BigDecimal.ZERO;
