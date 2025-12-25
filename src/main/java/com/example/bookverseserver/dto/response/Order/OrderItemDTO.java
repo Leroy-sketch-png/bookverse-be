@@ -1,0 +1,34 @@
+package com.example.bookverseserver.dto.response.Order;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class OrderItemDTO {
+  UUID id;
+  Long bookId;
+  String title;
+  String author;
+  String coverImage;
+  Integer quantity;
+  BigDecimal price;
+  BigDecimal subtotal;
+  public SellerInfo seller;
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class SellerInfo {
+    Long id;
+    String name;
+    String slug;
+  }
+}
