@@ -29,8 +29,8 @@ public class Wishlist {
     User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
-    BookMeta bookMeta;
+    @JoinColumn(name = "listing_id", nullable = false)
+    Listing listing;
 
     // Added to support Price Tracking logic
     @Column(name = "price_at_addition", nullable = false)

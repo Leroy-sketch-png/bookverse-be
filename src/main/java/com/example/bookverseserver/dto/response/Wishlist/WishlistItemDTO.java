@@ -1,6 +1,6 @@
 package com.example.bookverseserver.dto.response.Wishlist;
 
-import com.example.bookverseserver.dto.response.Book.BookResponse;
+import com.example.bookverseserver.dto.response.Product.ListingSummaryResponse;
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -10,12 +10,14 @@ import java.time.LocalDateTime;
 @Builder
 public class WishlistItemDTO {
     private Long id;
-    private String bookId;
-    private BookResponse book;
+
+    private ListingSummaryResponse listing;
+
     private LocalDateTime addedAt;
     private BigDecimal priceAtAddition;
     private BigDecimal currentPrice;
     private BigDecimal priceDrop;
     private double priceDropPercentage;
+
     private boolean inStock;
 }
