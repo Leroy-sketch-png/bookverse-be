@@ -1,5 +1,5 @@
 package com.example.bookverseserver.enums;
 
 public enum OrderStatus {
-    PENDING, SHIPPED, DELIVERED, CANCELLED
+    PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED
 }

@@ -37,6 +37,7 @@ public class ShippingAddressRequest {
     @Size(max = 100, message = "SHIPPING_ADDRESS_COUNTRY_TOO_LONG")
     String country;
 
+    @Builder.Default
     Boolean isDefault = false;
 }
 

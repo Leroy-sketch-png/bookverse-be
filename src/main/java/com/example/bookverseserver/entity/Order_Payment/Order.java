@@ -13,65 +13,101 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Table(name = "\"order\"") // The table name "order" is a reserved SQL keyword, so it needs to be escaped.
+@Table(name = "orders") // Changed from "order" to "orders" to match schema and avoid keywords
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Order {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.UUID)
+        UUID id;
 
-    // Many orders can belong to one user
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // user_id is NOT NULL in SQL
-            User user;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "user_id", nullable = false)
+        User user;
 
-    // An order is linked to a shipping address
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shipping_address_id", nullable = false) // shipping_address_id is NOT NULL in SQL
-            ShippingAddress shippingAddress;
+        @Column(name = "order_number", unique = true, nullable = false, length = 20)
+        String orderNumber;
 
-    // An order can optionally have a voucher
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "voucher_id")
-    Voucher voucher;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false)
+        @Builder.Default
+        OrderStatus status = OrderStatus.PENDING;
 
-    // Status of the order, mapped from a Java enum to a database string
-    @Enumerated(EnumType.STRING)
-    @Column(name = "order_status", nullable = false) // order_status is NOT NULL in SQL
-            OrderStatus orderStatus = OrderStatus.PENDING;
+        @Column(nullable = false, precision = 10, scale = 2)
+        BigDecimal subtotal;
 
-    // Financial fields, using BigDecimal for precision
-    @Column(nullable = false)
-    BigDecimal subtotalAmount;
+        @Column(nullable = false, precision = 10, scale = 2)
+        @Builder.Default
+        BigDecimal tax = BigDecimal.ZERO;
 
-    @Column(nullable = false)
-    BigDecimal discountAmount;
+        @Column(nullable = false, precision = 10, scale = 2)
+        @Builder.Default
+        BigDecimal shipping = BigDecimal.ZERO;
 
-    @Column(nullable = false)
-    BigDecimal shippingAmount;
+        @Column(nullable = false, precision = 10, scale = 2)
+        @Builder.Default
+        BigDecimal discount = BigDecimal.ZERO;
 
-    @Column(nullable = false)
-    BigDecimal totalAmount;
+        @Column(nullable = false, precision = 10, scale = 2)
+        BigDecimal total;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    LocalDateTime createdAt;
+        @Column(name = "promo_code", length = 50)
+        String promoCode;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    LocalDateTime updatedAt;
+        @Column(columnDefinition = "TEXT")
+        String notes;
 
-    // A one-to-many relationship with OrderItem entities
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<OrderItem> items = new ArrayList<>();
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "shipping_address_id")
+        ShippingAddress shippingAddress;
 
-    // A one-to-many relationship with Payment entities
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Payment> payments = new ArrayList<>();
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "billing_address_id")
+        ShippingAddress billingAddress;
+
+        @Column(name = "tracking_number", length = 100)
+        String trackingNumber;
+
+        @Column(name = "tracking_url", columnDefinition = "TEXT")
+        String trackingUrl;
+
+        @Column(length = 50)
+        String carrier;
+
+        @Column(name = "estimated_delivery")
+        LocalDateTime estimatedDelivery;
+
+        @Column(name = "shipped_at")
+        LocalDateTime shippedAt;
+
+        @Column(name = "delivered_at")
+        LocalDateTime deliveredAt;
+
+        @Column(name = "cancelled_at")
+        LocalDateTime cancelledAt;
+
+        @Column(name = "cancellation_reason", columnDefinition = "TEXT")
+        String cancellationReason;
+
+        @CreationTimestamp
+        @Column(name = "created_at", updatable = false)
+        LocalDateTime createdAt;
+
+        @UpdateTimestamp
+        @Column(name = "updated_at")
+        LocalDateTime updatedAt;
+
+        @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        List<OrderItem> items = new ArrayList<>();
+
+        @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        List<OrderTimeline> timeline = new ArrayList<>();
 }

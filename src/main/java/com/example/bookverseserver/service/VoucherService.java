@@ -79,5 +79,20 @@ public class VoucherService {
         log.info("Voucher deleted successfully with id: {}", id);
     }
 
+    public BigDecimal calculateDiscount(String code, BigDecimal orderValue) {
+        Voucher voucher = voucherRepository.findByCode(code)
+                .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
 
+        if (!voucher.getIsActive()
+                || (voucher.getValidTo() != null && voucher.getValidTo().isBefore(LocalDateTime.now()))) {
+            throw new AppException(ErrorCode.VOUCHER_NOT_FOUND);
+        }
+
+        DiscountStrategy strategy = discountStrategyFactory.getStrategy(voucher.getDiscountType());
+        if (!strategy.isValid(orderValue, voucher.getMinOrderValue())) {
+            throw new AppException(ErrorCode.VOUCHER_MIN_ORDER_VALUE_NOT_MET);
+        }
+
+        return strategy.calculateDiscount(orderValue, voucher.getDiscountValue(), voucher.getMinOrderValue());
+    }
 }
