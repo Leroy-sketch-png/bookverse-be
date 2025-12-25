@@ -1,5 +1,5 @@
 package com.example.bookverseserver.enums;
 
 public enum PaymentStatus {
-    PENDING, COMPLETED, FAILED, REFUNDED
+    PENDING, COMPLETED, FAILED, REFUNDED, PAID
 }

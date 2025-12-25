@@ -1,43 +1,57 @@
 package com.example.bookverseserver.controller;
 
 import java.text.ParseException;
+
 import com.example.bookverseserver.dto.request.Authentication.*;
 import com.example.bookverseserver.dto.request.User.UserCreationRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
-import com.example.bookverseserver.dto.response.Authentication.RefreshResponse;
+import com.example.bookverseserver.dto.response.Authentication.*;
 import com.example.bookverseserver.dto.response.User.UserResponse;
+import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.GoogleAuthService;
 import com.example.bookverseserver.service.SignupRequestService;
 import com.nimbusds.jose.JOSEException;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.example.bookverseserver.dto.response.Authentication.AuthenticationResponse;
-import com.example.bookverseserver.dto.response.Authentication.IntrospectResponse;
-import com.example.bookverseserver.service.AuthenticationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Tag(
+        name = "Authentication",
+        description = "APIs for authentication, authorization and account security"
+)
 public class AuthenticationController {
+
     AuthenticationService authenticationService;
     GoogleAuthService googleAuthService;
     SignupRequestService signupRequestService;
     PasswordEncoder passwordEncoder;
 
+    // ================= REGISTER =================
+
     @PostMapping("/register")
-    ApiResponse<String> createUser(@RequestBody @Valid UserCreationRequest request) {
+    @Operation(
+            summary = "Register new user",
+            description = "Create a new account and send OTP to user's email"
+    )
+    public ApiResponse<String> createUser(
+            @Valid @RequestBody UserCreationRequest request
+    ) {
         String passwordHash = passwordEncoder.encode(request.getPassword());
         signupRequestService.createSignupRequest(
                 request.getEmail(),
@@ -45,48 +59,46 @@ public class AuthenticationController {
                 passwordHash
         );
         return ApiResponse.<String>builder()
+                .code(HttpStatus.OK.value())
                 .result("OTP sent to email")
                 .build();
     }
 
+    // ================= LOGIN =================
+
     @PostMapping("/login")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
-        log.info(">>> Login endpoint hit with input={}", request.getEmailOrUsername());
-
-        var result = authenticationService.authenticate(request);
-        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+    @Operation(
+            summary = "Login",
+            description = "Authenticate user using email or username and password"
+    )
+    public ApiResponse<AuthenticationResponse> authenticate(
+            @RequestBody AuthenticationRequest request
+    ) {
+        log.info(">>> Login attempt: {}", request.getEmailOrUsername());
+        AuthenticationResponse result = authenticationService.authenticate(request);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
     }
 
-    @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request)
-            throws ParseException, JOSEException {
-        var result = authenticationService.introspect(request);
-        return ApiResponse.<IntrospectResponse>builder().result(result).build();
-    }
-
-    @PostMapping("/refresh")
-    ApiResponse<RefreshResponse> refresh(@RequestBody RefreshRequest request)
-            throws ParseException, JOSEException {
-        var result = authenticationService.refreshToken(request);
-        return ApiResponse.<RefreshResponse>builder().result(result).build();
-    }
-
-    @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
-            throws ParseException, JOSEException {
-        authenticationService.logout(request);
-        return ApiResponse.<Void>builder().build();
-    }
+    // ================= GOOGLE LOGIN =================
 
     @PostMapping("/google")
-    ApiResponse<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest request) {
+    @Operation(
+            summary = "Login with Google",
+            description = "Authenticate user using Google OAuth authorization code"
+    )
+    public ApiResponse<AuthenticationResponse> googleAuth(
+            @RequestBody GoogleAuthRequest request
+    ) {
         try {
-            AuthenticationResponse response = googleAuthService.authenticateGoogleUser(request);
+            AuthenticationResponse response =
+                    googleAuthService.authenticateGoogleUser(request);
             return ApiResponse.<AuthenticationResponse>builder()
                     .result(response)
                     .build();
         } catch (Exception e) {
-            logError(e);
+            log.error("Google authentication failed", e);
             return ApiResponse.<AuthenticationResponse>builder()
                     .code(HttpStatus.UNAUTHORIZED.value())
                     .message("Authentication failed: " + e.getMessage())
@@ -94,24 +106,70 @@ public class AuthenticationController {
         }
     }
 
-//    @PostMapping("/forgot-password")
-//    ApiResponse<String> forgotPassword(@RequestBody EmailRequest request) {
-//        String email = request.getEmail();
-//        authenticationService.forgotPasswordOtp(email);
-//        return ApiResponse.<String>builder()
-//                .result("Mã xác minh (OTP) đã được gửi đến địa chỉ email: " + email)
-//                .build();
-//    }
+    // ================= INTROSPECT =================
 
-    @PostMapping("/change-forgot-password")
-    ApiResponse<UserResponse> verifyOtpAndChangePassword(@RequestBody ForgotPasswordRequest request) {
-        return ApiResponse.<UserResponse>builder()
-                .result(authenticationService.verifyOtpAndChangePassword(request))
+    @PostMapping("/introspect")
+    @Operation(
+            summary = "Introspect token",
+            description = "Check whether a token is valid or expired"
+    )
+    public ApiResponse<IntrospectResponse> introspect(
+            @RequestBody IntrospectRequest request
+    ) throws ParseException, JOSEException {
+        IntrospectResponse result = authenticationService.introspect(request);
+        return ApiResponse.<IntrospectResponse>builder()
+                .result(result)
                 .build();
     }
 
-    private void logError(Exception e) {
-        System.err.println("Google authentication failed: " + e.getMessage());
-        e.printStackTrace();
+    // ================= REFRESH TOKEN =================
+
+    @PostMapping("/refresh")
+    @Operation(
+            summary = "Refresh access token",
+            description = "Generate a new access token using refresh token"
+    )
+    public ApiResponse<RefreshResponse> refresh(
+            @RequestBody RefreshRequest request
+    ) throws ParseException, JOSEException {
+        RefreshResponse result = authenticationService.refreshToken(request);
+        return ApiResponse.<RefreshResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    // ================= LOGOUT =================
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "Logout",
+            description = "Invalidate current access or refresh token"
+    )
+    @SecurityRequirement(name = "bearer-key")
+    public ApiResponse<Void> logout(
+            @RequestBody LogoutRequest request
+    ) throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Logout successful")
+                .build();
+    }
+
+    // ================= FORGOT PASSWORD =================
+
+    @PostMapping("/change-forgot-password")
+    @Operation(
+            summary = "Change forgotten password",
+            description = "Verify OTP and update new password"
+    )
+    public ApiResponse<UserResponse> verifyOtpAndChangePassword(
+            @RequestBody ForgotPasswordRequest request
+    ) {
+        UserResponse response =
+                authenticationService.verifyOtpAndChangePassword(request);
+        return ApiResponse.<UserResponse>builder()
+                .result(response)
+                .build();
     }
 }

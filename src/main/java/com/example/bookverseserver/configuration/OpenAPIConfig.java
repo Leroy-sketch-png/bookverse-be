@@ -31,7 +31,10 @@ public class OpenAPIConfig {
                 .tags(List.of(
                         new Tag().name("Cart").description("Cart management APIs"),
                         new Tag().name("Cart Item").description("Cart item management APIs"),
-                        new Tag().name("Shipping Address").description("Shipping address management APIs")
+                        new Tag().name("Shipping Address").description("Shipping address management APIs"),
+                        new Tag().name("Authentication").description("Authentication APIs"),
+                        new Tag().name("Category").description("Category management APIs"),
+                        new Tag().name("Transaction").description("Transaction APIs")
                 ));
     }
 }
