@@ -43,6 +43,9 @@ public class Order {
         BigDecimal subtotal;
 
         @Column(nullable = false, precision = 10, scale = 2)
+        BigDecimal totalAmount;
+
+        @Column(nullable = false, precision = 10, scale = 2)
         @Builder.Default
         BigDecimal tax = BigDecimal.ZERO;
 
@@ -110,4 +113,7 @@ public class Order {
         @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
         @Builder.Default
         List<OrderTimeline> timeline = new ArrayList<>();
+
+        @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        List<Payment> payments = new ArrayList<>();
 }
