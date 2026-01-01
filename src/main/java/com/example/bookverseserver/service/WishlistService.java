@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.Book.BookResponse;
 import com.example.bookverseserver.dto.response.Product.ListingSummaryResponse;
+import com.example.bookverseserver.dto.response.Wishlist.WishlistCheckDto;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistItemDTO;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistResponse;
 import com.example.bookverseserver.entity.Product.BookMeta;
@@ -84,6 +85,25 @@ public class WishlistService {
     @Transactional
     public void removeFromWishlist(Long userId, Long listingId) {
         wishlistRepository.deleteByUserIdAndListingId(userId, listingId);
+    }
+
+    /**
+     * Check if Listing is in Wishlist
+     */
+    @Transactional(readOnly = true)
+    public WishlistCheckDto checkIfInWishlist(Long userId, Long listingId) {
+        Optional<Wishlist> wishlist = wishlistRepository.findByUserIdAndListingId(userId, listingId);
+
+        if (wishlist.isPresent()) {
+            return WishlistCheckDto.builder()
+                    .inWishlist(true)
+                    .wishlistItemId(wishlist.get().getId())
+                    .addedAt(wishlist.get().getAddedAt())
+                    .build();
+        }
+        return WishlistCheckDto.builder()
+                .inWishlist(false)
+                .build();
     }
 
     // --- Helper Mapper ---
