@@ -8,7 +8,10 @@ import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.Product.Wishlist;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.exception.AppException;
+import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.BookMetaRepository; // Giả định
+import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.WishlistRepository;
 import com.example.bookverseserver.repository.UserRepository; // Giả định
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,7 +33,7 @@ import java.util.stream.Collectors;
 public class WishlistService {
 
     private final WishlistRepository wishlistRepository;
-    private final BookMetaRepository bookMetaRepository;
+    private final ListingRepository listingRepository;
     private final UserRepository userRepository;
 
     public WishlistResponse getUserFavorites(Long userId, Pageable pageable) {
@@ -41,6 +45,37 @@ public class WishlistService {
                 .favorites(items)
                 .totalFavorites(wishlistPage.getTotalElements())
                 .build();
+    }
+
+    /**
+     * Add Listing to Wishlist (Idempotent)
+     */
+    @Transactional
+    public WishlistItemDTO addToWishlist(Long userId, Long listingId) {
+        // 1. Validate Listing
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND, "Listing not found with id: " + listingId));
+
+        // 2. Check Exists (Idempotent)
+        Optional<Wishlist> existing = wishlistRepository.findByUserIdAndListingId(userId, listingId);
+        if (existing.isPresent()) {
+            return mapToDTO(existing.get());
+        }
+
+        // 3. Create New
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found"));
+
+        Wishlist wishlist = Wishlist.builder()
+                .user(user)
+                .listing(listing)
+                .priceAtAddition(listing.getPrice()) // Save snapshot of price
+                .build();
+
+        Wishlist saved = wishlistRepository.save(wishlist);
+
+        // SỬA: Xóa dòng 'wishlistPage' bị lỗi đi, trả về item vừa lưu
+        return mapToDTO(saved);
     }
 
     // --- Helper Mapper ---
