@@ -78,6 +78,14 @@ public class WishlistService {
         return mapToDTO(saved);
     }
 
+    /**
+     * Remove Listing from Wishlist
+     */
+    @Transactional
+    public void removeFromWishlist(Long userId, Long listingId) {
+        wishlistRepository.deleteByUserIdAndListingId(userId, listingId);
+    }
+
     // --- Helper Mapper ---
     private WishlistItemDTO mapToDTO(Wishlist wishlist) {
         Listing listing = wishlist.getListing();

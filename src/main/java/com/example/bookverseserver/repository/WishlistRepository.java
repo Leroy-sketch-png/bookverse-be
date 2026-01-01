@@ -20,4 +20,6 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
 
     // Tìm cụ thể để xóa
     Optional<Wishlist> findByUserIdAndListingId(Long userId, Long listingId);
+
+    void deleteByUserIdAndListingId(Long userId, Long listingId);
 }

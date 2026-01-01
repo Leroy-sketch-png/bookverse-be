@@ -51,4 +51,18 @@ public class WishlistController {
                 .result(response)
                 .build();
     }
+
+    @DeleteMapping("/{listingId}")
+    public ApiResponse removeFromWishList(
+            Authentication authentication,
+            @PathVariable Long listingId
+    ) {
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        wishlistService.removeFromWishlist(userId, listingId);
+
+        return ApiResponse.builder()
+                .code(200)
+                .result("Item removed from wishlist.")
+                .build();
+    }
 }
