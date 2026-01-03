@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -61,7 +62,7 @@ public class UserProfile {
     String responseTime;
     
     @Column(name = "fulfillment_rate", precision = 5, scale = 2)
-    Double fulfillmentRate;
+    BigDecimal fulfillmentRate;
 
     /**
      * Ensure Lombok builder preserves default values:

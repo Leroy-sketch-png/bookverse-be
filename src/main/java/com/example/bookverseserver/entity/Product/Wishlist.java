@@ -27,8 +27,8 @@ public class Wishlist {
     User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
-    BookMeta bookMeta;
+    @JoinColumn(name = "listing_id", nullable = false)
+    Listing listing;
 
     @CreationTimestamp
     @Column(name = "added_at", updatable = false, nullable = false)

@@ -48,7 +48,7 @@ public class BookMeta {
     String language = "en";
     
     @Column(name = "average_rating", precision = 3, scale = 2)
-    Double averageRating;
+    BigDecimal averageRating;
     
     @Column(name = "total_reviews")
     @Builder.Default
