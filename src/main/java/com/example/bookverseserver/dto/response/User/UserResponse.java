@@ -15,6 +15,6 @@ public class UserResponse {
     String username;
     String email;
     Boolean enabled;
-    RoleResponse role;
+    Set<RoleResponse> roles; // Changed from single role to Set of roles to match frontend expectations
 
 }

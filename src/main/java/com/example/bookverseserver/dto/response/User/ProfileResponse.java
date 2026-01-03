@@ -14,12 +14,16 @@ public class ProfileResponse {
     private String fullName;
     private String phoneNumber;
     private String avatarUrl;
+    private String coverImageUrl; // Added for seller profile banner
     private String bio;
     private String location;
     private String accountType;
     private Double ratingAvg;
     private Integer ratingCount;
     private String preferences;
+    private Boolean isProSeller; // Added to differentiate seller tiers
+    private String responseTime; // Average response time metric
+    private Double fulfillmentRate; // Percentage of successful deliveries
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate sellerSince;

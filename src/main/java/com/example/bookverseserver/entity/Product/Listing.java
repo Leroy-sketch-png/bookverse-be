@@ -77,6 +77,13 @@ public class Listing {
     @Column(name = "sold_count")
     @Builder.Default
     Integer soldCount = 0;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "active_promotion_id")
+    Promotion activePromotion;
+    
+    @Column(name = "last_viewed_at")
+    LocalDateTime lastViewedAt;
 
     @Column(name = "deleted_at")
     LocalDateTime deletedAt;
@@ -95,4 +102,25 @@ public class Listing {
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<ListingPhoto> photos = new ArrayList<>();
+    
+    // Helper method to calculate final price with active promotion
+    public BigDecimal getFinalPrice() {
+        if (activePromotion != null && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
+            BigDecimal discount = price.multiply(BigDecimal.valueOf(activePromotion.getDiscountPercentage()))
+                                      .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            return price.subtract(discount);
+        }
+        return price;
+    }
+    
+    // Helper method to get discount info
+    public java.util.Map<String, Object> getDiscountInfo() {
+        if (activePromotion != null && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
+            return java.util.Map.of(
+                "type", "PERCENT",
+                "value", activePromotion.getDiscountPercentage()
+            );
+        }
+        return null;
+    }
 }
