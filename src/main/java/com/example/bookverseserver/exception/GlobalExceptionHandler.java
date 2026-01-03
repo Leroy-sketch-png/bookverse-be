@@ -22,17 +22,18 @@ import java.util.Objects;
 public class GlobalExceptionHandler {
     private static final String MIN_ATTRIBUTE = "min";
 
-//    @ExceptionHandler(value = RuntimeException.class)
-//    ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException ex, WebRequest request){
-//        ApiResponse response = new ApiResponse();
-//
-//        response.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
-//        response.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
-//        return ResponseEntity.badRequest().body(response);
-//    }
+    // @ExceptionHandler(value = RuntimeException.class)
+    // ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException ex,
+    // WebRequest request){
+    // ApiResponse response = new ApiResponse();
+    //
+    // response.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+    // response.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+    // return ResponseEntity.badRequest().body(response);
+    // }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse> handleAppException(AppException ex){
+    ResponseEntity<ApiResponse> handleAppException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
         ApiResponse response = new ApiResponse();
 
@@ -65,7 +66,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ApiResponse> handleValidation(MethodArgumentNotValidException ex){
+    ResponseEntity<ApiResponse> handleValidation(MethodArgumentNotValidException ex) {
         String enumKey = ex.getFieldError().getDefaultMessage();
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
         Map<String, Object> attributes = null;
@@ -76,27 +77,35 @@ public class GlobalExceptionHandler {
 
             attributes = constraintViolation.getConstraintDescriptor().getAttributes();
             log.info(attributes.toString());
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
 
         }
         ApiResponse response = new ApiResponse();
         response.setCode(errorCode.getCode());
-        response.setMessage(Objects.nonNull(attributes) ?
-                mapAttributes(errorCode.getMessage(), attributes) : errorCode.getMessage());
+        response.setMessage(Objects.nonNull(attributes) ? mapAttributes(errorCode.getMessage(), attributes)
+                : errorCode.getMessage());
 
         return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(value = AccessDeniedException.class)
-    ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException ex){
-        ErrorCode errorCode =  ErrorCode.UNAUTHORIZED;
+    ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException ex) {
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
         return ResponseEntity.status(errorCode.getStatusCode()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
-                        .build()
-        );
+                        .build());
+    }
+
+    @ExceptionHandler(value = OutOfStockException.class)
+    ResponseEntity<ApiResponse> handleOutOfStockException(OutOfStockException ex) {
+        return ResponseEntity.badRequest().body(
+                ApiResponse.builder()
+                        .code(400)
+                        .message(ex.getMessage())
+                        .result(Map.of("unavailableItems", ex.getUnavailableItems()))
+                        .build());
     }
 
     @ExceptionHandler(value = ConstraintViolationException.class)
@@ -120,7 +129,7 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    private String mapAttributes(String message, Map<String, Object> attributes){
+    private String mapAttributes(String message, Map<String, Object> attributes) {
         String minValue = String.valueOf(attributes.get(MIN_ATTRIBUTE));
         return message.replace("{" + MIN_ATTRIBUTE + "}", minValue);
     }

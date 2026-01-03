@@ -3,7 +3,6 @@ package com.example.bookverseserver.entity.Order_Payment;
 import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.User.User;
-import com.example.bookverseserver.enums.OrderItemStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,9 +10,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "order_item")
+@Table(name = "order_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,51 +21,42 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    UUID id;
 
-    // Many order items belong to one order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     Order order;
 
-    // The listing that was purchased
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_id", nullable = false)
     Listing listing;
 
-    // The metadata for the book purchased
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id", nullable = false)
     BookMeta bookMeta;
 
-    // The user who sold this item
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     User seller;
 
-    // The quantity of the item
+    @Column(nullable = false)
+    String title;
+
+    @Column
+    String author;
+
+    @Column(name = "cover_image", columnDefinition = "TEXT")
+    String coverImage;
+
     @Column(nullable = false)
     Integer quantity;
 
-    // The price of a single item at the time of purchase
-    @Column(name = "price_per_item", nullable = false)
-    BigDecimal pricePerItem;
+    @Column(nullable = false, precision = 10, scale = 2)
+    BigDecimal price;
 
-    // The status of the item within the order lifecycle
-    @Enumerated(EnumType.STRING)
-    @Column(name = "item_status", nullable = false)
-    OrderItemStatus itemStatus = OrderItemStatus.PENDING;
-
-    // Tracking information
-    @Column(name = "tracking_number")
-    String trackingNumber;
-
-    @Column(name = "shipped_at")
-    LocalDateTime shippedAt;
-
-    @Column(name = "delivered_at")
-    LocalDateTime deliveredAt;
+    @Column(nullable = false, precision = 10, scale = 2)
+    BigDecimal subtotal;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -74,15 +65,31 @@ public class OrderItem {
     // Helper to convert Items from Cart to Order
     public static OrderItem fromCartItem(CartItem cartItem, Order order) {
         Listing listing = cartItem.getListing();
+        BookMeta meta = listing.getBookMeta();
+
+        String authorNames = meta.getAuthors().stream()
+                .map(author -> author.getName())
+                .reduce((a, b) -> a + ", " + b)
+                .orElse(null);
+
+        String cover = null;
+        if (!listing.getPhotos().isEmpty()) {
+            cover = listing.getPhotos().get(0).getUrl();
+        } else if (meta.getImages() != null && !meta.getImages().isEmpty()) {
+            cover = meta.getImages().get(0).getUrl();
+        }
 
         return OrderItem.builder()
                 .order(order)
                 .listing(listing)
-                .bookMeta(listing.getBookMeta())
+                .bookMeta(meta)
                 .seller(listing.getSeller())
+                .title(listing.getTitleOverride() != null ? listing.getTitleOverride() : meta.getTitle())
+                .author(authorNames)
+                .coverImage(cover)
                 .quantity(cartItem.getQuantity())
-                .pricePerItem(listing.getPrice())
-                .itemStatus(OrderItemStatus.PENDING)
+                .price(listing.getPrice())
+                .subtotal(listing.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())))
                 .build();
     }
 }

@@ -9,6 +9,8 @@ import com.example.bookverseserver.entity.User.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
+import java.util.Set;
+
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
@@ -28,7 +30,12 @@ public interface UserMapper {
             RoleResponse rr = new RoleResponse();
             rr.setId(role.getId());
             rr.setName(role.getName());
-            resp.setRole(rr);
+            // Inside your toUserResponse method
+            RoleResponse roleResponse = RoleResponse.builder()
+                    .name(user.getRole().getName())
+                    .build();
+
+            resp.setRoles(Set.of(roleResponse)); // Wrap single role in a Set
         }
 
         return resp;

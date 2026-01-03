@@ -39,12 +39,21 @@ public class ShippingAddress {
 
     @Column(nullable = false, length = 100)
     String city;
+    
+    @Column(length = 100)
+    String ward;
+    
+    @Column(length = 100)
+    String district;
 
     @Column(name = "postal_code", length = 20)
     String postalCode;
 
     @Column(nullable = false, length = 100)
     String country;
+    
+    @Column(columnDefinition = "TEXT")
+    String note;
 
     @Column(name = "is_default", nullable = false)
     Boolean isDefault = false;

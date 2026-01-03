@@ -36,8 +36,19 @@ public class Review {
 
     @Column(name = "is_visible", nullable = false)
     Boolean isVisible = true;
+    
+    @Column(name = "helpful_count")
+    @Builder.Default
+    Integer helpfulCount = 0;
+    
+    @Column(name = "verified_purchase")
+    @Builder.Default
+    Boolean verifiedPurchase = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
 }

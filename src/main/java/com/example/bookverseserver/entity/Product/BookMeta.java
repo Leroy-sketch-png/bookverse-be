@@ -42,6 +42,17 @@ public class BookMeta {
     LocalDate publishedDate;
     Integer pages;
     BigDecimal listPrice;
+    
+    @Column(length = 10)
+    @Builder.Default
+    String language = "en";
+    
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    BigDecimal averageRating;
+    
+    @Column(name = "total_reviews")
+    @Builder.Default
+    Integer totalReviews = 0;
 
     LocalDateTime deletedAt;
     Long deletedBy;

@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -40,6 +41,9 @@ public class UserProfile {
 
     @Column(name = "avatar_url")
     String avatarUrl;
+    
+    @Column(name = "cover_image_url", columnDefinition = "TEXT")
+    String coverImageUrl;
 
     @Column
     String bio;
@@ -49,6 +53,16 @@ public class UserProfile {
 
     @Column
     String location;
+    
+    @Column(name = "is_pro_seller")
+    @Builder.Default
+    Boolean isProSeller = false;
+    
+    @Column(name = "response_time", length = 50)
+    String responseTime;
+    
+    @Column(name = "fulfillment_rate", precision = 5, scale = 2)
+    BigDecimal fulfillmentRate;
 
     /**
      * Ensure Lombok builder preserves default values:

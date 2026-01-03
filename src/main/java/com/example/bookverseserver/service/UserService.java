@@ -109,8 +109,7 @@ public class UserService {
     public UserResponse getUser(Long id) {
         return userMapper.toUserResponse(
                 userRepository.findById(id)
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND))
-        );
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)));
     }
 
     public Optional<User> findByGoogleId(String googleId) {
