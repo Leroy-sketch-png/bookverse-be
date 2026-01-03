@@ -3,6 +3,7 @@ package com.example.bookverseserver.service;
 import com.example.bookverseserver.dto.response.Book.BookResponse;
 import com.example.bookverseserver.dto.response.Product.ListingSummaryResponse;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistCheckDto;
+import com.example.bookverseserver.dto.response.Wishlist.WishlistCountDto;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistItemDTO;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistResponse;
 import com.example.bookverseserver.entity.Product.BookMeta;
@@ -104,6 +105,14 @@ public class WishlistService {
         return WishlistCheckDto.builder()
                 .inWishlist(false)
                 .build();
+    }
+
+    /**
+     * Get Count
+     */
+    @Transactional(readOnly = true)
+    public WishlistCountDto getWishlistCount(Long userId) {
+        return new WishlistCountDto(wishlistRepository.countByUserId(userId));
     }
 
     // --- Helper Mapper ---

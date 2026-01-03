@@ -2,6 +2,7 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistCheckDto;
+import com.example.bookverseserver.dto.response.Wishlist.WishlistCountDto;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistItemDTO;
 import com.example.bookverseserver.dto.response.Wishlist.WishlistResponse;
 import com.example.bookverseserver.service.WishlistService;
@@ -77,6 +78,18 @@ public class WishlistController {
         return ApiResponse.<WishlistCheckDto>builder()
                 .code(200)
                 .result(wishlistService.checkIfInWishlist(userId, listingId))
+                .build();
+    }
+
+    @GetMapping("/wishlist-count")
+    public ApiResponse<WishlistCountDto> getWishlistCount(
+            Authentication authentication
+    ) {
+        Long userId = securityUtils.getCurrentUserId(authentication);
+
+        return ApiResponse.<WishlistCountDto>builder()
+                .code(200)
+                .result(wishlistService.getWishlistCount(userId))
                 .build();
     }
 }
