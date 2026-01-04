@@ -2,96 +2,264 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Product.ListingCreationRequest;
 import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
-import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
+import com.example.bookverseserver.dto.request.Product.UpdateStockRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.PagedResponse;
+import com.example.bookverseserver.dto.response.Product.ListingDetailResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
-import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.dto.response.Product.StockUpdateResponse;
+import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.service.ListingService;
-import io.swagger.v3.oas.annotations.Parameter;
+import com.example.bookverseserver.utils.SecurityUtils;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/listing")
+@RequestMapping("/api/listings")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ListingController {
-    ListingService listingService;
+        ListingService listingService;
+        SecurityUtils securityUtils;
 
-    @GetMapping("/all")
-    public ApiResponse<List<ListingResponse>> getAllListings() {
-        return ApiResponse.<List<ListingResponse>>builder()
-                .result(listingService.getAllListings())
-                .build();
-    }
+        // ============ List Listings with Filters ============
 
-    @GetMapping("/{id}")
-    public ApiResponse<ListingResponse> getListingById(@PathVariable("id") Long listingId, Authentication authentication) {
-        return ApiResponse.<ListingResponse>builder()
-                .result(listingService.getListingById(listingId, authentication))
-                .build();
-    }
+        /**
+         * Get paginated listings with optional filters.
+         * 
+         * Query Parameters:
+         * - sellerId: filter by seller
+         * - bookId: filter by book
+         * - status: filter by status (ACTIVE, SOLD_OUT, DRAFT, etc.)
+         * - sortBy: createdAt, price, viewCount, soldCount
+         * - sortOrder: asc, desc
+         * - page: page number (0-indexed)
+         * - size: page size (default 20)
+         */
+        @GetMapping
+        public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getListings(
+                        @RequestParam(required = false) Long sellerId,
+                        @RequestParam(required = false) Long bookId,
+                        @RequestParam(required = false) ListingStatus status,
+                        @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+                        @RequestParam(required = false, defaultValue = "desc") String sortOrder,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+                PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
+                                sellerId, bookId, status, sortBy, sortOrder, page, size);
 
-    @PostMapping("/create")
-    public ApiResponse<ListingResponse> createListing(@RequestBody ListingCreationRequest request, Authentication authentication) {
-        return ApiResponse.<ListingResponse>builder()
-                .result(listingService.createListing(request, authentication))
-                .build();
-    }
+                return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
+                                .result(result)
+                                .build());
+        }
 
-    @PutMapping("/sell/{quantity}")
-    public ApiResponse<ListingResponse> updateListingSoldCount(@RequestParam("id") Long id, @PathVariable("quantity") Integer quantity, Authentication authentication) {
-        return ApiResponse.<ListingResponse>builder()
-                .result(listingService.updateListingSoldCount(id, quantity, authentication))
-                .build();
-    }
+        /**
+         * Legacy endpoint for listing all listings (no pagination).
+         * Kept for backwards compatibility.
+         */
+        @GetMapping("/all")
+        public ApiResponse<List<ListingResponse>> getAllListings() {
+                return ApiResponse.<List<ListingResponse>>builder()
+                                .result(listingService.getAllListings())
+                                .build();
+        }
 
-    @PutMapping("/update")
-    public ApiResponse<ListingUpdateResponse> update(
-            @RequestParam("id") Long id,
-            @RequestBody ListingUpdateRequest request,
-            Authentication authentication
-    ) {
-        log.info(">>> Entered controller update with id={}, user={}", id, authentication != null ? authentication.getName() : "null");
+        // ============ Get Listing Details ============
 
-        return ApiResponse.<ListingUpdateResponse>builder()
-                .result(listingService.updateListing(id, request, authentication))
-                .build();
-    }
+        /**
+         * Get listing details by ID.
+         * - Increments view count (except for seller's own views)
+         * - Includes related listings (same book, different sellers)
+         */
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<ListingDetailResponse>> getListingById(
+                        @PathVariable("id") Long listingId,
+                        Authentication authentication) {
+                ListingDetailResponse detail = listingService.getListingDetail(listingId, authentication);
 
-    @DeleteMapping("/delete")
-    public ApiResponse<String> delete(@RequestParam("id") Long id, Authentication authentication) {
-        return ApiResponse.<String>builder()
-                .result(listingService.hardDeleteListing(id, authentication))
-                .build();
-    }
+                return ResponseEntity.ok(ApiResponse.<ListingDetailResponse>builder()
+                                .result(detail)
+                                .build());
+        }
 
-    @PutMapping("/soft-delete")
-    public ApiResponse<ListingUpdateResponse> softDelete(
-            @RequestParam("id") Long id,
-            @RequestBody ListingDeleteRequest request,
-            Authentication authentication) {
-        return ApiResponse.<ListingUpdateResponse>builder()
-                .result(listingService.softDeleteListing(id, authentication))
-                .build();
-    }
+        /**
+         * Legacy endpoint - returns simple response.
+         * Use GET /{id} for full details with related listings.
+         */
+        @GetMapping("/{id}/simple")
+        public ApiResponse<ListingResponse> getListingByIdSimple(
+                        @PathVariable("id") Long listingId,
+                        Authentication authentication) {
+                return ApiResponse.<ListingResponse>builder()
+                                .result(listingService.getListingById(listingId, authentication))
+                                .build();
+        }
 
-    @PutMapping("/toggle-like")
-    public ApiResponse<ListingResponse> toggleListingLike(
-            @RequestParam("id") Long id,
-            Authentication authentication
-    ) {
-        return ApiResponse.<ListingResponse>builder()
-                .result(listingService.toggleListingLike(id, authentication))
-                .build();
-    }
+        // ============ Create Listing ============
+
+        @PreAuthorize("hasRole('SELLER')")
+        @PostMapping
+        public ResponseEntity<ApiResponse<ListingResponse>> createListing(
+                        @RequestBody ListingCreationRequest request,
+                        Authentication authentication) {
+                ListingResponse created = listingService.createListing(request, authentication);
+
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.<ListingResponse>builder()
+                                                .result(created)
+                                                .message("Listing created successfully")
+                                                .build());
+        }
+
+        /**
+         * Legacy create endpoint.
+         */
+        @PreAuthorize("hasRole('SELLER')")
+        @PostMapping("/create")
+        public ApiResponse<ListingResponse> createListingLegacy(
+                        @RequestBody ListingCreationRequest request,
+                        Authentication authentication) {
+                return ApiResponse.<ListingResponse>builder()
+                                .result(listingService.createListing(request, authentication))
+                                .build();
+        }
+
+        // ============ Update Listing ============
+
+        @PutMapping("/{id}")
+        public ResponseEntity<ApiResponse<ListingUpdateResponse>> updateListing(
+                        @PathVariable("id") Long id,
+                        @RequestBody ListingUpdateRequest request,
+                        Authentication authentication) {
+                log.info(">>> Entered controller update with id={}, user={}", id,
+                                authentication != null ? authentication.getName() : "null");
+
+                ListingUpdateResponse updated = listingService.updateListing(id, request, authentication);
+
+                return ResponseEntity.ok(ApiResponse.<ListingUpdateResponse>builder()
+                                .result(updated)
+                                .build());
+        }
+
+        /**
+         * Legacy update endpoint.
+         */
+        @PutMapping("/update")
+        public ApiResponse<ListingUpdateResponse> updateListingLegacy(
+                        @RequestParam("id") Long id,
+                        @RequestBody ListingUpdateRequest request,
+                        Authentication authentication) {
+                log.info(">>> Entered controller update with id={}, user={}", id,
+                                authentication != null ? authentication.getName() : "null");
+
+                return ApiResponse.<ListingUpdateResponse>builder()
+                                .result(listingService.updateListing(id, request, authentication))
+                                .build();
+        }
+
+        // ============ Stock Management ============
+
+        /**
+         * Update listing stock.
+         * Supports SET (exact value), ADD (increment), and SUBTRACT (decrement)
+         * operations.
+         * Status automatically updates to SOLD_OUT when quantity becomes 0.
+         */
+        @PatchMapping("/{id}/stock")
+        public ResponseEntity<ApiResponse<StockUpdateResponse>> updateStock(
+                        @PathVariable("id") Long id,
+                        @Valid @RequestBody UpdateStockRequest request,
+                        Authentication authentication) {
+                Long userId = securityUtils.getCurrentUserId(authentication);
+                StockUpdateResponse result = listingService.updateStock(id, userId, request);
+
+                return ResponseEntity.ok(ApiResponse.<StockUpdateResponse>builder()
+                                .result(result)
+                                .message("Stock updated successfully")
+                                .build());
+        }
+
+        /**
+         * Legacy update sold count endpoint.
+         */
+        @PutMapping("/sell/{quantity}")
+        public ApiResponse<ListingResponse> updateListingSoldCount(
+                        @RequestParam("id") Long id,
+                        @PathVariable("quantity") Integer quantity,
+                        Authentication authentication) {
+                return ApiResponse.<ListingResponse>builder()
+                                .result(listingService.updateListingSoldCount(id, quantity, authentication))
+                                .build();
+        }
+
+        // ============ Delete Listing ============
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<ApiResponse<String>> deleteListing(
+                        @PathVariable("id") Long id,
+                        Authentication authentication) {
+                String result = listingService.hardDeleteListing(id, authentication);
+
+                return ResponseEntity.ok(ApiResponse.<String>builder()
+                                .result(result)
+                                .build());
+        }
+
+        /**
+         * Legacy delete endpoint.
+         */
+        @DeleteMapping("/delete")
+        public ApiResponse<String> deleteListingLegacy(
+                        @RequestParam("id") Long id,
+                        Authentication authentication) {
+                return ApiResponse.<String>builder()
+                                .result(listingService.hardDeleteListing(id, authentication))
+                                .build();
+        }
+
+        @PutMapping("/soft-delete")
+        public ApiResponse<ListingUpdateResponse> softDelete(
+                        @RequestParam("id") Long id,
+                        @RequestBody ListingDeleteRequest request,
+                        Authentication authentication) {
+                return ApiResponse.<ListingUpdateResponse>builder()
+                                .result(listingService.softDeleteListing(id, authentication))
+                                .build();
+        }
+
+        // ============ Like Toggle ============
+
+        @PutMapping("/{id}/toggle-like")
+        public ResponseEntity<ApiResponse<ListingResponse>> toggleListingLike(
+                        @PathVariable("id") Long id,
+                        Authentication authentication) {
+                return ResponseEntity.ok(ApiResponse.<ListingResponse>builder()
+                                .result(listingService.toggleListingLike(id, authentication))
+                                .build());
+        }
+
+        /**
+         * Legacy like toggle endpoint.
+         */
+        @PutMapping("/toggle-like")
+        public ApiResponse<ListingResponse> toggleListingLikeLegacy(
+                        @RequestParam("id") Long id,
+                        Authentication authentication) {
+                return ApiResponse.<ListingResponse>builder()
+                                .result(listingService.toggleListingLike(id, authentication))
+                                .build();
+        }
 }
