@@ -40,6 +40,9 @@ public class Listing {
     @Column(nullable = false)
     BigDecimal price;
 
+    @Column(name = "original_price")
+    BigDecimal originalPrice;
+
     @Column(nullable = false)
     String currency;
 
@@ -50,6 +53,10 @@ public class Listing {
     @Column(nullable = false)
     @Builder.Default
     Integer quantity = 1;
+
+    @Column(columnDefinition = "TEXT")
+    String description;
+
     String location;
 
     @Enumerated(EnumType.STRING)
@@ -77,11 +84,22 @@ public class Listing {
     @Column(name = "sold_count")
     @Builder.Default
     Integer soldCount = 0;
-    
+
+    // Shipping information
+    @Column(name = "free_shipping")
+    @Builder.Default
+    Boolean freeShipping = false;
+
+    @Column(name = "estimated_shipping_days")
+    String estimatedShippingDays;
+
+    @Column(name = "ships_from")
+    String shipsFrom;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "active_promotion_id")
     Promotion activePromotion;
-    
+
     @Column(name = "last_viewed_at")
     LocalDateTime lastViewedAt;
 
@@ -102,24 +120,55 @@ public class Listing {
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<ListingPhoto> photos = new ArrayList<>();
-    
+
+    /**
+     * Auto-update status based on stock quantity.
+     * - When quantity becomes 0 and status is ACTIVE, change to SOLD_OUT
+     * - When quantity becomes > 0 and status is SOLD_OUT, change back to ACTIVE
+     */
+    @PreUpdate
+    protected void onUpdate() {
+        if (quantity != null && quantity <= 0 && status == ListingStatus.ACTIVE) {
+            status = ListingStatus.SOLD_OUT;
+        } else if (quantity != null && quantity > 0 && status == ListingStatus.SOLD_OUT) {
+            status = ListingStatus.ACTIVE;
+        }
+    }
+
     // Helper method to calculate final price with active promotion
     public BigDecimal getFinalPrice() {
-        if (activePromotion != null && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
+        if (activePromotion != null
+                && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
             BigDecimal discount = price.multiply(BigDecimal.valueOf(activePromotion.getDiscountPercentage()))
-                                      .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
             return price.subtract(discount);
         }
         return price;
     }
-    
+
     // Helper method to get discount info
     public java.util.Map<String, Object> getDiscountInfo() {
-        if (activePromotion != null && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
+        if (activePromotion != null
+                && activePromotion.getStatus() == com.example.bookverseserver.enums.PromotionStatus.ACTIVE) {
             return java.util.Map.of(
-                "type", "PERCENT",
-                "value", activePromotion.getDiscountPercentage()
-            );
+                    "type", "PERCENT",
+                    "value", activePromotion.getDiscountPercentage());
+        }
+        return null;
+    }
+
+    /**
+     * Calculate discount percentage between original and current price.
+     * 
+     * @return discount percentage (0-100) or null if no original price
+     */
+    public Integer getDiscountPercentage() {
+        if (originalPrice != null && originalPrice.compareTo(BigDecimal.ZERO) > 0
+                && price != null && originalPrice.compareTo(price) > 0) {
+            return originalPrice.subtract(price)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(originalPrice, 0, java.math.RoundingMode.HALF_UP)
+                    .intValue();
         }
         return null;
     }

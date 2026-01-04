@@ -99,6 +99,10 @@ public enum ErrorCode {
     VOUCHER_ALREADY_EXISTS(409, "Voucher code already exists", HttpStatus.CONFLICT),
     VOUCHER_EXPIRED(409, "Voucher code expired", HttpStatus.CONFLICT),
 
+    // --- Stock Operations ---
+    STOCK_CANNOT_BE_NEGATIVE(400, "Stock quantity cannot be negative", HttpStatus.BAD_REQUEST),
+    SELLER_ROLE_REQUIRED(403, "Only sellers can create listings", HttpStatus.FORBIDDEN),
+
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
     ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY);

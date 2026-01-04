@@ -15,7 +15,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -62,7 +61,7 @@ class UserMapperTest {
 
         Role userRole = new Role();
         userRole.setName(RoleName.BUYER);
-        user.setRoles(Set.of(userRole));
+        user.setRole(userRole);
 
         UserResponse response = userMapper.toUserResponse(user);
 
@@ -83,11 +82,11 @@ class UserMapperTest {
         user.setUsername("testuser");
         Role userRole = new Role();
         userRole.setName(RoleName.BUYER);
-        user.setRoles(Set.of(userRole));
+        user.setRole(userRole);
 
         userMapper.updateUser(user, request);
 
-        assertThat(user.getRoles()).hasSize(1);
-        assertThat(user.getRoles().iterator().next().getName()).isEqualTo(RoleName.ADMIN);
+        assertThat(user.getRole()).isNotNull();
+        assertThat(user.getRole().getName()).isEqualTo(RoleName.ADMIN);
     }
 }
