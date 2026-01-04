@@ -98,10 +98,13 @@ public enum ErrorCode {
     LISTING_EXISTED(409, "Listing already exists", HttpStatus.CONFLICT),
     VOUCHER_ALREADY_EXISTS(409, "Voucher code already exists", HttpStatus.CONFLICT),
     VOUCHER_EXPIRED(409, "Voucher code expired", HttpStatus.CONFLICT),
+    REVIEW_ALREADY_EXISTS(409, "You have already reviewed this book", HttpStatus.CONFLICT),
+    ALREADY_VOTED_HELPFUL(409, "You have already voted this review as helpful", HttpStatus.CONFLICT),
 
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
-    ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY);
+    ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY),
+    CANNOT_REVIEW_OWN_BOOK(422, "You cannot review your own book listing", HttpStatus.UNPROCESSABLE_ENTITY);
 
     private final int code;
     private final String message;
