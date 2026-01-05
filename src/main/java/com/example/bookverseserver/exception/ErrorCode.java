@@ -88,6 +88,7 @@ public enum ErrorCode {
     SHIPPING_ADDRESS_NOT_FOUND(404, "Shipping address not found", HttpStatus.NOT_FOUND),
     VOUCHER_NOT_FOUND(404, "Voucher not found or invalid", HttpStatus.NOT_FOUND),
     CHECKOUT_SESSION_NOT_FOUND(404, "Checkout session not found", HttpStatus.NOT_FOUND),
+    COLLECTION_NOT_FOUND(404, "Curated collection not found", HttpStatus.NOT_FOUND),
 
     // --- 409 CONFLICT (Trùng lặp dữ liệu) ---
     USER_EXISTED(409, "User already exists", HttpStatus.CONFLICT),
@@ -109,7 +110,7 @@ public enum ErrorCode {
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
     ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY),
     CANNOT_REVIEW_OWN_BOOK(422, "You cannot review your own book listing", HttpStatus.UNPROCESSABLE_ENTITY),
-    INVALID_PASSWORD(422, "Invalid password", HttpStatus.UNPROCESSABLE_ENTITY ),
+    INVALID_PASSWORD(422, "Invalid password", HttpStatus.UNPROCESSABLE_ENTITY),
     ;
 
     private final int code;
