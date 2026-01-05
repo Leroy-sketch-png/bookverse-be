@@ -2,6 +2,6 @@ package com.example.bookverseserver.enums;
 
 public enum AccountType {
     BUYER,
-    CASUAL_SELLER,
+    SELLER,
     PRO_SELLER
 }
