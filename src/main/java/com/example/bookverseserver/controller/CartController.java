@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/cart")
+@RequestMapping("/api/cart")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Validated
 @Tag(name = "Cart", description = "Cart management APIs")

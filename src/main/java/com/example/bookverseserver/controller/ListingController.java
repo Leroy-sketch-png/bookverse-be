@@ -110,7 +110,7 @@ public class ListingController {
 
         // ============ Create Listing ============
 
-        @PreAuthorize("hasRole('SELLER')")
+        //@PreAuthorize("hasRole('SELLER')")
         @PostMapping
         public ResponseEntity<ApiResponse<ListingResponse>> createListing(
                         @RequestBody ListingCreationRequest request,

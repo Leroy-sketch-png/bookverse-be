@@ -1,16 +1,13 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.dto.response.Book.BookDetailResponse;
 import com.example.bookverseserver.dto.response.Book.BookResponse;
-import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.dto.response.External.RichBookData;
-import com.example.bookverseserver.entity.Product.Author;
-import com.example.bookverseserver.entity.Product.BookMeta;
-import com.example.bookverseserver.entity.Product.Category;
-import com.example.bookverseserver.entity.Product.Listing;
-import com.example.bookverseserver.entity.Product.BookImage;
+import com.example.bookverseserver.dto.response.PagedResponse;
+import com.example.bookverseserver.entity.Product.*;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
@@ -18,7 +15,8 @@ import com.example.bookverseserver.repository.BookMetaRepository;
 import com.example.bookverseserver.repository.ListingRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,25 +30,106 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class BookService {
 
     private final BookMetaRepository bookMetaRepository;
     private final ListingRepository listingRepository;
+    private final OpenLibraryService openLibraryService;
+    private final AuthorService authorService;
+    private final CategoryService categoryService;
 
-    @Autowired
-    private OpenLibraryService openLibraryService;
-    @Autowired
-    private AuthorService authorService;
-    @Autowired
-    private CategoryService categoryService;
+    // --- MAIN METHOD TO FETCH & FILTER DATA ---
+    public String createBookFromOpenLibrary(String isbn) {
+        // 1. Check if book already exists
+        Optional<BookMeta> existingBookMeta = bookMetaRepository.findByIsbn(isbn);
+        if (existingBookMeta.isPresent()) {
+            return existingBookMeta.get().getId().toString();
+        }
 
-    @Autowired
-    public BookService(BookMetaRepository bookMetaRepository, ListingRepository listingRepository) {
-        this.bookMetaRepository = bookMetaRepository;
-        this.listingRepository = listingRepository;
+        // 2. Fetch raw data from OpenLibrary
+        RichBookData bookData = openLibraryService.fetchRichBookDetailsByIsbn(isbn);
+        if (bookData == null) {
+            throw new AppException(ErrorCode.BOOK_NOT_FOUND_IN_OPEN_LIBRARY);
+        }
+
+        // 3. Create new Book entity
+        BookMeta newBookMeta = new BookMeta();
+        newBookMeta.setTitle(bookData.getTitle());
+        newBookMeta.setIsbn(isbn);
+        newBookMeta.setPublisher(bookData.getPublisher());
+        newBookMeta.setDescription(bookData.getDescription());
+        newBookMeta.setPages(bookData.getNumberOfPages());
+        newBookMeta.setPublishedDate(parsePublishedDate(bookData.getPublishedDate()));
+
+        // 4. Handle Authors
+        Set<Author> authors = new HashSet<>();
+        if (bookData.getAuthors() != null && bookData.getAuthorKeys() != null) {
+            for (int i = 0; i < bookData.getAuthors().size(); i++) {
+                String name = bookData.getAuthors().get(i);
+                String key = bookData.getAuthorKeys().get(i);
+                authors.add(authorService.getOrCreateAuthor(name, key));
+            }
+        }
+        newBookMeta.setAuthors(authors);
+
+        // =====================================================================
+        // 5. STRICT CATEGORY FILTERING (The Fix)
+        // =====================================================================
+        Set<Category> finalCategories = new HashSet<>();
+
+        if (bookData.getCategories() != null) {
+            for (String rawSubject : bookData.getCategories()) {
+                // CALL THE SMART FILTER:
+                // This checks if 'rawSubject' maps to one of your 6 approved Enum values.
+                // If NO match found, it returns NULL.
+                Category validCategory = categoryService.filterAndGetCategory(rawSubject);
+
+                // EXCLUDE NON-MATCHES:
+                // Only add to the set if it is NOT null.
+                if (validCategory != null) {
+                    finalCategories.add(validCategory);
+                }
+            }
+        }
+        // If the set is empty (no matches found), the book will have NO categories.
+        newBookMeta.setCategories(finalCategories);
+        // =====================================================================
+
+        // 6. Handle Cover Image
+        if (bookData.getCoverUrl() != null && !bookData.getCoverUrl().isEmpty()) {
+            BookImage coverImage = BookImage.builder()
+                    .url(bookData.getCoverUrl())
+                    .bookMeta(newBookMeta)
+                    .isCover(true)
+                    .build();
+            // Initialize list if null (depends on your Entity constructor)
+            if (newBookMeta.getImages() == null) newBookMeta.setImages(new ArrayList<>());
+            newBookMeta.getImages().add(coverImage);
+        }
+
+        BookMeta savedBookMeta = bookMetaRepository.save(newBookMeta);
+        return savedBookMeta.getId().toString();
     }
 
-    public ApiResponse<Map<String, Object>> getBooks(String q, String authorId, String categoryId, int page, int limit) {
+    // --- Helper for messy dates ---
+    private LocalDate parsePublishedDate(String dateStr) {
+        if (dateStr == null) return null;
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+        } catch (Exception e1) {
+            try {
+                return LocalDate.parse(dateStr + "-01-01", DateTimeFormatter.ISO_DATE);
+            } catch (Exception e2) {
+                return null;
+            }
+        }
+    }
+
+    // --- READ OPERATIONS ---
+
+    public ApiResponse<PagedResponse<BookResponse>> getBooks(String q, String authorId, String categoryId, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit);
 
         Specification<BookMeta> spec = (root, query, cb) -> {
@@ -73,22 +152,23 @@ public class BookService {
         };
 
         Page<BookMeta> bookMetaPage = bookMetaRepository.findAll(spec, pageable);
-
         List<BookResponse> bookResponses = bookMetaPage.getContent().stream()
                 .map(this::convertToBookResponse)
                 .collect(Collectors.toList());
 
-        Map<String, Object> pagination = new HashMap<>();
-        pagination.put("page", bookMetaPage.getNumber());
-        pagination.put("limit", bookMetaPage.getSize());
-        pagination.put("total", bookMetaPage.getTotalElements());
-        pagination.put("has_next", bookMetaPage.hasNext());
+        // Use PagedResponse with correct meta structure
+        PagedResponse<BookResponse> pagedResponse = PagedResponse.of(
+                bookResponses,
+                bookMetaPage.getNumber(),
+                bookMetaPage.getSize(),
+                bookMetaPage.getTotalElements(),
+                bookMetaPage.getTotalPages()
+        );
 
-        Map<String, Object> responseData = new HashMap<>();
-        responseData.put("data", bookResponses);
-        responseData.put("pagination", pagination);
-
-        return ApiResponse.<Map<String, Object>>builder().message("ok").result(responseData).build();
+        return ApiResponse.<PagedResponse<BookResponse>>builder()
+                .message("ok")
+                .result(pagedResponse)
+                .build();
     }
 
     public ApiResponse<BookDetailResponse> getBookById(String bookId) {
@@ -97,80 +177,9 @@ public class BookService {
                 .orElse(ApiResponse.<BookDetailResponse>builder().message("ok").result(null).build());
     }
 
-    public String createBookFromOpenLibrary(String isbn) {
-        Optional<BookMeta> existingBookMeta = bookMetaRepository.findByIsbn(isbn);
-        if (existingBookMeta.isPresent()) {
-            return existingBookMeta.get().getId().toString();
-        }
-
-        RichBookData bookData = openLibraryService.fetchRichBookDetailsByIsbn(isbn);
-        if (bookData == null) {
-            throw new AppException(ErrorCode.BOOK_NOT_FOUND_IN_OPEN_LIBRARY);
-        }
-
-        BookMeta newBookMeta = new BookMeta();
-        newBookMeta.setTitle(bookData.getTitle());
-        newBookMeta.setIsbn(isbn);
-        newBookMeta.setPublisher(bookData.getPublisher());
-        newBookMeta.setDescription(bookData.getDescription());
-        newBookMeta.setPages(bookData.getNumberOfPages());
-
-        if (bookData.getPublishedDate() != null) {
-            try {
-                // Handle various date formats from Open Library (e.g., "July 15, 2003", "2003", "2003-07-15")
-                newBookMeta.setPublishedDate(LocalDate.parse(bookData.getPublishedDate(), DateTimeFormatter.ofPattern("MMMM d, yyyy")));
-            } catch (java.time.format.DateTimeParseException e1) {
-                try {
-                    newBookMeta.setPublishedDate(LocalDate.parse(bookData.getPublishedDate() + "-01-01", DateTimeFormatter.ISO_DATE));
-                } catch (java.time.format.DateTimeParseException e2) {
-                    try {
-                        newBookMeta.setPublishedDate(LocalDate.parse(bookData.getPublishedDate(), DateTimeFormatter.ISO_DATE));
-                    } catch (java.time.format.DateTimeParseException e3) {
-                        newBookMeta.setPublishedDate(null); // Fallback
-                    }
-                }
-            }
-        } else {
-            newBookMeta.setPublishedDate(null);
-        }
-
-        Set<Author> authors = new HashSet<>();
-        if (bookData.getAuthors() != null && bookData.getAuthorKeys() != null) {
-            for (int i = 0; i < bookData.getAuthors().size(); i++) {
-                String name = bookData.getAuthors().get(i);
-                String key = bookData.getAuthorKeys().get(i);
-                Author author = authorService.getOrCreateAuthor(name, key);
-                authors.add(author);
-            }
-        }
-        newBookMeta.setAuthors(authors);
-
-        Set<Category> categories = new HashSet<>();
-        if (bookData.getCategories() != null) {
-            for (String categoryName : bookData.getCategories()) {
-                Category category = categoryService.getOrCreateCategory(categoryName);
-                categories.add(category);
-            }
-        }
-        newBookMeta.setCategories(categories);
-
-        // Handle cover image
-        if (bookData.getCoverUrl() != null && !bookData.getCoverUrl().isEmpty()) {
-            BookImage coverImage = BookImage.builder()
-                    .url(bookData.getCoverUrl())
-                    .bookMeta(newBookMeta) // Establish the relationship
-                    .isCover(true) // Mark as cover image
-                    .build();
-            newBookMeta.getImages().add(coverImage);
-        }
-
-        BookMeta savedBookMeta = bookMetaRepository.save(newBookMeta);
-        return savedBookMeta.getId().toString();
-    }
-
     private BookResponse convertToBookResponse(BookMeta bookMeta) {
         BookResponse bookResponse = new BookResponse();
-        bookResponse.setId(bookMeta.getId());
+        bookResponse.setId(String.valueOf(bookMeta.getId()));
         bookResponse.setTitle(bookMeta.getTitle());
         bookResponse.setIsbn(bookMeta.getIsbn());
         bookResponse.setAuthors(bookMeta.getAuthors().stream()
@@ -194,75 +203,37 @@ public class BookService {
                 bookResponse.setCheapest_listing_preview(cheapestListingPreview);
             }
         }
-
         return bookResponse;
     }
 
     private BookDetailResponse convertToBookDetailResponse(BookMeta bookMeta) {
-        BookDetailResponse bookDetailResponse = new BookDetailResponse();
-        bookDetailResponse.setId(bookMeta.getId());
-        bookDetailResponse.setTitle(bookMeta.getTitle());
-        bookDetailResponse.setIsbn(bookMeta.getIsbn());
-        bookDetailResponse.setPublisher(bookMeta.getPublisher());
+        BookDetailResponse response = new BookDetailResponse();
+        response.setId(bookMeta.getId());
+        response.setTitle(bookMeta.getTitle());
+        response.setIsbn(bookMeta.getIsbn());
+        response.setPublisher(bookMeta.getPublisher());
+        response.setPageCount(bookMeta.getPages());
+        response.setLanguage(bookMeta.getLanguage()); // Add language field
+        response.setDescription(bookMeta.getDescription());
+        response.setPublicationDate(bookMeta.getPublishedDate() != null ? java.sql.Date.valueOf(bookMeta.getPublishedDate()) : null);
 
-        if (bookMeta.getPublishedDate() != null) {
-            bookDetailResponse.setPublished_date(java.sql.Date.valueOf(bookMeta.getPublishedDate()));
-        } else {
-            bookDetailResponse.setPublished_date(null);
+        response.setAuthors(bookMeta.getAuthors() != null ?
+                bookMeta.getAuthors().stream().map(a -> new AuthorResponse(a.getId(), a.getName())).toList() :
+                Collections.emptyList());
+
+        response.setCategories(bookMeta.getCategories() != null ?
+                bookMeta.getCategories().stream().map(c -> new CategoryResponse(c.getId(), c.getName())).toList() :
+                Collections.emptyList());
+
+        if (bookMeta.getImages() != null && !bookMeta.getImages().isEmpty()) {
+            response.setCoverImageUrl(bookMeta.getImages().get(0).getUrl());
         }
-
-        bookDetailResponse.setPages(bookMeta.getPages());
-        bookDetailResponse.setDescription(bookMeta.getDescription());
-
-        if (bookMeta.getAuthors() != null) {
-            bookDetailResponse.setAuthors(
-                    bookMeta.getAuthors().stream()
-                            .map(author -> new AuthorResponse(author.getId(), author.getName()))
-                            .collect(Collectors.toList())
-            );
-        } else {
-            bookDetailResponse.setAuthors(Collections.emptyList());
-        }
-
-        if (bookMeta.getCategories() != null) {
-            bookDetailResponse.setCategories(
-                    bookMeta.getCategories().stream()
-                            .map(category -> new CategoryResponse(category.getId(), category.getName()))
-                            .collect(Collectors.toList())
-            );
-        } else {
-            bookDetailResponse.setCategories(Collections.emptyList());
-        }
-
-        if (bookMeta.getImages() != null) {
-            bookDetailResponse.setImages(
-                    bookMeta.getImages().stream()
-                            .map(image -> {
-                                Map<String, String> imageMap = new HashMap<>();
-                                imageMap.put("id", image.getId() != null ? image.getId().toString() : null);
-                                imageMap.put("url", image.getUrl());
-                                return imageMap;
-                            })
-                            .collect(Collectors.toList())
-            );
-        } else {
-            bookDetailResponse.setImages(Collections.emptyList());
-        }
-
-        List<Listing> listings = listingRepository.findByBookMetaAndStatusAndVisibility(bookMeta, ListingStatus.ACTIVE, true);
-        if (listings != null && !listings.isEmpty()) {
-            Listing cheapestListing = listings.stream()
-                    .min(Comparator.comparing(Listing::getPrice))
-                    .orElse(null);
-            if (cheapestListing != null) {
-                Map<String, Object> cheapestListingPreview = new HashMap<>();
-                cheapestListingPreview.put("listing_id", cheapestListing.getId() != null ? cheapestListing.getId().toString() : null);
-                cheapestListingPreview.put("price", cheapestListing.getPrice() != null ? cheapestListing.getPrice().toString() : null);
-                cheapestListingPreview.put("currency", cheapestListing.getCurrency());
-                bookDetailResponse.setCheapest_listing_preview(cheapestListingPreview);
-            }
-        }
-
-        return bookDetailResponse;
+        
+        // TODO: Calculate and set averageRating and totalReviews from Review entity
+        // This requires ReviewRepository injection and calculation
+        response.setAverageRating(0.0);
+        response.setTotalReviews(0);
+        
+        return response;
     }
 }

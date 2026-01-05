@@ -20,6 +20,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.Set;
@@ -140,20 +141,25 @@ public class SignupRequestService {
             throw new IllegalStateException("User already exists with this email");
         }
 
-        Role buyerRole = roleRepository.findByName(RoleName.BUYER)
-                .orElseThrow(() -> new RuntimeException("BUYER role not found"));
+        Role userRole = roleRepository.findByName(RoleName.USER)
+                .orElseThrow(() -> new RuntimeException("USER role not found"));
 
         User user = new User();
         user.setEmail(req.getEmail());
         user.setUsername(req.getUsername());
         user.setPasswordHash(req.getPasswordHash());
-        user.setRole(buyerRole);  // gán role đã được lưu trong DB
+        
+        // Set roles as Set<Role>
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+        user.setRoles(roles);
+        
         user.setEnabled(true);
 
         userRepository.save(user);
 
 
-        // ✅ Tạo user profile
+        // Create user profile
         UserProfile profile = new UserProfile();
         profile.setUser(user);
         profile.setAccountType("BUYER");

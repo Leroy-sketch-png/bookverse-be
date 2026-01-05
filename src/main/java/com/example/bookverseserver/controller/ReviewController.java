@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/review")
 @Tag(name = "Review", description = "Review & Rating APIs - Users can review books and vote helpful")
 public class ReviewController {
 

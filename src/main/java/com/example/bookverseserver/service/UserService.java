@@ -1,8 +1,10 @@
 package com.example.bookverseserver.service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
@@ -47,10 +49,12 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        // ✅ Chỉ 1 role duy nhất
-        Role userRole = roleRepository.findByName(RoleName.BUYER)
+        // Set default role USER
+        Role userRole = roleRepository.findByName(RoleName.USER)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRole(userRole);
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+        user.setRoles(roles);
 
         user.setEnabled(true);
 
@@ -83,12 +87,16 @@ public class UserService {
         userMapper.updateUser(user, request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        // ✅ Gán 1 role duy nhất
+        // Update roles - support multiple roles
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            RoleName roleName = RoleName.valueOf(request.getRoles().get(0)); // lấy role đầu tiên
-            Role role = roleRepository.findByName(roleName)
-                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-            user.setRole(role);
+            Set<Role> roles = new HashSet<>();
+            for (String roleStr : request.getRoles()) {
+                RoleName roleName = RoleName.valueOf(roleStr);
+                Role role = roleRepository.findByName(roleName)
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+                roles.add(role);
+            }
+            user.setRoles(roles);
         }
 
         return userMapper.toUserResponse(userRepository.save(user));
@@ -142,10 +150,12 @@ public class UserService {
                     newUser.setAuthProvider("GOOGLE");
                     newUser.setEnabled(true);
 
-                    // ✅ Role mặc định
-                    Role casualRole = roleRepository.findByName(RoleName.CASUAL)
+                    // Set default role USER for Google OAuth
+                    Role userRole = roleRepository.findByName(RoleName.USER)
                             .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-                    newUser.setRole(casualRole);
+                    Set<Role> roles = new HashSet<>();
+                    roles.add(userRole);
+                    newUser.setRoles(roles);
                     return newUser;
                 });
 

@@ -24,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -105,11 +107,15 @@ public class UserProfileService {
 
         User user = profile.getUser();
 
-        Role casualRole = roleRepository.findByName(RoleName.CASUAL)
+        Role sellerRole = roleRepository.findByName(RoleName.USER)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-        user.setRole(casualRole);
-        profile.setAccountType("CASUAL");
+        // Add SELLER role to existing roles
+        Set<Role> roles = new HashSet<>(user.getRoles());
+        roles.add(sellerRole);
+        user.setRoles(roles);
+        
+        profile.setAccountType("SELLER");
 
         userRepository.save(user);
         userProfileRepository.save(profile);

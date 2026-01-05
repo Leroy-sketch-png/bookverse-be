@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +54,7 @@ public class NimbusJwtService {
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("scope", buildScope(user))
+                .claim("roles", buildRolesArray(user)) // Add roles array for FE
                 .build();
 
         JWSObject jwsObject = new JWSObject(header, new Payload(jwtClaimsSet.toJSONObject()));
@@ -98,7 +100,16 @@ public class NimbusJwtService {
     }
 
     private String buildScope(User user) {
-        if (user.getRole() == null) return "";
-        return "ROLE_" + user.getRole().getName();
+        if (user.getRoles() == null || user.getRoles().isEmpty()) return "";
+        return user.getRoles().stream()
+                .map(role -> "ROLE_" + role.getName())
+                .collect(Collectors.joining(" "));
+    }
+
+    private java.util.List<String> buildRolesArray(User user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) return java.util.Collections.emptyList();
+        return user.getRoles().stream()
+                .map(role -> role.getName().toString())
+                .collect(Collectors.toList());
     }
 }
