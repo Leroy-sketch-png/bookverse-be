@@ -15,11 +15,14 @@ import java.util.Optional;
 @Repository
 public interface BookMetaRepository extends JpaRepository<BookMeta, String>, JpaSpecificationExecutor<BookMeta> {
 
-    @EntityGraph(attributePaths = {"authors", "categories", "images"})
+    // Custom exists check with Long id (more efficient than findById)
+    boolean existsById(Long id);
+
+    @EntityGraph(attributePaths = { "authors", "categories", "images" })
     Optional<BookMeta> findById(Long id);
 
     @Override
-    @EntityGraph(attributePaths = {"authors", "categories", "images"})
+    @EntityGraph(attributePaths = { "authors", "categories", "images" })
     Page<BookMeta> findAll(Specification<BookMeta> spec, Pageable pageable);
 
     // Find by category id (ManyToMany relation -> categories)

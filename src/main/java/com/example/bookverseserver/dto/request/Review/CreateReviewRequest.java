@@ -10,16 +10,12 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateReviewRequest {
-    
-    @NotNull(message = "Book ID is required")
-    Long bookId;
-    
+
     @NotNull(message = "Rating is required")
     @Min(value = 1, message = "Rating must be between 1 and 5")
     @Max(value = 5, message = "Rating must be between 1 and 5")
     Integer rating;
-    
-    @NotBlank(message = "Comment is required")
-    @Size(min = 10, max = 1000, message = "Comment must be between 10 and 1000 characters")
+
+    @Size(max = 2000, message = "Comment must not exceed 2000 characters")
     String comment;
 }

@@ -13,4 +13,16 @@ import java.util.List;
 public class ReviewsListResponse {
     List<ReviewResponse> reviews;
     ReviewStatsResponse stats;
+    PaginationMeta meta;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PaginationMeta {
+        Integer page;
+        Integer totalPages;
+        Long totalItems;
+        Integer itemsPerPage;
+    }
 }

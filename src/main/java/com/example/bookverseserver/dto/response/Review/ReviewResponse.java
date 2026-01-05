@@ -22,4 +22,6 @@ public class ReviewResponse {
     LocalDateTime updatedAt;
     Integer helpfulCount;
     Boolean verified; // verified purchase
+    Boolean isCurrentUserReview;
+    Boolean userHasVotedHelpful;
 }

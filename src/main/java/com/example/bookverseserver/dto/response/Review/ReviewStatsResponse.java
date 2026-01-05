@@ -11,6 +11,7 @@ import java.util.Map;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReviewStatsResponse {
+    Long bookId;
     Double averageRating;
     Integer totalReviews;
     Map<Integer, Integer> ratingDistribution; // 1->count, 2->count, 3->count, 4->count, 5->count
