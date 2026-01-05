@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.example.bookverseserver.dto.request.Authentication.ChangePasswordRequest;
 import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -100,6 +101,25 @@ public class UserService {
         }
 
         return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    public void changePassword(ChangePasswordRequest request, Authentication authentication) {
+        // 1. Lấy username/email từ SecurityContext (Token)
+        Long userId = securityUtils.getCurrentUserId(authentication);
+
+        // 2. Tìm User trong DB
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. KIỂM TRA MẬT KHẨU CŨ (Rất quan trọng)
+        // Nếu mật khẩu cũ nhập vào KHÔNG khớp với Hash trong DB -> Báo lỗi
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new AppException(ErrorCode.INVALID_PASSWORD); // "Mật khẩu cũ không đúng"
+        }
+
+        // 4. Mã hóa mật khẩu MỚI và lưu
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
