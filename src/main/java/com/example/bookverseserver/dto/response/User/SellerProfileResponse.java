@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SellerProfileResponse {
-    Long id;
+    String id; // Changed to String to match frontend expectations
     String username;
     String displayName;
     String avatarUrl;

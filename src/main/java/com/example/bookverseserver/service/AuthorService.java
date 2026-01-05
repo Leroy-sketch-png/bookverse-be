@@ -164,34 +164,59 @@ public class AuthorService {
     }
 
     public Author getOrCreateAuthor(String name, String openLibraryKey) {
-        // Try to find by OpenLibrary ID first
-        if (openLibraryKey != null && !openLibraryKey.isEmpty()) {
-            String olKey = openLibraryKey.replace("/authors/", "");
+        String olKey = (openLibraryKey != null && !openLibraryKey.isEmpty())
+                ? openLibraryKey.replace("/authors/", "")
+                : null;
+
+        // 1. Try to find by OpenLibrary ID first
+        if (olKey != null) {
             Optional<Author> existingAuthor = authorRepository.findByOpenLibraryId(olKey);
             if (existingAuthor.isPresent()) {
                 return existingAuthor.get();
             }
         }
 
-        // If not found by OpenLibrary ID, try to find by name
+        // 2. If not found by ID, try to find by Name
         if (name != null && !name.isEmpty()) {
             Optional<Author> existingAuthor = authorRepository.findByName(name);
             if (existingAuthor.isPresent()) {
-                // If found by name, update the OpenLibrary ID if it's missing
                 Author author = existingAuthor.get();
-                if (author.getOpenLibraryId() == null && openLibraryKey != null && !openLibraryKey.isEmpty()) {
-                    author.setOpenLibraryId(openLibraryKey.replace("/authors/", ""));
+                // Link OLID if we have it but DB doesn't
+                if (author.getOpenLibraryId() == null && olKey != null) {
+                    author.setOpenLibraryId(olKey);
                     return authorRepository.save(author);
                 }
                 return author;
             }
         }
 
-        // If author does not exist, create a new one
-        Author newAuthor = Author.builder()
+        // 3. CREATE NEW: Fetch Full Details from OpenLibrary
+        // This is the FIX for the null fields
+        if (olKey != null) {
+            try {
+                // Call the API to get Bio, Dates, Photos, etc.
+                OpenLibraryDetailAuthorResponse dto = openLibraryService.getAuthorByOLID(olKey);
+
+                // Map the rich DTO to your Entity
+                Author fullAuthor = OpenLibraryMapper.toEntityDetail(dto);
+
+                // Ensure name is consistent (OpenLib might return a slightly different name variant)
+                if (fullAuthor.getName() == null || fullAuthor.getName().isEmpty()) {
+                    fullAuthor.setName(name);
+                }
+
+                return authorRepository.save(fullAuthor);
+            } catch (Exception e) {
+                // If API fails (e.g. timeout), log it and fall back to skeleton creation below
+                System.err.println("Failed to enrich author details for " + name + ": " + e.getMessage());
+            }
+        }
+
+        // 4. Fallback: Create skeletal author (only if API failed or no Key provided)
+        Author skeletalAuthor = Author.builder()
                 .name(name)
-                .openLibraryId(openLibraryKey != null ? openLibraryKey.replace("/authors/", "") : null)
+                .openLibraryId(olKey)
                 .build();
-        return authorRepository.save(newAuthor);
+        return authorRepository.save(skeletalAuthor);
     }
 }

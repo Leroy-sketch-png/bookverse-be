@@ -4,7 +4,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -12,8 +11,8 @@ import java.util.UUID;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItemDTO {
-  UUID id;
-  Long bookId;
+  String id;
+  String bookId;
   String title;
   String author;
   String coverImage;
@@ -27,7 +26,7 @@ public class OrderItemDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class SellerInfo {
-    Long id;
+    String id;
     String name;
     String slug;
   }

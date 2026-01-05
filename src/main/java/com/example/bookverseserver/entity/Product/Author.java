@@ -36,6 +36,35 @@ public class Author {
     @Column(length = 500)
     String personalName;
 
+    @Column(length = 1000) // URL length may exceed 255
+    String avatar;
+
+    @Column(columnDefinition = "TEXT") // biography can be very long
+    String bio;
+    
+    @Column(length = 255)
+    String position; // Role/Genre the author writes
+    
+    @Column(name = "books_count")
+    @Builder.Default
+    Integer booksCount = 0;
+    
+    @Column(name = "main_genre", length = 100)
+    String mainGenre;
+    
+    @Column(columnDefinition = "TEXT")
+    List<String> awards; // JSON array or comma-separated
+    
+    @Column(length = 255)
+    String nationality;
+    
+    @Column(name = "date_of_birth")
+    String dob; // ISO string format
+
+    @Column(length = 500)
+    String website;
+
+    // Legacy fields - keep for backward compatibility
     String birthDate;
     String deathDate;
 
@@ -43,15 +72,6 @@ public class Author {
     String topWork;
 
     Integer workCount;
-
-    @Column(columnDefinition = "TEXT") // biography can be very long
-    String biography;
-
-    @Column(length = 1000) // URL length may exceed 255
-    String avatarUrl;
-
-    @Column(length = 255)
-    String nationality;
 
     @ManyToMany(mappedBy = "authors")
     @JsonBackReference

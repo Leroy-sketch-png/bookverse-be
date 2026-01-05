@@ -12,7 +12,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PagedResponse<T> {
     List<T> data;
-    PaginationMeta pagination;
+    PaginationMeta meta;
     
     @Data
     @NoArgsConstructor
@@ -20,26 +20,24 @@ public class PagedResponse<T> {
     @Builder
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class PaginationMeta {
-        Integer total;
         Integer page;
-        Integer limit;
-        Boolean hasNext;
         Integer totalPages;
+        Long totalItems;
+        Integer itemsPerPage;
     }
     
     // Helper method to create from Spring's Page
     public static <T> PagedResponse<T> of(List<T> content, int page, int size, long totalElements, int totalPages) {
         PaginationMeta meta = PaginationMeta.builder()
-                .total((int) totalElements)
                 .page(page)
-                .limit(size)
-                .hasNext(page < totalPages - 1)
                 .totalPages(totalPages)
+                .totalItems(totalElements)
+                .itemsPerPage(size)
                 .build();
                 
         return PagedResponse.<T>builder()
                 .data(content)
-                .pagination(meta)
+                .meta(meta)
                 .build();
     }
 }

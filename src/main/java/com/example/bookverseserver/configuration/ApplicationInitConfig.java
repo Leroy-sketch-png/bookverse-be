@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @Configuration
 @RequiredArgsConstructor
@@ -48,11 +50,14 @@ public class ApplicationInitConfig {
                 Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                         .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
 
+                Set<Role> roles = new HashSet<>();
+                roles.add(adminRole);
+
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .email("admin@bookverse.com")
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
-                        .role(adminRole) // chỉ 1 role duy nhất
+                        .roles(roles)
                         .enabled(true)
                         .build();
 

@@ -20,17 +20,26 @@ public class ShippingAddressResponse {
 
     String fullName;
 
-    String phoneNumber;
+    String phone; // Match frontend naming (not phoneNumber)
 
-    String addressLine1;
-
-    String addressLine2;
+    // Frontend expects: street, city, state, zipCode
+    String street; // Maps from addressLine1 + addressLine2
+    
+    String ward; // Additional Vietnamese address field
+    
+    String district; // Additional Vietnamese address field (can map to state)
 
     String city;
+    
+    String state; // Can be mapped from district for frontend compatibility
 
-    String postalCode;
-
+    String zipCode; // Match frontend naming (not postalCode)
+    
+    String postalCode; // Keep for backward compatibility
+    
     String country;
+    
+    String note; // Additional field from entity
 
     Boolean isDefault;
 

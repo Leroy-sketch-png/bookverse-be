@@ -13,7 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookResponse {
-    private Long id;
+    private String id;
     private String title;
     private String isbn;
     private List<AuthorResponse> authors;

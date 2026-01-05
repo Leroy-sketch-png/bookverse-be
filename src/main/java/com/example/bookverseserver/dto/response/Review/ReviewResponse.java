@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReviewResponse {
-    Long id;
-    Long bookId;
+    String id; // Changed to String to match frontend expectations
+    String bookId; // Changed to String to match frontend expectations
     Long userId;
     String userName;
     String userAvatar;
@@ -20,7 +20,7 @@ public class ReviewResponse {
     String comment;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
-    Integer helpfulCount;
+    Integer helpful; // Match frontend naming (not helpfulCount)
     Boolean verified; // verified purchase
     Boolean isCurrentUserReview;
     Boolean userHasVotedHelpful;

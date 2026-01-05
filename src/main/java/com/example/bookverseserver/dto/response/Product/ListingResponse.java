@@ -19,10 +19,10 @@ public class ListingResponse {
 
     Long id;
 
-    Long bookMetaId;
+    String bookMetaId;
     String bookTitle;
 
-    Long sellerId;
+    String sellerId;
     String sellerName;
 
     String titleOverride;
