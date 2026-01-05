@@ -3,7 +3,7 @@ package com.example.bookverseserver.configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod; // Nhớ import cái này
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,7 +13,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -24,8 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.List; // Dùng List.of cho gọn
 
 @Configuration
 @EnableWebSecurity
@@ -42,7 +40,7 @@ public class SecurityConfig {
             "/api/books/**",
             "/api/vouchers/{code}",
             "/api/v1/transactions/**",
-            "/error"  // Added error endpoint
+            "/error"
     };
 
     @Autowired
@@ -53,18 +51,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.cors(Customizer.withDefaults());
+        httpSecurity.cors(Customizer.withDefaults()); // Kích hoạt CORS config ở dưới
+
         httpSecurity.authorizeHttpRequests(request ->
-                        request
-                                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                                .requestMatchers("/api/me").authenticated()
-                                .anyRequest().authenticated()
-                );
+                request
+                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+
+                        // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        .requestMatchers("/api/me").authenticated()
+                        .anyRequest().authenticated()
+        );
 
         httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                         .decoder(customJwtDecoder)
                         .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 .authenticationEntryPoint(customAuthenticationFailureHandler));
+
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
@@ -73,9 +77,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.Arrays.asList("*"));
-        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+
+        // 👇 1. Nên set cụ thể domain Frontend thay vì "*" để tránh lỗi credential
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
+
+        // 👇 2. QUAN TRỌNG: Đã thêm "PATCH" vào danh sách
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        // 👇 3. Cho phép các header cần thiết (Authorization, Content-Type)
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-no-retry"));
+
+        // 👇 4. Cho phép gửi kèm credentials (nếu sau này cần cookie)
+        configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -85,47 +99,28 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            // Giữ nguyên logic log của bạn, nó rất tốt để debug
             log.info("========== JWT DEBUG ==========");
-            log.info("JWT Claims: {}", jwt.getClaims());
-
             Object scopeClaim = jwt.getClaim("scope");
-            log.info("Scope claim value: {}", scopeClaim);
-            log.info("Scope claim type: {}", scopeClaim != null ? scopeClaim.getClass().getName() : "null");
-
             Collection<GrantedAuthority> authorities = new ArrayList<>();
 
-            if (scopeClaim == null) {
-                log.warn("No scope claim found!");
-            } else if (scopeClaim instanceof String) {
+            if (scopeClaim instanceof String) {
                 String scope = (String) scopeClaim;
-                log.info("Processing scope as String: '{}'", scope);
-
-                // Handle space-separated roles
                 String[] roles = scope.split(" ");
                 for (String role : roles) {
                     if (!role.trim().isEmpty()) {
+                        // Đảm bảo role có prefix ROLE_ nếu cần, hoặc giữ nguyên tùy logic
                         authorities.add(new SimpleGrantedAuthority(role.trim()));
-                        log.info("Added authority: {}", role.trim());
                     }
                 }
             } else if (scopeClaim instanceof Collection) {
-                log.info("Processing scope as Collection");
                 Collection<?> scopes = (Collection<?>) scopeClaim;
                 for (Object scope : scopes) {
-                    String role = scope.toString();
-                    authorities.add(new SimpleGrantedAuthority(role));
-                    log.info("Added authority: {}", role);
+                    authorities.add(new SimpleGrantedAuthority(scope.toString()));
                 }
-            } else {
-                log.error("Unknown scope type: {}", scopeClaim.getClass());
             }
-
-            log.info("Final authorities: {}", authorities);
-            log.info("===============================");
-
             return authorities;
         });
-
         return converter;
     }
 
