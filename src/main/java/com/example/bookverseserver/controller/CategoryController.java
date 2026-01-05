@@ -8,6 +8,10 @@ import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.service.CategoryService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -17,6 +21,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,8 +30,8 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 @Tag(
-        name = "Category",
-        description = "APIs for managing book categories"
+        name = "Categories",
+        description = "📚 Book category management APIs - Browse categories, manage category hierarchy"
 )
 public class CategoryController {
 
@@ -35,12 +40,43 @@ public class CategoryController {
     // ================= CREATE =================
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
-            summary = "Create category",
-            description = "Create a new book category with name, description and tags"
+            summary = "Create category (Admin only)",
+            description = "Create a new book category with name, description, slug, and tags. " +
+                         "**Supports hierarchical categories** (parent-child relationships). " +
+                         "**Requires ADMIN role**. " +
+                         "**Examples**: Fiction, Technology > Programming, Science > Physics"
     )
-    @SecurityRequirement(name = "bearer-key") // nếu chỉ admin dùng
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201", 
+            description = "Category created successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Invalid category data or slug already exists"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403", 
+            description = "Forbidden - Admin access required"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409", 
+            description = "Category with this name/slug already exists"
+        )
+    })
     public ApiResponse<CategoryResponse> createCategory(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Category details (name, description, parent category ID, tags)",
+                required = true,
+                content = @Content(schema = @Schema(implementation = CategoryRequest.class))
+            )
             @RequestBody CategoryRequest categoryRequest
     ) {
         return ApiResponse.<CategoryResponse>builder()
@@ -53,13 +89,44 @@ public class CategoryController {
     // ================= UPDATE =================
 
     @PutMapping("/{categoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
-            summary = "Update category",
-            description = "Update category information by category ID"
+            summary = "Update category (Admin only)",
+            description = "Update existing category information. **Requires ADMIN role**. " +
+                         "Can update name, description, parent category, tags, and slug."
     )
-    @SecurityRequirement(name = "bearer-key")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Category updated successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Invalid update data"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403", 
+            description = "Forbidden - Admin access required"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Category not found"
+        )
+    })
     public ApiResponse<CategoryResponse> updateCategory(
+            @Parameter(description = "Category ID to update", example = "1", required = true)
             @PathVariable Long categoryId,
+            
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Updated category details",
+                required = true,
+                content = @Content(schema = @Schema(implementation = CategoryRequest.class))
+            )
             @RequestBody CategoryRequest categoryRequest
     ) {
         return ApiResponse.<CategoryResponse>builder()
@@ -72,12 +139,38 @@ public class CategoryController {
     // ================= DELETE =================
 
     @DeleteMapping("/{categoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
-            summary = "Delete category",
-            description = "Delete a category by ID"
+            summary = "Delete category (Admin only)",
+            description = "Delete a category by ID. **Requires ADMIN role**. " +
+                         "**Warning**: May affect books in this category. " +
+                         "Consider moving books to another category first."
     )
-    @SecurityRequirement(name = "bearer-key")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Category deleted successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403", 
+            description = "Forbidden - Admin access required"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Category not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409", 
+            description = "Cannot delete - category has books or subcategories"
+        )
+    })
     public ApiResponse<CategoryResponse> deleteCategory(
+            @Parameter(description = "Category ID to delete", example = "1", required = true)
             @PathVariable Long categoryId
     ) {
         return ApiResponse.<CategoryResponse>builder()
@@ -92,8 +185,19 @@ public class CategoryController {
     @GetMapping
     @Operation(
             summary = "Get all categories",
-            description = "Retrieve all available book categories"
+            description = "Retrieve hierarchical list of all book categories. " +
+                         "**Includes**: " +
+                         "- Main categories and subcategories " +
+                         "- Book count per category " +
+                         "- Category slugs for SEO-friendly URLs " +
+                         "**Use for**: Navigation menus, category filters, breadcrumbs"
     )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Categories retrieved successfully"
+        )
+    })
     public ApiResponse<List<CategoryResponse>> getAllCategories() {
         return ApiResponse.<List<CategoryResponse>>builder()
                 .code(HttpStatus.OK.value())

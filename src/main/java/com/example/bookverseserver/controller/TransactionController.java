@@ -9,6 +9,11 @@ import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationR
 import com.example.bookverseserver.service.TransactionService;
 import com.example.bookverseserver.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,17 +29,53 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/transactions")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Transaction", description = "Transaction management APIs")
+@Tag(name = "Transactions", description = "💳 Payment transaction management APIs - Stripe payment intents, verification, history")
 public class TransactionController {
 
     SecurityUtils securityUtils;
     TransactionService transactionService;
 
-    @Operation(summary = "Create Payment Intent", description = "Initialize a Stripe payment intent")
+    @Operation(
+        summary = "Create Stripe Payment Intent",
+        description = "Initialize a Stripe payment intent for checkout. " +
+                     "**Idempotency**: Use Idempotency-Key header to prevent duplicate charges. " +
+                     "Returns client_secret for frontend Stripe.js integration. " +
+                     "**Payment flow**: " +
+                     "1. Create intent (this endpoint) " +
+                     "2. Frontend confirms payment with Stripe " +
+                     "3. Verify payment with /verify endpoint"
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Payment intent created successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Invalid amount or currency"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500", 
+            description = "Stripe API error"
+        )
+    })
     @PostMapping("/intent")
     public ApiResponse<PaymentIntentResponse> createPaymentIntent(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Payment details (amount, currency, order ID)",
+                required = true,
+                content = @Content(schema = @Schema(implementation = CreatePaymentIntentRequest.class))
+            )
             @RequestBody CreatePaymentIntentRequest request,
+            
+            @Parameter(description = "Idempotency key to prevent duplicate charges")
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            
             Authentication authentication
     ) {
         try {
@@ -61,9 +102,38 @@ public class TransactionController {
         }
     }
 
-    @Operation(summary = "Verify Payment", description = "Verify payment status with Stripe")
+    @Operation(
+        summary = "Verify payment status",
+        description = "Verify and confirm payment success with Stripe. " +
+                     "**Call this after** user completes payment on frontend. " +
+                     "Checks payment_intent status and updates order accordingly. " +
+                     "**Statuses**: succeeded, processing, requires_payment_method, failed"
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Payment verified successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Payment failed or invalid payment_intent_id"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Payment intent not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500", 
+            description = "Stripe verification error"
+        )
+    })
     @PostMapping("/verify")
     public ApiResponse<PaymentVerificationResponse> verifyPayment(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Payment intent ID from Stripe",
+                required = true,
+                content = @Content(schema = @Schema(implementation = VerifyPaymentRequest.class))
+            )
             @RequestBody VerifyPaymentRequest request
     ) {
         try {
@@ -84,11 +154,31 @@ public class TransactionController {
         }
     }
 
-    @Operation(summary = "Get Payment History")
+    @Operation(
+        summary = "Get payment history",
+        description = "Retrieve paginated payment transaction history for current user. " +
+                     "Includes all payment attempts, successful and failed transactions. " +
+                     "Shows payment method, amount, status, and timestamps."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Payment history retrieved successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401", 
+            description = "Unauthorized"
+        )
+    })
     @GetMapping("/history")
     public ApiResponse<Page<PaymentAuditResponse>> getPaymentHistory(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Items per page", example = "10")
             @RequestParam(defaultValue = "10") int limit,
+            
             Authentication authentication
     ) {
         try {
