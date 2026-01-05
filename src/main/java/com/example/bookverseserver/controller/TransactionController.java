@@ -22,7 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/transactions")
+@RequestMapping("/api/transactions")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Transaction", description = "Transaction management APIs")
 public class TransactionController {
