@@ -1,6 +1,7 @@
 package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Authentication.ChangePasswordRequest;
+import com.example.bookverseserver.dto.request.Authentication.UserStatusRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
@@ -62,6 +63,17 @@ public class UserController {
         userService.changePassword(request, authentication);
         return ApiResponse.<Void>builder()
                 .message("Password changed successfully")
+                .build();
+    }
+
+    @PatchMapping("/{userId}/enable")
+    public ApiResponse<Void> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestBody UserStatusRequest request
+    ) {
+        userService.updateUserStatus(userId, request);
+        return ApiResponse.<Void>builder()
+                .message("User status updated successfully")
                 .build();
     }
 }
