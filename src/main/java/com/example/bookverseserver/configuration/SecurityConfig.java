@@ -78,16 +78,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 👇 1. Nên set cụ thể domain Frontend thay vì "*" để tránh lỗi credential
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
 
-        // 👇 2. QUAN TRỌNG: Đã thêm "PATCH" vào danh sách
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-        // 👇 3. Cho phép các header cần thiết (Authorization, Content-Type)
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-no-retry"));
 
-        // 👇 4. Cho phép gửi kèm credentials (nếu sau này cần cookie)
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
