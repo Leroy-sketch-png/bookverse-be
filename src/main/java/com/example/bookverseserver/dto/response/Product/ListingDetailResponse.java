@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.response.Product;
 
+import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
@@ -23,6 +24,9 @@ public class ListingDetailResponse {
 
     // Book information
     BookSummaryDto book;
+
+    // Category information
+    CategoryResponse category;
 
     // Seller information
     SellerSummaryDto seller;

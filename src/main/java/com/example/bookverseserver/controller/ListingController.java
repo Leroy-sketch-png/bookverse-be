@@ -43,6 +43,7 @@ public class ListingController {
          * Query Parameters:
          * - sellerId: filter by seller
          * - bookId: filter by book
+         * - categoryId: filter by category
          * - status: filter by status (ACTIVE, SOLD_OUT, DRAFT, etc.)
          * - sortBy: createdAt, price, viewCount, soldCount
          * - sortOrder: asc, desc
@@ -53,13 +54,34 @@ public class ListingController {
         public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getListings(
                         @RequestParam(required = false) Long sellerId,
                         @RequestParam(required = false) Long bookId,
+                        @RequestParam(required = false) Long categoryId,
                         @RequestParam(required = false) ListingStatus status,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                sellerId, bookId, status, sortBy, sortOrder, page, size);
+                                sellerId, bookId, categoryId, status, sortBy, sortOrder, page, size);
+
+                return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
+                                .result(result)
+                                .build());
+        }
+
+        /**
+         * Get listings by category slug.
+         * Endpoint: GET /api/listings/category/{categorySlug}
+         * Example: GET /api/listings/category/technology?page=0&size=20
+         */
+        @GetMapping("/category/{categorySlug}")
+        public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getListingsByCategory(
+                        @PathVariable String categorySlug,
+                        @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+                        @RequestParam(required = false, defaultValue = "desc") String sortOrder,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+                PagedResponse<ListingResponse> result = listingService.getListingsByCategory(
+                                categorySlug, sortBy, sortOrder, page, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

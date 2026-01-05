@@ -20,6 +20,9 @@ public abstract class ListingMapper {
     @Autowired
     protected AuthorMapper authorMapper;
 
+    @Autowired
+    protected CategoryMapper categoryMapper;
+
     @Mapping(source = "condition", target = "condition")
     @Mapping(target = "likes", ignore = true)
     @Mapping(target = "views", ignore = true)
@@ -47,6 +50,7 @@ public abstract class ListingMapper {
                     : List.of())
                 .bookCoverImage(bookMeta != null ? bookMeta.getCoverImageUrl() : null)
                 .isbn(bookMeta != null ? bookMeta.getIsbn() : null)
+                .category(listing.getCategory() != null ? categoryMapper.toCategoryResponse(listing.getCategory()) : null)
                 .sellerId(listing.getSeller() != null ? listing.getSeller().getId() : null)
                 .sellerName(listing.getSeller() != null ? listing.getSeller().getUsername() : null)
                 .titleOverride(listing.getTitleOverride())
@@ -106,6 +110,7 @@ public abstract class ListingMapper {
         return ListingDetailResponse.builder()
                 .id(listing.getId()) // Sử dụng Long trực tiếp
                 .book(toBookSummary(listing.getBookMeta()))
+                .category(listing.getCategory() != null ? categoryMapper.toCategoryResponse(listing.getCategory()) : null)
                 .seller(toSellerSummary(listing.getSeller()))
                 .condition(listing.getCondition())
                 .price(listing.getPrice())

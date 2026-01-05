@@ -34,6 +34,10 @@ public class Listing {
     @JoinColumn(name = "seller_id", nullable = false)
     User seller;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    Category category;
+
     @Column(name = "title_override")
     String titleOverride;
 

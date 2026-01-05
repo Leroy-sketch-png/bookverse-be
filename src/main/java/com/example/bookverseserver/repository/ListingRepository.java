@@ -78,4 +78,35 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Count listings by seller and status.
      */
     long countBySellerIdAndStatus(Long sellerId, ListingStatus status);
+
+    /**
+     * Find all listings by category with pagination.
+     * Only return active, visible listings.
+     */
+    @Query("""
+            SELECT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH l.category c
+            WHERE l.category.id = :categoryId
+            AND l.status = 'ACTIVE'
+            AND l.visibility = true
+            AND l.deletedAt IS NULL
+        """)
+    Page<Listing> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
+
+    /**
+     * Find all listings by category slug with pagination.
+     */
+    @Query("""
+            SELECT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH l.category c
+            WHERE l.category.slug = :categorySlug
+            AND l.status = 'ACTIVE'
+            AND l.visibility = true
+            AND l.deletedAt IS NULL
+        """)
+    Page<Listing> findByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 }

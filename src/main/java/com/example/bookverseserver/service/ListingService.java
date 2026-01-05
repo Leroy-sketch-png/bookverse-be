@@ -57,6 +57,7 @@ public class ListingService {
      * 
      * @param sellerId  filter by seller
      * @param bookId    filter by book
+     * @param categoryId filter by category ID
      * @param status    filter by status
      * @param sortBy    field to sort by (createdAt, price, views)
      * @param sortOrder asc or desc
@@ -68,6 +69,7 @@ public class ListingService {
     public PagedResponse<ListingResponse> getListingsFiltered(
             Long sellerId,
             Long bookId,
+            Long categoryId,
             ListingStatus status,
             String sortBy,
             String sortOrder,
@@ -81,6 +83,9 @@ public class ListingService {
         }
         if (bookId != null) {
             spec = spec.and(ListingSpecification.hasBook(bookId));
+        }
+        if (categoryId != null) {
+            spec = spec.and(ListingSpecification.hasCategory(categoryId));
         }
         if (status != null) {
             spec = spec.and(ListingSpecification.hasStatus(status));
@@ -97,6 +102,34 @@ public class ListingService {
         Page<Listing> listingPage = listingRepository.findAll(spec, pageable);
 
         // Map to DTOs
+        List<ListingResponse> responses = listingPage.getContent().stream()
+                .map(listingMapper::toListingResponse)
+                .toList();
+
+        return PagedResponse.of(
+                responses,
+                page,
+                size,
+                listingPage.getTotalElements(),
+                listingPage.getTotalPages());
+    }
+
+    /**
+     * Get all listings by category slug with pagination.
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<ListingResponse> getListingsByCategory(
+            String categorySlug,
+            String sortBy,
+            String sortOrder,
+            int page,
+            int size) {
+        
+        Sort sort = buildSort(sortBy, sortOrder);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Listing> listingPage = listingRepository.findByCategorySlug(categorySlug, pageable);
+        
         List<ListingResponse> responses = listingPage.getContent().stream()
                 .map(listingMapper::toListingResponse)
                 .toList();

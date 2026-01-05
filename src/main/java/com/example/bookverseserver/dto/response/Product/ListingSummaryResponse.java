@@ -1,5 +1,6 @@
 package com.example.bookverseserver.dto.response.Product;
 
+import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
@@ -28,6 +29,9 @@ public class ListingSummaryResponse {
     BookCondition condition;
     String sellerName;
     Long sellerId; // Cần thiết để navigate vào trang profile shop
+
+    // Category information
+    CategoryResponse category;
 
     // Trạng thái tồn kho & hiển thị
     ListingStatus status;

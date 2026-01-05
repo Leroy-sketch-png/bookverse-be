@@ -29,6 +29,13 @@ public class ListingSpecification {
     }
 
     /**
+     * Filter listings by category ID.
+     */
+    public static Specification<Listing> hasCategory(Long categoryId) {
+        return (root, query, cb) -> cb.equal(root.get("category").get("id"), categoryId);
+    }
+
+    /**
      * Filter listings by status.
      */
     public static Specification<Listing> hasStatus(ListingStatus status) {
