@@ -108,7 +108,9 @@ public enum ErrorCode {
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
     ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY),
-    CANNOT_REVIEW_OWN_BOOK(422, "You cannot review your own book listing", HttpStatus.UNPROCESSABLE_ENTITY);
+    CANNOT_REVIEW_OWN_BOOK(422, "You cannot review your own book listing", HttpStatus.UNPROCESSABLE_ENTITY),
+    INVALID_PASSWORD(422, "Invalid password", HttpStatus.UNPROCESSABLE_ENTITY ),
+    ;
 
     private final int code;
     private final String message;

@@ -1,9 +1,12 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Authentication.ChangePasswordRequest;
+import com.example.bookverseserver.dto.request.Authentication.UserStatusRequest;
 import com.example.bookverseserver.dto.request.User.UserUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,6 +55,25 @@ public class UserController {
     ApiResponse<UserResponse> updateUser(@PathVariable Long userId, @RequestBody UserUpdateRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(userId, request))
+                .build();
+    }
+
+    @PatchMapping("/me/password")
+    public ApiResponse<Void> changePassword(@RequestBody @Valid ChangePasswordRequest request, Authentication authentication) {
+        userService.changePassword(request, authentication);
+        return ApiResponse.<Void>builder()
+                .message("Password changed successfully")
+                .build();
+    }
+
+    @PatchMapping("/{userId}/enable")
+    public ApiResponse<Void> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestBody UserStatusRequest request
+    ) {
+        userService.updateUserStatus(userId, request);
+        return ApiResponse.<Void>builder()
+                .message("User status updated successfully")
                 .build();
     }
 }
