@@ -9,38 +9,96 @@ import com.example.bookverseserver.entity.Product.ListingPhoto;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
 import org.mapstruct.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
-public interface ListingMapper {
+public abstract class ListingMapper {
+
+    @Autowired
+    protected AuthorMapper authorMapper;
 
     @Mapping(source = "condition", target = "condition")
     @Mapping(target = "likes", ignore = true)
     @Mapping(target = "views", ignore = true)
     @Mapping(target = "soldCount", ignore = true)
-    Listing toListing(ListingRequest request);
+    public abstract Listing toListing(ListingRequest request);
 
-    // Cập nhật: id map trực tiếp (Long -> Long)
-    @Mapping(source = "id", target = "id")
-    @Mapping(source = "bookMeta.id", target = "bookMetaId", ignore = true)
-    @Mapping(source = "bookMeta.title", target = "bookTitle")
-    @Mapping(source = "seller.id", target = "sellerId", ignore = true)
-    @Mapping(source = "seller.username", target = "sellerName")
-    ListingResponse toListingResponse(Listing listing);
+    /**
+     * Map listing to listing response with author details.
+     */
+    public ListingResponse toListingResponse(Listing listing) {
+        if (listing == null) {
+            return null;
+        }
 
-    ListingUpdateResponse toListingUpdateResponse(Listing listing);
+        BookMeta bookMeta = listing.getBookMeta();
+        
+        return ListingResponse.builder()
+                .id(listing.getId())
+                .bookMetaId(bookMeta != null ? bookMeta.getId() : null)
+                .bookTitle(bookMeta != null ? bookMeta.getTitle() : null)
+                .authors(bookMeta != null && bookMeta.getAuthors() != null 
+                    ? bookMeta.getAuthors().stream()
+                        .map(authorMapper::toAuthorResponse)
+                        .collect(Collectors.toList())
+                    : List.of())
+                .bookCoverImage(bookMeta != null ? bookMeta.getCoverImageUrl() : null)
+                .isbn(bookMeta != null ? bookMeta.getIsbn() : null)
+                .sellerId(listing.getSeller() != null ? listing.getSeller().getId() : null)
+                .sellerName(listing.getSeller() != null ? listing.getSeller().getUsername() : null)
+                .titleOverride(listing.getTitleOverride())
+                .price(listing.getPrice())
+                .currency(listing.getCurrency())
+                .condition(listing.getCondition())
+                .quantity(listing.getQuantity())
+                .location(listing.getLocation())
+                .status(listing.getStatus())
+                .visibility(listing.getVisibility())
+                .platformFeePercent(listing.getPlatformFeePercent())
+                .suggestedPriceLow(listing.getSuggestedPriceLow())
+                .suggestedPriceHigh(listing.getSuggestedPriceHigh())
+                .views(listing.getViews())
+                .likes(listing.getLikes())
+                .soldCount(listing.getSoldCount())
+                .createdAt(listing.getCreatedAt())
+                .updatedAt(listing.getUpdatedAt())
+                .photos(listing.getPhotos() != null 
+                    ? listing.getPhotos().stream()
+                        .map(this::toListingPhotoResponse)
+                        .collect(Collectors.toList())
+                    : List.of())
+                .build();
+    }
+
+    /**
+     * Map ListingPhoto entity to response DTO.
+     */
+    private ListingPhotoResponse toListingPhotoResponse(ListingPhoto photo) {
+        if (photo == null) {
+            return null;
+        }
+        return ListingPhotoResponse.builder()
+                .id(photo.getId())
+                .url(photo.getUrl())
+                .position(photo.getPosition())
+                .createdAt(photo.getCreatedAt())
+                .build();
+    }
+
+    public abstract ListingUpdateResponse toListingUpdateResponse(Listing listing);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateListing(@MappingTarget Listing listing, ListingUpdateRequest request);
+    public abstract void updateListing(@MappingTarget Listing listing, ListingUpdateRequest request);
 
     // ============ New mapping methods for detailed responses ============
 
     /**
      * Map listing to detailed response for single listing view.
      */
-    default ListingDetailResponse toDetailResponse(Listing listing) {
+    public ListingDetailResponse toDetailResponse(Listing listing) {
         if (listing == null) {
             return null;
         }
@@ -68,7 +126,7 @@ public interface ListingMapper {
     /**
      * Map BookMeta to summary DTO.
      */
-    default BookSummaryDto toBookSummary(BookMeta bookMeta) {
+    public BookSummaryDto toBookSummary(BookMeta bookMeta) {
         if (bookMeta == null) {
             return null;
         }
@@ -82,6 +140,11 @@ public interface ListingMapper {
                 .id(bookMeta.getId()) // Sử dụng Long trực tiếp
                 .title(bookMeta.getTitle())
                 .author(authorName)
+                .authors(bookMeta.getAuthors() != null 
+                    ? bookMeta.getAuthors().stream()
+                        .map(authorMapper::toAuthorResponse)
+                        .collect(Collectors.toList())
+                    : List.of())
                 .isbn(bookMeta.getIsbn())
                 .coverImage(bookMeta.getCoverImageUrl())
                 .averageRating(bookMeta.getAverageRating())
@@ -92,7 +155,7 @@ public interface ListingMapper {
     /**
      * Map User to seller summary DTO.
      */
-    default SellerSummaryDto toSellerSummary(User seller) {
+    public SellerSummaryDto toSellerSummary(User seller) {
         if (seller == null) {
             return null;
         }
@@ -114,7 +177,7 @@ public interface ListingMapper {
     /**
      * Map listing shipping fields to DTO.
      */
-    default ShippingInfoDto toShippingInfo(Listing listing) {
+    public ShippingInfoDto toShippingInfo(Listing listing) {
         if (listing == null) {
             return null;
         }
@@ -129,7 +192,7 @@ public interface ListingMapper {
     /**
      * Map listing to related listing summary.
      */
-    default RelatedListingDto toRelatedDto(Listing listing) {
+    public RelatedListingDto toRelatedDto(Listing listing) {
         if (listing == null) {
             return null;
         }
@@ -152,7 +215,7 @@ public interface ListingMapper {
     /**
      * Extract photo URLs from listing photos.
      */
-    default List<String> extractPhotoUrls(List<ListingPhoto> photos) {
+    public List<String> extractPhotoUrls(List<ListingPhoto> photos) {
         if (photos == null) {
             return List.of();
         }
@@ -164,7 +227,7 @@ public interface ListingMapper {
     /**
      * Map list of listings to related listing DTOs.
      */
-    default List<RelatedListingDto> toRelatedDtoList(List<Listing> listings) {
+    public List<RelatedListingDto> toRelatedDtoList(List<Listing> listings) {
         if (listings == null) {
             return List.of();
         }
