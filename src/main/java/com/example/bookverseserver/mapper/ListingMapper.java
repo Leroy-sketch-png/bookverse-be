@@ -1,6 +1,5 @@
 package com.example.bookverseserver.mapper;
 
-import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
 import com.example.bookverseserver.dto.response.Product.*;
@@ -23,9 +22,11 @@ public interface ListingMapper {
     @Mapping(target = "soldCount", ignore = true)
     Listing toListing(ListingRequest request);
 
-    @Mapping(source = "bookMeta.id", target = "bookMetaId")
+    // Cập nhật: id map trực tiếp (Long -> Long)
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "bookMeta.id", target = "bookMetaId", ignore = true)
     @Mapping(source = "bookMeta.title", target = "bookTitle")
-    @Mapping(source = "seller.id", target = "sellerId")
+    @Mapping(source = "seller.id", target = "sellerId", ignore = true)
     @Mapping(source = "seller.username", target = "sellerName")
     ListingResponse toListingResponse(Listing listing);
 
@@ -45,7 +46,7 @@ public interface ListingMapper {
         }
 
         return ListingDetailResponse.builder()
-                .id(listing.getId())
+                .id(listing.getId()) // Sử dụng Long trực tiếp
                 .book(toBookSummary(listing.getBookMeta()))
                 .seller(toSellerSummary(listing.getSeller()))
                 .condition(listing.getCondition())
@@ -78,7 +79,7 @@ public interface ListingMapper {
         }
 
         return BookSummaryDto.builder()
-                .id(bookMeta.getId())
+                .id(bookMeta.getId()) // Sử dụng Long trực tiếp
                 .title(bookMeta.getTitle())
                 .author(authorName)
                 .isbn(bookMeta.getIsbn())
@@ -99,7 +100,7 @@ public interface ListingMapper {
         UserProfile profile = seller.getUserProfile();
 
         return SellerSummaryDto.builder()
-                .id(seller.getId())
+                .id(seller.getId()) // Sử dụng Long trực tiếp
                 .username(seller.getUsername())
                 .businessName(profile != null ? profile.getDisplayName() : seller.getUsername())
                 .avatar(profile != null ? profile.getAvatarUrl() : null)
@@ -139,7 +140,7 @@ public interface ListingMapper {
         }
 
         return RelatedListingDto.builder()
-                .id(listing.getId())
+                .id(listing.getId()) // Sử dụng Long trực tiếp
                 .seller(toSellerSummary(listing.getSeller()))
                 .condition(listing.getCondition())
                 .price(listing.getPrice())

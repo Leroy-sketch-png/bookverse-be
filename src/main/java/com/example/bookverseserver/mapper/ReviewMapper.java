@@ -34,10 +34,12 @@ public interface ReviewMapper {
   @Mapping(target = "updatedAt", ignore = true)
   void updateReview(@MappingTarget Review review, UpdateReviewRequest request);
 
-  @Mapping(target = "bookId", source = "review.bookMeta.id")
+  @Mapping(target = "id", expression = "java(String.valueOf(review.getId()))")
+  @Mapping(target = "bookId", expression = "java(String.valueOf(review.getBookMeta().getId()))")
   @Mapping(target = "userId", source = "review.user.id")
   @Mapping(target = "userName", source = "review.user.username")
   @Mapping(target = "userAvatar", expression = "java(getUserAvatar(review))")
+  @Mapping(target = "helpful", source = "review.helpfulCount")
   @Mapping(target = "verified", source = "review.verifiedPurchase")
   @Mapping(target = "isCurrentUserReview", ignore = true)
   @Mapping(target = "userHasVotedHelpful", ignore = true)

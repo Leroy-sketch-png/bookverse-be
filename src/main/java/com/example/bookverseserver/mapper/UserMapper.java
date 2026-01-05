@@ -7,9 +7,11 @@ import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.User;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
@@ -25,21 +27,20 @@ public interface UserMapper {
         resp.setEmail(user.getEmail());
         resp.setEnabled(user.getEnabled());
 
-        Role role = user.getRole();
-        if (role != null) {
-            RoleResponse rr = new RoleResponse();
-            rr.setId(role.getId());
-            rr.setName(role.getName());
-            // Inside your toUserResponse method
-            RoleResponse roleResponse = RoleResponse.builder()
-                    .name(user.getRole().getName())
-                    .build();
-
-            resp.setRoles(Set.of(roleResponse)); // Wrap single role in a Set
+        // Map Set<Role> to Set<RoleResponse>
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            Set<RoleResponse> roleResponses = user.getRoles().stream()
+                    .map(role -> RoleResponse.builder()
+                            .id(role.getId())
+                            .name(role.getName())
+                            .build())
+                    .collect(Collectors.toSet());
+            resp.setRoles(roleResponses);
         }
 
         return resp;
     }
 
+    @Mapping(target = "roles", ignore = true) // Roles handled manually in service
     void updateUser(@MappingTarget User user, UserUpdateRequest request);
 }
