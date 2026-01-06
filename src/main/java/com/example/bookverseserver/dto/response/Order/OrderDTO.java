@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderDTO {
-  String id;
+  Long id;
   String orderNumber;
   OrderStatus status;
   List<OrderItemDTO> items;

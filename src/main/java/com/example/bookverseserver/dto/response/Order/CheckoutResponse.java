@@ -5,7 +5,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -13,8 +12,8 @@ import java.util.UUID;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CheckoutResponse {
-  UUID sessionId;
-  UUID orderId;
+  Long sessionId;
+  Long orderId;
   String paymentIntentId;
   String clientSecret;
   BigDecimal amount;

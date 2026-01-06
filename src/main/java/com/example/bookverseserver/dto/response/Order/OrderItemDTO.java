@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItemDTO {
-  String id;
-  String bookId;
+  Long id;
+  Long bookId;
   String title;
   String author;
   String coverImage;
@@ -26,7 +26,7 @@ public class OrderItemDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class SellerInfo {
-    String id;
+    Long id;
     String name;
     String slug;
   }

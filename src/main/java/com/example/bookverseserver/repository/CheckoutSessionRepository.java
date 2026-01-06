@@ -5,9 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface CheckoutSessionRepository extends JpaRepository<CheckoutSession, UUID> {
+public interface CheckoutSessionRepository extends JpaRepository<CheckoutSession, Long> {
   Optional<CheckoutSession> findByPaymentIntentId(String paymentIntentId);
 }

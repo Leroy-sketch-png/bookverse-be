@@ -13,15 +13,15 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
-  @Mapping(target = "id", expression = "java(order.getId().toString())")
+  @Mapping(target = "id", source = "id")
   @Mapping(target = "items", qualifiedByName = "toOrderItemDTO") // Use the default method
   @Mapping(target = "paymentStatus", ignore = true) // Handle in service or via helper
   @Mapping(target = "paymentMethod", ignore = true) // Placeholder
   OrderDTO toOrderDTO(Order order);
 
   // Internal method - DO NOT use directly
-  @Mapping(target = "id", expression = "java(orderItem.getId().toString())")
-  @Mapping(target = "bookId", expression = "java(String.valueOf(orderItem.getBookMeta().getId()))")
+  @Mapping(target = "id", source = "id")
+  @Mapping(target = "bookId", source = "bookMeta.id")
   @Mapping(target = "seller", ignore = true) // Map manually in default method
   @Mapping(target = "title", source = "bookMeta.title")
   @Mapping(target = "author", expression = "java(orderItem.getBookMeta().getAuthors().isEmpty() ? null : orderItem.getBookMeta().getAuthors().iterator().next().getName())")
@@ -37,7 +37,7 @@ public interface OrderMapper {
     // Manually map seller info
     if (orderItem.getSeller() != null) {
       OrderItemDTO.SellerInfo sellerInfo = OrderItemDTO.SellerInfo.builder()
-        .id(String.valueOf(orderItem.getSeller().getId()))
+        .id(orderItem.getSeller().getId())
         .name(orderItem.getSeller().getUsername())
         .slug(null) // TODO: Add slug if available
         .build();

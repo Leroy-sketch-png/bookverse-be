@@ -13,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -40,7 +38,7 @@ public class OrderController {
 
   @GetMapping("/{orderId}")
   public ApiResponse<OrderDTO> getOrderDetails(
-      @PathVariable UUID orderId,
+      @PathVariable Long orderId,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
     return ApiResponse.<OrderDTO>builder()
@@ -51,7 +49,7 @@ public class OrderController {
 
   @PostMapping("/{orderId}/cancel")
   public ApiResponse<CancelOrderResponse> cancelOrder(
-      @PathVariable UUID orderId,
+      @PathVariable Long orderId,
       @RequestBody CancelOrderRequest request,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
@@ -63,7 +61,7 @@ public class OrderController {
 
   @GetMapping("/{orderId}/tracking")
   public ApiResponse<OrderTrackingDTO> getOrderTracking(
-      @PathVariable UUID orderId,
+      @PathVariable Long orderId,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
     return ApiResponse.<OrderTrackingDTO>builder()

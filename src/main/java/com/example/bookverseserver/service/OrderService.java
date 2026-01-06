@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -69,7 +68,7 @@ public class OrderService {
         .build();
   }
 
-  public OrderDTO getOrderDetails(Long userId, UUID orderId) {
+  public OrderDTO getOrderDetails(Long userId, Long orderId) {
     User currentUser = userRepository.findById(userId)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -80,7 +79,7 @@ public class OrderService {
   }
 
   @Transactional
-  public CancelOrderResponse cancelOrder(Long userId, UUID orderId, CancelOrderRequest request) {
+  public CancelOrderResponse cancelOrder(Long userId, Long orderId, CancelOrderRequest request) {
     User currentUser = userRepository.findById(userId)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -120,7 +119,7 @@ public class OrderService {
         .build();
   }
 
-  public OrderTrackingDTO getOrderTracking(Long userId, UUID orderId) {
+  public OrderTrackingDTO getOrderTracking(Long userId, Long orderId) {
     User currentUser = userRepository.findById(userId)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 

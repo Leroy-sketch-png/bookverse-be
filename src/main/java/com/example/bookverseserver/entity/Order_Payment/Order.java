@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "orders") // Changed from "order" to "orders" to match schema and avoid keywords
@@ -24,8 +23,8 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Order {
         @Id
-        @GeneratedValue(strategy = GenerationType.UUID)
-        UUID id;
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        Long id;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "user_id", nullable = false)

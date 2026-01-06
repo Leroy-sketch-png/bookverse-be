@@ -5,7 +5,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderTrackingDTO {
-  UUID orderId;
+  Long orderId;
   String orderNumber;
   String trackingNumber;
   String carrier;
