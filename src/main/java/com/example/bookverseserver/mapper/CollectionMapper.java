@@ -17,7 +17,7 @@ public abstract class CollectionMapper {
     @Autowired
     protected ListingMapper listingMapper;
 
-    @Mapping(target = "id", expression = "java(String.valueOf(collection.getId()))")
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "books", expression = "java(mapListingsToBookResponses(collection.getListings()))")
     @Mapping(target = "totalBooks", expression = "java(collection.getListings() != null ? collection.getListings().size() : 0)")
     public abstract CollectionResponse toCollectionResponse(Collection collection);

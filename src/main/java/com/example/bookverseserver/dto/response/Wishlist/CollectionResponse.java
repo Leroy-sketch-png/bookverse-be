@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CollectionResponse {
-    String id; // Changed to String to match frontend
+    Long id;
     String title;
     String description;
     List<ListingResponse> books; // Frontend expects books, not listings

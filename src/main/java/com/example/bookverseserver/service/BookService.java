@@ -179,7 +179,7 @@ public class BookService {
 
     private BookResponse convertToBookResponse(BookMeta bookMeta) {
         BookResponse bookResponse = new BookResponse();
-        bookResponse.setId(String.valueOf(bookMeta.getId()));
+        bookResponse.setId(bookMeta.getId());
         bookResponse.setTitle(bookMeta.getTitle());
         bookResponse.setIsbn(bookMeta.getIsbn());
         bookResponse.setAuthors(bookMeta.getAuthors().stream()

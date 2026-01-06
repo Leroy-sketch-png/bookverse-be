@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReviewResponse {
-    String id; // Changed to String to match frontend expectations
-    String bookId; // Changed to String to match frontend expectations
+    Long id;
+    Long bookId;
     Long userId;
     String userName;
     String userAvatar;

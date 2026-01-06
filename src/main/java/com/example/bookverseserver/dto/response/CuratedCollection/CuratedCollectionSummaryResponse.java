@@ -16,7 +16,7 @@ import java.util.List;
 public class CuratedCollectionSummaryResponse {
 
     @Schema(description = "Unique identifier")
-    private String id;
+    private Long id;
 
     @Schema(description = "URL-friendly identifier")
     private String slug;

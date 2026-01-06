@@ -25,7 +25,7 @@ public abstract class CuratedCollectionMapper {
 
     private static final int COVER_IMAGE_COUNT = 3;
 
-    @Mapping(target = "id", expression = "java(String.valueOf(collection.getId()))")
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "coverImageUrls", expression = "java(getRandomCoverImages(collection.getBooks()))")
     public abstract CuratedCollectionSummaryResponse toSummaryResponse(CuratedCollection collection);
 
@@ -77,7 +77,7 @@ public abstract class CuratedCollectionMapper {
 
     private BookResponse convertToBookResponse(BookMeta bookMeta) {
         BookResponse bookResponse = new BookResponse();
-        bookResponse.setId(String.valueOf(bookMeta.getId()));
+        bookResponse.setId(bookMeta.getId());
         bookResponse.setTitle(bookMeta.getTitle());
         bookResponse.setIsbn(bookMeta.getIsbn());
 

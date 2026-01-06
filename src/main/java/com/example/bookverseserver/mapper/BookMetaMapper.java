@@ -15,7 +15,7 @@ public interface BookMetaMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateBookMeta(@MappingTarget BookMeta bookMeta, BookMetaCreationRequest request);
 
-    @Mapping(target = "id", expression = "java(String.valueOf(bookMeta.getId()))")
+    @Mapping(target = "id", source = "id")
     BookResponse toBookResponse(BookMeta bookMeta);
 
     List<BookResponse> toBookResponseList(List<BookMeta> bookMetas);
