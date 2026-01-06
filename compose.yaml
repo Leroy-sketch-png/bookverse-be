@@ -1,47 +1,51 @@
-version: "3.9"
+# Bookverse Local Development Stack
+# Usage: docker compose up -d
 
 services:
+  # ============================================================================
+  # LOCAL DEVELOPMENT DATABASE
+  # ============================================================================
+  # Use with: .\dev.bat -docker
+  # Fresh schema every restart (no constraint conflicts!)
+  # ============================================================================
   postgres:
-    container_name: postgres-sql-bvs
-    image: postgres:latest
-    restart: always
+    container_name: bookverse-postgres-local
+    image: postgres:15
+    restart: unless-stopped
     environment:
-      - 'POSTGRES_DB=bookversedb'
-      - 'POSTGRES_PASSWORD=${DB_PASSWORD}'
-      - 'POSTGRES_USER=${DB_USERNAME}'
+      POSTGRES_DB: bookversedb
+      POSTGRES_USER: bookverse
+      POSTGRES_PASSWORD: bookverse_dev_2026
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - bookverse_postgres_data:/var/lib/postgresql/data
     networks:
-      - spring-demo
+      - bookverse-local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookverse -d bookversedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  bvs-api:
-    container_name: bvs-api
-    image: votrungtin/bvs-api:latest
-    restart: always
-    ports:
-      - "8080:8080"
-    environment:
-      ACTIVE_PROFILE: prod
-      DB_URL: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require
-      DB_USERNAME: postgres.mwxvoifusflwtmxxiybq
-      DB_PASSWORD: votrungtin2005
-      SPRING_MAIL_HOST: ${MAIL_HOST}
-      SPRING_MAIL_PORT: ${MAIL_PORT}
-      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
-    networks:
-      - spring-demo
-    depends_on:
-      - postgres
-
+  # ============================================================================
+  # OPTIONAL: MailHog for local email testing
+  # ============================================================================
+  # Access UI at: http://localhost:8025
+  # mailhog:
+  #   container_name: bookverse-mailhog
+  #   image: mailhog/mailhog
+  #   ports:
+  #     - "1025:1025"  # SMTP
+  #     - "8025:8025"  # Web UI
+  #   networks:
+  #     - bookverse-local
 
 volumes:
-  postgres_data:
+  bookverse_postgres_data:
 
 networks:
-  spring-demo:
+  bookverse-local:
     driver: bridge

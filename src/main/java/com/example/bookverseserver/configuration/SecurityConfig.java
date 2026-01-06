@@ -38,6 +38,7 @@ public class SecurityConfig {
             "/api/author/name/{name}",
             "/api/books",
             "/api/books/**",
+            "/api/categories",       // GET categories is public for browsing
             "/api/vouchers/{code}",
             "/api/v1/transactions/**",
             "/error"
