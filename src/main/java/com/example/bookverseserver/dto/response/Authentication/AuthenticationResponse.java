@@ -5,8 +5,17 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+/**
+ * Authentication response matching Vision API_CONTRACTS.md.
+ * 
+ * Format:
+ * {
+ *   "token": "...",
+ *   "refreshToken": "...",
+ *   "user": { ... }
+ * }
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,8 +23,8 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthenticationResponse {
     String token;
+    String refreshToken;        // Added per Vision
     boolean authenticated;
     LocalDateTime lastLogin;
     UserResponse user;
-
 }

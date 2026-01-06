@@ -109,4 +109,19 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             AND l.deletedAt IS NULL
         """)
     Page<Listing> findByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
+
+    /**
+     * Find all listings by seller ID (for seller dashboard).
+     */
+    List<Listing> findBySellerId(Long sellerId);
+
+    /**
+     * Find seller listings by status with pagination.
+     */
+    Page<Listing> findBySellerIdAndStatus(Long sellerId, ListingStatus status, Pageable pageable);
+
+    /**
+     * Find seller listings excluding a specific status with pagination.
+     */
+    Page<Listing> findBySellerIdAndStatusNot(Long sellerId, ListingStatus status, Pageable pageable);
 }

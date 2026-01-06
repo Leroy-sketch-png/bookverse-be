@@ -6,13 +6,12 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Builder
 public class PaymentAuditResponse {
     private Long id;                // ID của Payment
-    private UUID orderId;           // ID của Order
+    private Long orderId;           // ID của Order
     private BigDecimal amount;      // Số tiền
     private String currency;        // Đơn vị tiền (USD)
     private PaymentStatus status;   // PENDING, PAID...
