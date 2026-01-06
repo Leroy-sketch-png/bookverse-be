@@ -1,6 +1,7 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.Analytics.*;
+import com.example.bookverseserver.dto.response.Order.OrderDTO;
 import com.example.bookverseserver.dto.response.Order.OrderListResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
@@ -12,6 +13,7 @@ import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.ListingMapper;
+import com.example.bookverseserver.mapper.OrderMapper;
 import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.OrderRepository;
@@ -44,6 +46,7 @@ public class SellerService {
     OrderRepository orderRepository;
     OrderItemRepository orderItemRepository;
     ListingMapper listingMapper;
+    OrderMapper orderMapper;
 
     // ============ Dashboard Stats ============
 
@@ -217,9 +220,11 @@ public class SellerService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        // TODO: Map to proper OrderDTO format
+        // Map orders to DTOs
+        List<OrderDTO> orderDTOs = orderMapper.toOrderDTOList(pagedOrders);
+        
         return OrderListResponse.builder()
-                .orders(List.of()) // TODO: Map orders to OrderDTO
+                .orders(orderDTOs)
                 .pagination(OrderListResponse.PaginationInfo.builder()
                         .page(page)
                         .limit(limit)

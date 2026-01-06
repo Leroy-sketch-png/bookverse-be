@@ -107,6 +107,10 @@ public enum ErrorCode {
     REVIEW_ALREADY_EXISTS(409, "You have already reviewed this book", HttpStatus.CONFLICT),
     ALREADY_VOTED_HELPFUL(409, "You have already voted this review as helpful", HttpStatus.CONFLICT),
 
+    // --- Purchase Verification ---
+    PURCHASE_REQUIRED_FOR_REVIEW(403, "You must purchase this item before reviewing", HttpStatus.FORBIDDEN),
+    ORDER_ITEM_NOT_FOUND(404, "Order item not found", HttpStatus.NOT_FOUND),
+
     // --- Stock Operations ---
     STOCK_CANNOT_BE_NEGATIVE(400, "Stock quantity cannot be negative", HttpStatus.BAD_REQUEST),
     SELLER_ROLE_REQUIRED(403, "Only sellers can create listings", HttpStatus.FORBIDDEN),

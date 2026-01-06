@@ -4,14 +4,17 @@ import com.example.bookverseserver.dto.request.Review.CreateReviewRequest;
 import com.example.bookverseserver.dto.request.Review.HideReviewRequest;
 import com.example.bookverseserver.dto.request.Review.UpdateReviewRequest;
 import com.example.bookverseserver.dto.response.Review.*;
+import com.example.bookverseserver.entity.Order_Payment.OrderItem;
 import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Review;
 import com.example.bookverseserver.entity.Product.ReviewHelpful;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.ReviewMapper;
 import com.example.bookverseserver.repository.BookMetaRepository;
+import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.ReviewHelpfulRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
 import com.example.bookverseserver.repository.UserRepository;
@@ -44,6 +47,7 @@ public class ReviewService {
   BookMetaRepository bookMetaRepository;
   UserRepository userRepository;
   ReviewMapper reviewMapper;
+  OrderItemRepository orderItemRepository;
 
   // 1. Create Review
   @Transactional
@@ -57,6 +61,18 @@ public class ReviewService {
       throw new AppException(ErrorCode.REVIEW_ALREADY_EXISTS);
     }
 
+    // VISION REQUIREMENT: Verify purchase before allowing review
+    // Per buyer-flow.md: "Must have purchased this product"
+    OrderItem orderItem = orderItemRepository.findByOrderIdAndListingIdAndUserIdAndOrderStatus(
+            request.getOrderId(),
+            request.getListingId(),
+            userId,
+            OrderStatus.DELIVERED)
+        .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_REQUIRED_FOR_REVIEW));
+    
+    log.info("Verified purchase for review: orderId={}, listingId={}, userId={}", 
+             request.getOrderId(), request.getListingId(), userId);
+
     // Get user
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -65,6 +81,7 @@ public class ReviewService {
     Review review = reviewMapper.toReview(request);
     review.setBookMeta(book);
     review.setUser(user);
+    review.setVerifiedPurchase(true); // Set verified since we validated purchase
 
     Review savedReview = reviewRepository.save(review);
     log.info("Created review {} for book {} by user {}", savedReview.getId(), bookId, userId);
