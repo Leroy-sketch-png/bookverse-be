@@ -46,11 +46,10 @@ public class OpenLibraryMapper {
                 .openLibraryId(dto.getKey().replace("/authors/", ""))
                 .name(dto.getName())
                 .personalName(dto.getPersonalName())
-                .birthDate(dto.getBirthDate() != null ? dto.getBirthDate() : "Unknown")
-                .deathDate(dto.getDeathDate() != null ? dto.getDeathDate() : "Unknown")
+                .birthDate(dto.getBirthDate())
+                .deathDate(dto.getDeathDate())
                 .bio(bio)
                 .avatar(avatarUrl)
-                .nationality("Zootopia")
                 .build();
     }
 

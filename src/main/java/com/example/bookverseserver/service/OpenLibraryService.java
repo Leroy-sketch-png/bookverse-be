@@ -76,6 +76,9 @@ public class OpenLibraryService {
     }
 
     private RichBookData buildRichBookData(String isbn, OpenLibraryDataResponse dataResponse, String description) {
+        // ═══════════════════════════════════════════════════════════════════════════
+        // COVER IMAGE (prefer large, fallback to medium/small)
+        // ═══════════════════════════════════════════════════════════════════════════
         String coverUrl = null;
         if (dataResponse.getCover() != null) {
             if (dataResponse.getCover().getLarge() != null) {
@@ -87,6 +90,9 @@ public class OpenLibraryService {
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════════════════
+        // AUTHORS
+        // ═══════════════════════════════════════════════════════════════════════════
         List<String> authorNames = dataResponse.getAuthors() != null
                 ? dataResponse.getAuthors().stream().map(OpenLibraryDataResponse.Author::getName).collect(Collectors.toList())
                 : Collections.emptyList();
@@ -95,13 +101,103 @@ public class OpenLibraryService {
                 ? dataResponse.getAuthors().stream().map(OpenLibraryDataResponse.Author::getKey).collect(Collectors.toList())
                 : Collections.emptyList();
 
+        // ═══════════════════════════════════════════════════════════════════════════
+        // SUBJECTS (raw for category mapping)
+        // ═══════════════════════════════════════════════════════════════════════════
         List<String> categoryNames = dataResponse.getSubjects() != null
                 ? dataResponse.getSubjects().stream().map(OpenLibraryDataResponse.Subject::getName).collect(Collectors.toList())
                 : Collections.emptyList();
 
+        // ═══════════════════════════════════════════════════════════════════════════
+        // PUBLISHER
+        // ═══════════════════════════════════════════════════════════════════════════
         String publisherName = (dataResponse.getPublishers() != null && !dataResponse.getPublishers().isEmpty())
                 ? dataResponse.getPublishers().get(0).getName()
                 : null;
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // FIRST LINE (from excerpts - marketing gold!)
+        // ═══════════════════════════════════════════════════════════════════════════
+        String firstLine = null;
+        if (dataResponse.getExcerpts() != null && !dataResponse.getExcerpts().isEmpty()) {
+            // Look for "first sentence" or take the first excerpt
+            for (OpenLibraryDataResponse.Excerpt excerpt : dataResponse.getExcerpts()) {
+                if (excerpt.getText() != null && !excerpt.getText().isEmpty()) {
+                    firstLine = excerpt.getText();
+                    break;
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // SUBJECT PLACES (story locations)
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<String> subjectPlaces = dataResponse.getSubjectPlaces() != null
+                ? dataResponse.getSubjectPlaces().stream()
+                    .map(OpenLibraryDataResponse.SubjectPlace::getName)
+                    .limit(10) // Cap at 10
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // SUBJECT PEOPLE (characters)
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<String> subjectPeople = dataResponse.getSubjectPeople() != null
+                ? dataResponse.getSubjectPeople().stream()
+                    .map(OpenLibraryDataResponse.SubjectPerson::getName)
+                    .limit(15) // Cap at 15 characters
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // SUBJECT TIMES (eras/periods)
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<String> subjectTimes = dataResponse.getSubjectTimes() != null
+                ? dataResponse.getSubjectTimes().stream()
+                    .map(OpenLibraryDataResponse.SubjectTime::getName)
+                    .limit(5) // Cap at 5
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // EXTERNAL LINKS (Wikipedia, Britannica, etc.)
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<RichBookData.ExternalLink> externalLinks = dataResponse.getLinks() != null
+                ? dataResponse.getLinks().stream()
+                    .filter(link -> link.getUrl() != null && !link.getUrl().isEmpty())
+                    .map(link -> RichBookData.ExternalLink.builder()
+                            .title(link.getTitle())
+                            .url(link.getUrl())
+                            .build())
+                    .limit(5) // Cap at 5 links
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // CROSS-PLATFORM IDs
+        // ═══════════════════════════════════════════════════════════════════════════
+        String openLibraryId = null;
+        String goodreadsId = null;
+        
+        if (dataResponse.getIdentifiers() != null) {
+            if (dataResponse.getIdentifiers().getOpenlibrary() != null 
+                && !dataResponse.getIdentifiers().getOpenlibrary().isEmpty()) {
+                openLibraryId = dataResponse.getIdentifiers().getOpenlibrary().get(0);
+            }
+            if (dataResponse.getIdentifiers().getGoodreads() != null 
+                && !dataResponse.getIdentifiers().getGoodreads().isEmpty()) {
+                goodreadsId = dataResponse.getIdentifiers().getGoodreads().get(0);
+            }
+        }
+        
+        // Fallback: extract from key if identifiers not available
+        if (openLibraryId == null && dataResponse.getKey() != null) {
+            // /books/OL1017798M → OL1017798M
+            String key = dataResponse.getKey();
+            if (key.startsWith("/books/")) {
+                openLibraryId = key.substring(7);
+            }
+        }
 
         return RichBookData.builder()
                 .title(dataResponse.getTitle())
@@ -114,6 +210,14 @@ public class OpenLibraryService {
                 .authors(authorNames)
                 .authorKeys(authorKeys)
                 .categories(categoryNames)
+                // NEW RICH DATA
+                .firstLine(firstLine)
+                .subjectPlaces(subjectPlaces)
+                .subjectPeople(subjectPeople)
+                .subjectTimes(subjectTimes)
+                .externalLinks(externalLinks)
+                .openLibraryId(openLibraryId)
+                .goodreadsId(goodreadsId)
                 .build();
     }
 

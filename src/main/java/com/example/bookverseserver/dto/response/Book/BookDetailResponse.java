@@ -9,6 +9,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Complete book detail response with Open Library enrichment.
+ * 
+ * Includes rich discovery data for product pages:
+ * - Basic: title, authors, publisher, pages
+ * - Discovery: tags, categories, places, people, times
+ * - Marketing: firstLine, externalLinks
+ * - Cross-platform: openLibraryId, goodreadsId
+ */
 @Data
 public class BookDetailResponse {
     private Long id;
@@ -16,18 +25,77 @@ public class BookDetailResponse {
     private String isbn;
     private String publisher;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private Date publicationDate; // Match frontend naming
-    private Integer pageCount; // Match frontend naming
+    private Date publicationDate;
+    private Integer pageCount;
     private String language;
     private String description;
-    private String coverImageUrl; // Match frontend naming
+    private String coverImageUrl;
     private List<AuthorResponse> authors;
     private List<CategoryResponse> categories;
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GRANULAR TAGS (NEW) - For filtering: Romance, Historical, Mystery, etc.
+    // ═══════════════════════════════════════════════════════════════════════════
+    private List<String> tags;
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RICH DISCOVERY DATA (NEW)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Famous opening line
+     * e.g., "It is a truth universally acknowledged..."
+     */
+    private String firstLine;
+    
+    /**
+     * Story locations: ["England", "Derbyshire"]
+     */
+    private List<String> subjectPlaces;
+    
+    /**
+     * Characters: ["Elizabeth Bennet", "Mr. Darcy"]
+     */
+    private List<String> subjectPeople;
+    
+    /**
+     * Time periods: ["19th century"]
+     */
+    private List<String> subjectTimes;
+    
+    /**
+     * External links: Wikipedia, Britannica, etc.
+     */
+    private List<ExternalLinkResponse> externalLinks;
+    
+    /**
+     * Open Library Edition ID
+     */
+    private String openLibraryId;
+    
+    /**
+     * Goodreads ID for linking
+     */
+    private String goodreadsId;
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PRICING & SELLER (for listing context)
+    // ═══════════════════════════════════════════════════════════════════════════
     private BigDecimal price;
     private BigDecimal finalPrice;
-    private Map<String, Object> discount; // {type: 'PERCENT' | 'FIXED', value: number}
+    private Map<String, Object> discount;
     private String currency;
-    private SellerProfileResponse seller; // Match frontend naming
-    private Double averageRating; // Average rating from reviews
-    private Integer totalReviews; // Total number of reviews
+    private SellerProfileResponse seller;
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RATINGS
+    // ═══════════════════════════════════════════════════════════════════════════
+    private Double averageRating;
+    private Integer totalReviews;
+    
+    @Data
+    public static class ExternalLinkResponse {
+        private String title;
+        private String url;
+    }
 }

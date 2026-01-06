@@ -11,8 +11,11 @@ import com.example.bookverseserver.entity.Product.*;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
+import com.example.bookverseserver.mapper.AuthorMapper;
 import com.example.bookverseserver.repository.BookMetaRepository;
 import com.example.bookverseserver.repository.ListingRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +42,13 @@ public class BookService {
     private final OpenLibraryService openLibraryService;
     private final AuthorService authorService;
     private final CategoryService categoryService;
+    private final TagService tagService;
+    private final AuthorMapper authorMapper;
+    private final ObjectMapper objectMapper;
 
-    // --- MAIN METHOD TO FETCH & FILTER DATA ---
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MAIN METHOD: Import book with FULL Open Library value extraction
+    // ═══════════════════════════════════════════════════════════════════════════
     public String createBookFromOpenLibrary(String isbn) {
         // 1. Check if book already exists
         Optional<BookMeta> existingBookMeta = bookMetaRepository.findByIsbn(isbn);
@@ -48,13 +56,13 @@ public class BookService {
             return existingBookMeta.get().getId().toString();
         }
 
-        // 2. Fetch raw data from OpenLibrary
+        // 2. Fetch rich data from OpenLibrary
         RichBookData bookData = openLibraryService.fetchRichBookDetailsByIsbn(isbn);
         if (bookData == null) {
             throw new AppException(ErrorCode.BOOK_NOT_FOUND_IN_OPEN_LIBRARY);
         }
 
-        // 3. Create new Book entity
+        // 3. Create new Book entity with ALL the rich data
         BookMeta newBookMeta = new BookMeta();
         newBookMeta.setTitle(bookData.getTitle());
         newBookMeta.setIsbn(isbn);
@@ -63,7 +71,9 @@ public class BookService {
         newBookMeta.setPages(bookData.getNumberOfPages());
         newBookMeta.setPublishedDate(parsePublishedDate(bookData.getPublishedDate()));
 
-        // 4. Handle Authors
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 4. AUTHORS (with full enrichment from AuthorService)
+        // ═══════════════════════════════════════════════════════════════════════════
         Set<Author> authors = new HashSet<>();
         if (bookData.getAuthors() != null && bookData.getAuthorKeys() != null) {
             for (int i = 0; i < bookData.getAuthors().size(); i++) {
@@ -74,46 +84,99 @@ public class BookService {
         }
         newBookMeta.setAuthors(authors);
 
-        // =====================================================================
-        // 5. STRICT CATEGORY FILTERING (The Fix)
-        // =====================================================================
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 5. CATEGORIES (broad buckets: Fiction, Science, etc.)
+        // ═══════════════════════════════════════════════════════════════════════════
         Set<Category> finalCategories = new HashSet<>();
-
         if (bookData.getCategories() != null) {
             for (String rawSubject : bookData.getCategories()) {
-                // CALL THE SMART FILTER:
-                // This checks if 'rawSubject' maps to one of your 6 approved Enum values.
-                // If NO match found, it returns NULL.
                 Category validCategory = categoryService.filterAndGetCategory(rawSubject);
-
-                // EXCLUDE NON-MATCHES:
-                // Only add to the set if it is NOT null.
                 if (validCategory != null) {
                     finalCategories.add(validCategory);
                 }
             }
         }
-        // If the set is empty (no matches found), the book will have NO categories.
         newBookMeta.setCategories(finalCategories);
-        // =====================================================================
 
-        // 6. Handle Cover Image
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 6. TAGS (granular genres: Romance, Historical, Mystery, etc.) - NEW!
+        // ═══════════════════════════════════════════════════════════════════════════
+        if (bookData.getCategories() != null) {
+            Set<BookTag> tags = tagService.extractTags(bookData.getCategories());
+            newBookMeta.setTags(tags);
+            log.info("Book '{}' tagged with: {}", bookData.getTitle(), 
+                    tags.stream().map(BookTag::getName).collect(Collectors.joining(", ")));
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 7. RICH DISCOVERY DATA (NEW!)
+        // ═══════════════════════════════════════════════════════════════════════════
+        
+        // First line (marketing gold!)
+        newBookMeta.setFirstLine(bookData.getFirstLine());
+        
+        // Subject places (as JSON array)
+        if (bookData.getSubjectPlaces() != null && !bookData.getSubjectPlaces().isEmpty()) {
+            newBookMeta.setSubjectPlaces(toJson(bookData.getSubjectPlaces()));
+        }
+        
+        // Subject people (as JSON array)
+        if (bookData.getSubjectPeople() != null && !bookData.getSubjectPeople().isEmpty()) {
+            newBookMeta.setSubjectPeople(toJson(bookData.getSubjectPeople()));
+        }
+        
+        // Subject times (as JSON array)
+        if (bookData.getSubjectTimes() != null && !bookData.getSubjectTimes().isEmpty()) {
+            newBookMeta.setSubjectTimes(toJson(bookData.getSubjectTimes()));
+        }
+        
+        // External links (as JSON array of objects)
+        if (bookData.getExternalLinks() != null && !bookData.getExternalLinks().isEmpty()) {
+            newBookMeta.setExternalLinks(toJson(bookData.getExternalLinks()));
+        }
+        
+        // Cross-platform IDs
+        newBookMeta.setOpenLibraryId(bookData.getOpenLibraryId());
+        newBookMeta.setGoodreadsId(bookData.getGoodreadsId());
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 8. COVER IMAGE
+        // ═══════════════════════════════════════════════════════════════════════════
         if (bookData.getCoverUrl() != null && !bookData.getCoverUrl().isEmpty()) {
             BookImage coverImage = BookImage.builder()
                     .url(bookData.getCoverUrl())
                     .bookMeta(newBookMeta)
                     .isCover(true)
                     .build();
-            // Initialize list if null (depends on your Entity constructor)
             if (newBookMeta.getImages() == null) newBookMeta.setImages(new ArrayList<>());
             newBookMeta.getImages().add(coverImage);
         }
 
         BookMeta savedBookMeta = bookMetaRepository.save(newBookMeta);
+        
+        log.info("✅ Imported book '{}' with full Open Library enrichment: {} categories, {} tags, {} places, {} characters",
+                savedBookMeta.getTitle(),
+                savedBookMeta.getCategories().size(),
+                savedBookMeta.getTags() != null ? savedBookMeta.getTags().size() : 0,
+                bookData.getSubjectPlaces() != null ? bookData.getSubjectPlaces().size() : 0,
+                bookData.getSubjectPeople() != null ? bookData.getSubjectPeople().size() : 0);
+        
         return savedBookMeta.getId().toString();
     }
 
-    // --- Helper for messy dates ---
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    private String toJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize to JSON: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private LocalDate parsePublishedDate(String dateStr) {
         if (dateStr == null) return null;
         try {
@@ -183,7 +246,7 @@ public class BookService {
         bookResponse.setTitle(bookMeta.getTitle());
         bookResponse.setIsbn(bookMeta.getIsbn());
         bookResponse.setAuthors(bookMeta.getAuthors().stream()
-                .map(author -> new AuthorResponse(author.getId(), author.getName()))
+                .map(authorMapper::toAuthorResponse)
                 .collect(Collectors.toList()));
         bookResponse.setCategories(bookMeta.getCategories().stream()
                 .map(category -> new CategoryResponse(category.getId(), category.getName()))
@@ -213,12 +276,12 @@ public class BookService {
         response.setIsbn(bookMeta.getIsbn());
         response.setPublisher(bookMeta.getPublisher());
         response.setPageCount(bookMeta.getPages());
-        response.setLanguage(bookMeta.getLanguage()); // Add language field
+        response.setLanguage(bookMeta.getLanguage());
         response.setDescription(bookMeta.getDescription());
         response.setPublicationDate(bookMeta.getPublishedDate() != null ? java.sql.Date.valueOf(bookMeta.getPublishedDate()) : null);
 
         response.setAuthors(bookMeta.getAuthors() != null ?
-                bookMeta.getAuthors().stream().map(a -> new AuthorResponse(a.getId(), a.getName())).toList() :
+                bookMeta.getAuthors().stream().map(authorMapper::toAuthorResponse).toList() :
                 Collections.emptyList());
 
         response.setCategories(bookMeta.getCategories() != null ?
@@ -229,11 +292,63 @@ public class BookService {
             response.setCoverImageUrl(bookMeta.getImages().get(0).getUrl());
         }
         
-        // TODO: Calculate and set averageRating and totalReviews from Review entity
-        // This requires ReviewRepository injection and calculation
-        response.setAverageRating(0.0);
-        response.setTotalReviews(0);
+        // ═══════════════════════════════════════════════════════════════════════════
+        // GRANULAR TAGS (NEW)
+        // ═══════════════════════════════════════════════════════════════════════════
+        if (bookMeta.getTags() != null && !bookMeta.getTags().isEmpty()) {
+            response.setTags(bookMeta.getTags().stream()
+                    .map(BookTag::getName)
+                    .collect(Collectors.toList()));
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // RICH DISCOVERY DATA (NEW)
+        // ═══════════════════════════════════════════════════════════════════════════
+        response.setFirstLine(bookMeta.getFirstLine());
+        response.setSubjectPlaces(fromJson(bookMeta.getSubjectPlaces(), List.class));
+        response.setSubjectPeople(fromJson(bookMeta.getSubjectPeople(), List.class));
+        response.setSubjectTimes(fromJson(bookMeta.getSubjectTimes(), List.class));
+        
+        // External links
+        if (bookMeta.getExternalLinks() != null) {
+            try {
+                List<Map<String, String>> links = objectMapper.readValue(
+                        bookMeta.getExternalLinks(), 
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                response.setExternalLinks(links.stream()
+                        .map(link -> {
+                            BookDetailResponse.ExternalLinkResponse elr = new BookDetailResponse.ExternalLinkResponse();
+                            elr.setTitle(link.get("title"));
+                            elr.setUrl(link.get("url"));
+                            return elr;
+                        })
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                log.warn("Failed to parse external links: {}", e.getMessage());
+            }
+        }
+        
+        // Cross-platform IDs
+        response.setOpenLibraryId(bookMeta.getOpenLibraryId());
+        response.setGoodreadsId(bookMeta.getGoodreadsId());
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // RATINGS
+        // ═══════════════════════════════════════════════════════════════════════════
+        response.setAverageRating(bookMeta.getAverageRating() != null ? bookMeta.getAverageRating().doubleValue() : 0.0);
+        response.setTotalReviews(bookMeta.getTotalReviews() != null ? bookMeta.getTotalReviews() : 0);
         
         return response;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private <T> T fromJson(String json, Class<T> clazz) {
+        if (json == null || json.isEmpty()) return null;
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (Exception e) {
+            log.warn("Failed to parse JSON: {}", e.getMessage());
+            return null;
+        }
     }
 }

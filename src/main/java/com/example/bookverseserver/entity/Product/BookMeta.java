@@ -18,7 +18,7 @@ import java.util.*;
 @Getter
 @Setter
 @ToString
-@EqualsAndHashCode(exclude = {"authors", "categories"})
+@EqualsAndHashCode(exclude = {"authors", "categories", "tags"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -54,6 +54,61 @@ public class BookMeta {
     @Builder.Default
     Integer totalReviews = 0;
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // OPEN LIBRARY ENRICHMENT FIELDS (NEW)
+    // These fields capture the FULL VALUE from Open Library API
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Famous opening line - marketing gold!
+     * e.g., "It is a truth universally acknowledged, that a single man..."
+     */
+    @Column(name = "first_line", columnDefinition = "TEXT")
+    String firstLine;
+    
+    /**
+     * Story locations as JSON array: ["England", "Derbyshire", "Hertfordshire"]
+     * Enables location-based discovery
+     */
+    @Column(name = "subject_places", columnDefinition = "TEXT")
+    String subjectPlaces;
+    
+    /**
+     * Character names as JSON array: ["Elizabeth Bennet", "Mr. Darcy"]
+     * Enables character-based discovery
+     */
+    @Column(name = "subject_people", columnDefinition = "TEXT")
+    String subjectPeople;
+    
+    /**
+     * Time periods as JSON array: ["19th century", "1789-1820"]
+     * Enables era-based discovery
+     */
+    @Column(name = "subject_times", columnDefinition = "TEXT")
+    String subjectTimes;
+    
+    /**
+     * External links as JSON: [{"title": "Wikipedia", "url": "..."}]
+     * Provides additional context
+     */
+    @Column(name = "external_links", columnDefinition = "TEXT")
+    String externalLinks;
+    
+    /**
+     * Open Library Work/Edition ID: "OL8479867M"
+     * For attribution and future data syncs
+     */
+    @Column(name = "openlibrary_id", length = 50)
+    String openLibraryId;
+    
+    /**
+     * Goodreads ID for cross-platform linking
+     */
+    @Column(name = "goodreads_id", length = 50)
+    String goodreadsId;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+
     LocalDateTime deletedAt;
     Long deletedBy;
 
@@ -79,7 +134,7 @@ public class BookMeta {
     @JsonManagedReference
     Set<Author> authors = new HashSet<>();
 
-    // Many-to-Many relationship for categories
+    // Many-to-Many relationship for categories (broad: Fiction, Science, etc.)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "book_category",
@@ -87,6 +142,15 @@ public class BookMeta {
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     Set<Category> categories = new HashSet<>();
+    
+    // Many-to-Many relationship for tags (granular: romance, mystery, regency, etc.)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "book_tag_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    Set<BookTag> tags = new HashSet<>();
 
     public String getCoverImageUrl() {
         if (images != null && !images.isEmpty()) {

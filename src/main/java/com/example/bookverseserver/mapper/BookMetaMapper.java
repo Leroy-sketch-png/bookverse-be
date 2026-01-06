@@ -7,7 +7,7 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {AuthorMapper.class})
 public interface BookMetaMapper {
 
     BookMeta toBookMeta(BookMetaCreationRequest request);

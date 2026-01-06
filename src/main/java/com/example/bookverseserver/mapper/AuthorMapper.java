@@ -16,8 +16,12 @@ public interface AuthorMapper {
     @Mapping(target = "bookMetas", ignore = true)
     Author toAuthor(AuthorRequest author);
 
+    @Mapping(source = "birthDate", target = "dob")
+    @Mapping(source = "openLibraryId", target = "openLibraryId")
     AuthorResponse toAuthorResponse(Author author);
 
+    @Mapping(source = "bio", target = "biography")
+    @Mapping(source = "avatar", target = "avatarUrl")
     AuthorDetailResponse toAuthorDetailResponse(Author author);
 
     @Mapping(target = "bookMetas", ignore = true)
