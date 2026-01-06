@@ -1,16 +1,20 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Order.UpdateOrderStatusRequest;
 import com.example.bookverseserver.dto.response.Analytics.*;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Order.OrderListResponse;
+import com.example.bookverseserver.dto.response.Order.UpdateOrderStatusResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.enums.OrderStatus;
+import com.example.bookverseserver.service.OrderService;
 import com.example.bookverseserver.service.SellerService;
 import com.example.bookverseserver.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,6 +32,7 @@ import java.util.List;
  * - Dashboard stats (revenue, sales, orders, listings)
  * - Seller's listings with filters
  * - Seller's orders with filters
+ * - Order status updates with tracking
  * - Analytics data
  */
 @RestController
@@ -39,6 +44,7 @@ import java.util.List;
 public class SellerController {
 
     SellerService sellerService;
+    OrderService orderService;
     SecurityUtils securityUtils;
 
     // ============ Dashboard Stats ============
@@ -170,6 +176,23 @@ public class SellerController {
         return ApiResponse.<ListingResponse>builder()
                 .message("Listing deactivated successfully")
                 .result(sellerService.deactivateListing(sellerId, listingId))
+                .build();
+    }
+
+    // ============ Order Management ============
+
+    @PatchMapping("/orders/{orderId}/status")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Update order status", 
+               description = "Seller updates order status with tracking info. Per Vision API_CONTRACTS.md")
+    public ApiResponse<UpdateOrderStatusResponse> updateOrderStatus(
+            @PathVariable Long orderId,
+            @Valid @RequestBody UpdateOrderStatusRequest request,
+            Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<UpdateOrderStatusResponse>builder()
+                .message("Order status updated successfully")
+                .result(orderService.updateOrderStatusBySeller(sellerId, orderId, request))
                 .build();
     }
 }
