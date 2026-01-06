@@ -30,18 +30,24 @@ import java.util.List; // Dùng List.of cho gọn
 @EnableMethodSecurity
 @Slf4j
 public class SecurityConfig {
-    private final String[] PUBLIC_ENDPOINTS = {
+    // Public endpoints for unauthenticated access (GET only for most)
+    // Note: POST /api/books/from-open-library requires auth (handled by @SecurityRequirement)
+    private final String[] PUBLIC_GET_ENDPOINTS = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/auth/**",
             "/api/author/name/{name}",
-            "/api/books",
-            "/api/books/**",
             "/api/categories",       // GET categories is public for browsing
             "/api/vouchers/{code}",
             "/api/v1/transactions/**",
             "/error"
+    };
+    
+    // Books endpoints - GET is public, POST requires auth
+    private final String[] PUBLIC_BOOKS_GET = {
+            "/api/books",       // GET all books
+            "/api/books/{id}"   // GET book by ID
     };
 
     @Autowired
@@ -56,7 +62,8 @@ public class SecurityConfig {
 
         httpSecurity.authorizeHttpRequests(request ->
                 request
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(PUBLIC_GET_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_BOOKS_GET).permitAll()
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
