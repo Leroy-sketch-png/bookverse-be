@@ -113,6 +113,17 @@ public enum ErrorCode {
     
     // --- Promotion Validation ---
     INVALID_DATE_RANGE(400, "End date must be after start date", HttpStatus.BAD_REQUEST),
+    
+    // --- Order Status Validation ---
+    INVALID_ORDER_STATUS(400, "Invalid order status for this operation", HttpStatus.BAD_REQUEST),
+    TRACKING_NUMBER_REQUIRED(400, "Tracking number is required when shipping", HttpStatus.BAD_REQUEST),
+    ORDER_ALREADY_CANCELLED(400, "Order has already been cancelled", HttpStatus.BAD_REQUEST),
+    
+    // --- PRO Seller Application ---
+    PRO_APPLICATION_ALREADY_PENDING(409, "You already have a pending PRO application", HttpStatus.CONFLICT),
+    ALREADY_PRO_SELLER(409, "You are already a PRO seller", HttpStatus.CONFLICT),
+    PRO_APPLICATION_NOT_FOUND(404, "PRO seller application not found", HttpStatus.NOT_FOUND),
+    PRO_APPLICATION_ALREADY_REVIEWED(400, "This application has already been reviewed", HttpStatus.BAD_REQUEST),
 
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),

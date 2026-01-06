@@ -124,4 +124,9 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Find seller listings excluding a specific status with pagination.
      */
     Page<Listing> findBySellerIdAndStatusNot(Long sellerId, ListingStatus status, Pageable pageable);
+
+    /**
+     * Count listings by status (for admin stats).
+     */
+    long countByStatus(ListingStatus status);
 }
