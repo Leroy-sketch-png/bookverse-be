@@ -89,6 +89,11 @@ public enum ErrorCode {
     VOUCHER_NOT_FOUND(404, "Voucher not found or invalid", HttpStatus.NOT_FOUND),
     CHECKOUT_SESSION_NOT_FOUND(404, "Checkout session not found", HttpStatus.NOT_FOUND),
     COLLECTION_NOT_FOUND(404, "Curated collection not found", HttpStatus.NOT_FOUND),
+    PROMOTION_NOT_FOUND(404, "Promotion not found", HttpStatus.NOT_FOUND),
+    MODERATION_ACTION_NOT_FOUND(404, "Moderation action not found", HttpStatus.NOT_FOUND),
+    FLAGGED_LISTING_NOT_FOUND(404, "Flagged listing not found", HttpStatus.NOT_FOUND),
+    USER_REPORT_NOT_FOUND(404, "User report not found", HttpStatus.NOT_FOUND),
+    DISPUTE_NOT_FOUND(404, "Dispute not found", HttpStatus.NOT_FOUND),
 
     // --- 409 CONFLICT (Trùng lặp dữ liệu) ---
     USER_EXISTED(409, "User already exists", HttpStatus.CONFLICT),
@@ -105,6 +110,9 @@ public enum ErrorCode {
     // --- Stock Operations ---
     STOCK_CANNOT_BE_NEGATIVE(400, "Stock quantity cannot be negative", HttpStatus.BAD_REQUEST),
     SELLER_ROLE_REQUIRED(403, "Only sellers can create listings", HttpStatus.FORBIDDEN),
+    
+    // --- Promotion Validation ---
+    INVALID_DATE_RANGE(400, "End date must be after start date", HttpStatus.BAD_REQUEST),
 
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
