@@ -62,8 +62,8 @@ class ReviewControllerTest {
                                 .build();
 
                 ReviewResponse response = ReviewResponse.builder()
-                                .id(String.valueOf(1L))
-                                .bookId(String.valueOf(TEST_BOOK_ID))
+                                .id(1L)
+                                .bookId(TEST_BOOK_ID)
                                 .userId(TEST_USER_ID)
                                 .rating(5)
                                 .comment("Great book!")

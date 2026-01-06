@@ -111,12 +111,13 @@ class ListingControllerTest {
 
         samplePagedResponse = PagedResponse.<ListingResponse>builder()
                 .data(List.of(sampleListingResponse))
-                .pagination(PagedResponse.PaginationMeta.builder()
-                        .total(1)
-                        .page(0)
+                .meta(PagedResponse.PaginationMeta.builder()
+                        .totalItems(1L)
+                        .page(1)
                         .limit(20)
                         .totalPages(1)
                         .hasNext(false)
+                        .hasPrev(false)
                         .build())
                 .build();
     }
@@ -132,7 +133,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings with default pagination")
         void getListings_DefaultParams_ReturnsListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -141,7 +142,7 @@ class ListingControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.result.data").isArray())
                     .andExpect(jsonPath("$.result.data[0].id").value(301))
-                    .andExpect(jsonPath("$.result.pagination.total").value(1));
+                    .andExpect(jsonPath("$.result.meta.totalItems").value(1));
         }
 
         @Test
@@ -149,7 +150,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings filtered by seller ID")
         void getListings_WithSellerFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    eq(50L), isNull(), isNull(),
+                    eq(50L), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -165,7 +166,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings filtered by status")
         void getListings_WithStatusFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), eq(ListingStatus.ACTIVE),
+                    isNull(), isNull(), isNull(), eq(ListingStatus.ACTIVE),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -181,7 +182,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings sorted by price")
         void getListings_SortedByPrice_ReturnsSortedListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(),
                     eq("price"), eq("asc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -198,7 +199,7 @@ class ListingControllerTest {
         @DisplayName("Should return paginated results")
         void getListings_WithPagination_ReturnsPaginatedResults() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(1), eq(10)))
                     .thenReturn(samplePagedResponse);
@@ -207,7 +208,7 @@ class ListingControllerTest {
                             .param("page", "1")
                             .param("size", "10"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.result.pagination").exists());
+                    .andExpect(jsonPath("$.result.meta").exists());
         }
     }
 
