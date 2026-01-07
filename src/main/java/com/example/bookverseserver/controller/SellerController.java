@@ -149,6 +149,48 @@ public class SellerController {
                 .build();
     }
 
+    @GetMapping("/analytics/traffic")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Get traffic sources (STUB)", 
+               description = "Returns traffic source breakdown. NOTE: Currently returns placeholder data.")
+    public ApiResponse<com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse> getTrafficSources(
+            @RequestParam(defaultValue = "30") int days,
+            Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse>builder()
+                .message("Traffic sources retrieved (placeholder data)")
+                .result(sellerService.getTrafficSources(sellerId, days))
+                .build();
+    }
+
+    @GetMapping("/analytics/conversion")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Get conversion funnel (STUB)", 
+               description = "Returns conversion funnel stages. NOTE: Currently returns placeholder data.")
+    public ApiResponse<com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse> getConversionFunnel(
+            @RequestParam(defaultValue = "30") int days,
+            Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse>builder()
+                .message("Conversion funnel retrieved (placeholder data)")
+                .result(sellerService.getConversionFunnel(sellerId, days))
+                .build();
+    }
+
+    @GetMapping("/analytics/customers")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Get customer insights (STUB)", 
+               description = "Returns customer analytics. NOTE: Currently returns placeholder data.")
+    public ApiResponse<com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse> getCustomerInsights(
+            @RequestParam(defaultValue = "30") int days,
+            Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse>builder()
+                .message("Customer insights retrieved (placeholder data)")
+                .result(sellerService.getCustomerInsights(sellerId, days))
+                .build();
+    }
+
     // ============ Quick Actions ============
 
     @PostMapping("/listings/{listingId}/activate")

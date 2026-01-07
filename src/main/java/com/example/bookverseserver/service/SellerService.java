@@ -264,6 +264,90 @@ public class SellerService {
         return List.of();
     }
 
+    // ============ Advanced Analytics (Stubs) ============
+    
+    /**
+     * STUB: Traffic sources analytics.
+     * TODO: Implement real tracking in future sprint.
+     */
+    @Transactional(readOnly = true)
+    public com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse getTrafficSources(Long sellerId, int days) {
+        log.debug("getTrafficSources called for seller {} - returning stub data", sellerId);
+        return com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse.builder()
+                .sources(List.of(
+                        com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse.TrafficSource.builder()
+                                .source("Direct")
+                                .visitors(0L)
+                                .percentage(0.0)
+                                .build(),
+                        com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse.TrafficSource.builder()
+                                .source("Search")
+                                .visitors(0L)
+                                .percentage(0.0)
+                                .build()
+                ))
+                .totalTraffic(0L)
+                .bounceRate(0.0)
+                .build();
+    }
+
+    /**
+     * STUB: Conversion funnel analytics.
+     * TODO: Implement real tracking in future sprint.
+     */
+    @Transactional(readOnly = true)
+    public com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse getConversionFunnel(Long sellerId, int days) {
+        log.debug("getConversionFunnel called for seller {} - returning stub data", sellerId);
+        return com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.builder()
+                .steps(List.of(
+                        com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.FunnelStep.builder()
+                                .stage("views")
+                                .count(0L)
+                                .conversionRate(0.0)
+                                .build(),
+                        com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.FunnelStep.builder()
+                                .stage("wishlist")
+                                .count(0L)
+                                .conversionRate(0.0)
+                                .build(),
+                        com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.FunnelStep.builder()
+                                .stage("cart")
+                                .count(0L)
+                                .conversionRate(0.0)
+                                .build(),
+                        com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.FunnelStep.builder()
+                                .stage("checkout")
+                                .count(0L)
+                                .conversionRate(0.0)
+                                .build(),
+                        com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse.FunnelStep.builder()
+                                .stage("purchase")
+                                .count(0L)
+                                .conversionRate(0.0)
+                                .build()
+                ))
+                .overallConversionRate(0.0)
+                .build();
+    }
+
+    /**
+     * STUB: Customer insights analytics.
+     * TODO: Implement real tracking in future sprint.
+     */
+    @Transactional(readOnly = true)
+    public com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse getCustomerInsights(Long sellerId, int days) {
+        log.debug("getCustomerInsights called for seller {} - returning stub data", sellerId);
+        return com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse.builder()
+                .totalCustomers(0L)
+                .repeatCustomers(0L)
+                .repeatRate(0.0)
+                .newCustomers(0L)
+                .newCustomersTrend(0.0)
+                .avgLifetimeValue(BigDecimal.ZERO)
+                .topRegions(List.of())
+                .build();
+    }
+
     // ============ Quick Actions ============
 
     @Transactional
