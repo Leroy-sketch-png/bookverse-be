@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/review")
+@RequestMapping("/api")
 @Tag(name = "Review", description = "Review & Rating APIs - Users can review books and vote helpful")
 public class ReviewController {
 
@@ -68,7 +68,7 @@ public class ReviewController {
         .build();
   }
 
-  @PutMapping("/reviews/{id}")
+  @PatchMapping("/books/{bookId}/reviews/{id}")
   @Operation(summary = "Update a review", description = "Updates an existing review. Only the review owner can update.")
   @ApiResponses({
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Review updated successfully"),
@@ -76,6 +76,7 @@ public class ReviewController {
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found or not owned by user")
   })
   public ApiResponse<ReviewResponse> updateReview(
+      @Parameter(description = "Book ID", example = "1") @PathVariable Long bookId,
       @Parameter(description = "Review ID", example = "1") @PathVariable Long id,
       @RequestBody @Valid UpdateReviewRequest request,
       Authentication authentication) {
@@ -86,7 +87,7 @@ public class ReviewController {
         .build();
   }
 
-  @DeleteMapping("/reviews/{id}")
+  @DeleteMapping("/books/{bookId}/reviews/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(summary = "Delete a review", description = "Deletes a review. Owners can delete their own reviews, admins can delete any.")
   @ApiResponses({
@@ -94,6 +95,7 @@ public class ReviewController {
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found")
   })
   public ApiResponse<Void> deleteReview(
+      @Parameter(description = "Book ID", example = "1") @PathVariable Long bookId,
       @Parameter(description = "Review ID", example = "1") @PathVariable Long id,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
@@ -119,13 +121,14 @@ public class ReviewController {
         .build();
   }
 
-  @PostMapping("/reviews/{id}/helpful")
+  @PostMapping("/books/{bookId}/reviews/{id}/helpful")
   @Operation(summary = "Toggle helpful vote", description = "Marks or unmarks a review as helpful. Toggles the vote if already voted.")
   @ApiResponses({
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Vote toggled successfully"),
       @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found")
   })
   public ApiResponse<HelpfulVoteResponse> toggleHelpful(
+      @Parameter(description = "Book ID", example = "1") @PathVariable Long bookId,
       @Parameter(description = "Review ID", example = "1") @PathVariable Long id,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
