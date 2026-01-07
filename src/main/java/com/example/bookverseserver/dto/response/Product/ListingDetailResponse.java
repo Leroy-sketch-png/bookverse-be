@@ -33,19 +33,20 @@ public class ListingDetailResponse {
 
     // Listing details
     BookCondition condition;
-    BigDecimal price;
-    BigDecimal originalPrice;
-    Integer discount; // Calculated percentage discount
-    Integer stockQuantity;
+    BigDecimal price;           // Base/list price
+    BigDecimal originalPrice;   // Original price before discount (if any)
+    BigDecimal finalPrice;      // Actual selling price (per Vision API_CONTRACTS.md)
+    Integer discount;           // Calculated percentage discount
+    Integer quantity;           // Stock quantity (renamed from stockQuantity per Vision)
     ListingStatus status;
     String description;
-    List<String> images; // Photo URLs
+    List<String> photos;        // Photo URLs (renamed from images per Vision)
 
     // Shipping info
     ShippingInfoDto shippingInfo;
 
     // Statistics
-    Integer viewCount;
+    Integer views;              // View count (renamed from viewCount per Vision)
     Integer soldCount;
 
     // Timestamps

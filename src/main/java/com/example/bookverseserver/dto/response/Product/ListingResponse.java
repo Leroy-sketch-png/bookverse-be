@@ -35,7 +35,9 @@ public class ListingResponse {
     String sellerName;
 
     String titleOverride;
-    BigDecimal price;
+    BigDecimal price;           // Base/list price
+    BigDecimal originalPrice;   // Original price before discount (if any)
+    BigDecimal finalPrice;      // Actual selling price (per Vision API_CONTRACTS.md)
     String currency;
 
     BookCondition condition;
