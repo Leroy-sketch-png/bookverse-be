@@ -1,6 +1,7 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.Cart.CartResponse;
+import com.example.bookverseserver.dto.response.Cart.CartSummary;
 import com.example.bookverseserver.dto.response.CartItem.CartItemForCartResponse;
 import com.example.bookverseserver.dto.response.Voucher.VoucherCartResponse;
 import com.example.bookverseserver.entity.Order_Payment.Cart;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,13 +60,10 @@ public class CartService {
         return discountStrategy.calculateDiscount(savedCart.getTotalPrice(), savedCart.getVoucher().getDiscountValue(), savedCart.getVoucher().getMinOrderValue());
     }
 
-    // 1. Method chính: Rất ngắn gọn
     public CartResponse getCartByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Dùng orElseGet để xử lý logic: "Nếu có thì lấy, không có thì tạo mới"
-        // Method findByUserId này chính là cái @Query tối ưu JOIN FETCH ở Repo
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     Cart newCart = Cart.builder()
@@ -75,53 +73,45 @@ public class CartService {
                     return cartRepository.save(newCart);
                 });
 
-        // Gọi hàm helper để tính toán Tax, Ship, Total và map DTO
         return buildCartResponse(cart);
     }
 
-    // 2. Helper Method: Nơi tập trung logic tính tiền (đã gửi ở step trước)
+    /**
+     * Builds CartResponse matching Vision API_CONTRACTS.md §Cart structure.
+     * Uses nested summary object instead of flat financial fields.
+     */
     private CartResponse buildCartResponse(Cart cart) {
         BigDecimal subtotal = cart.getTotalPrice() != null ? cart.getTotalPrice() : BigDecimal.ZERO;
-
-        // --- CÁC LOGIC CÒN THIẾU TRONG CODE CŨ ---
-        BigDecimal tax = subtotal.multiply(new BigDecimal("0.09")); // Tax 9%
-
-        BigDecimal shipping = (subtotal.compareTo(new BigDecimal("50.00")) > 0)
-                ? BigDecimal.ZERO : new BigDecimal("5.00"); // Ship logic
-
         BigDecimal discount = getDiscount(cart);
-
-        // Tính tổng cuối: Subtotal + Tax + Ship - Discount
-        BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount);
+        BigDecimal total = subtotal.subtract(discount);
         if (total.compareTo(BigDecimal.ZERO) < 0) total = BigDecimal.ZERO;
-        // ------------------------------------------
+
+        // Build nested summary per Vision spec
+        CartSummary summary = CartSummary.builder()
+                .subtotal(subtotal)
+                .discount(discount)
+                .total(total)
+                .build();
 
         return CartResponse.builder()
                 .id(cart.getId())
-                .userId(cart.getUser().getId())
                 .cartItems(getCartItems(cart))
-                .subtotal(subtotal)
-                .tax(tax)           // Mới
-                .shipping(shipping) // Mới
-                .discount(discount)
-                .total(total)       // Mới (Số tiền user phải trả)
+                .summary(summary)
                 .voucher(getVoucher(cart))
                 .itemCount(cart.getCartItems() != null ? cart.getCartItems().size() : 0)
                 .build();
     }
 
-    // 3. Helper lấy items (giữ nguyên logic của bạn nhưng viết ngắn hơn)
-    private Set<CartItemForCartResponse> getCartItems(Cart cart) {
-        if (cart.getCartItems() == null) return Set.of();
+    private List<CartItemForCartResponse> getCartItems(Cart cart) {
+        if (cart.getCartItems() == null) return List.of();
 
         return cart.getCartItems().stream()
                 .map(cartItemMapper::toCartItemForCartResponse)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
-    @Transactional // Nên thêm để đảm bảo tính nhất quán khi save
+    @Transactional
     public CartResponse applyVoucherToCart(Long userId, String voucherCode) {
-        // 1. Dùng query tối ưu (JOIN FETCH) để lấy items luôn
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 

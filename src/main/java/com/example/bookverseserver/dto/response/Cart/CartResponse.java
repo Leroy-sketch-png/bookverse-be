@@ -4,26 +4,18 @@ import com.example.bookverseserver.dto.response.CartItem.CartItemForCartResponse
 import com.example.bookverseserver.dto.response.Voucher.VoucherCartResponse;
 import lombok.Builder;
 
-import java.math.BigDecimal;
-import java.util.Set;
+import java.util.List;
 
+/**
+ * Cart response matching Vision API_CONTRACTS.md §Cart
+ * Uses nested summary instead of flat financial fields.
+ */
 @Builder
 public record CartResponse(
         Long id,
-        Long userId,
-
-        // --- CÁC TRƯỜNG TÍNH TOÁN (Financial Breakdown) ---
-        BigDecimal subtotal,    // Tổng tiền hàng (tương đương totalPrice cũ trong DB)
-        BigDecimal tax,         // Thuế (9%) - Mới thêm
-        BigDecimal shipping,    // Phí ship - Mới thêm
-        BigDecimal discount,    // Tiền giảm giá
-        BigDecimal total,       // TỔNG THANH TOÁN CUỐI CÙNG (User phải trả) - Mới thêm
-
-        // --- META DATA ---
-        Integer itemCount,
-
-        // --- OBJECTS ---
+        List<CartItemForCartResponse> cartItems,
+        CartSummary summary,
         VoucherCartResponse voucher,
-        Set<CartItemForCartResponse> cartItems
+        Integer itemCount
 ) {
 }

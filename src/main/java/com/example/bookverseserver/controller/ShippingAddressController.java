@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/shipping-addresses")
+@RequestMapping("/api/shipping-addresses")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Shipping Address", description = "Shipping address management APIs")
 public class ShippingAddressController {

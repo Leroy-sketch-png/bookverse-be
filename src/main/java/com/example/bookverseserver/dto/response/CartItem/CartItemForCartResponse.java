@@ -1,12 +1,15 @@
 package com.example.bookverseserver.dto.response.CartItem;
 
-import java.math.BigDecimal;
+import com.example.bookverseserver.dto.response.Cart.CartItemListingResponse;
+import lombok.Builder;
 
+/**
+ * Cart item with full nested listing (Vision API_CONTRACTS.md §Cart)
+ */
+@Builder
 public record CartItemForCartResponse(
         Long id,
-        Long listingId,
-        Integer quantity,
-        String title,
-        BigDecimal subTotalPrice
+        CartItemListingResponse listing,
+        Integer quantity  // Quantity in cart
 ) {
 }
