@@ -151,42 +151,42 @@ public class SellerController {
 
     @GetMapping("/analytics/traffic")
     @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
-    @Operation(summary = "Get traffic sources (STUB)", 
-               description = "Returns traffic source breakdown. NOTE: Currently returns placeholder data.")
-    public ApiResponse<com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse> getTrafficSources(
+    @Operation(summary = "Get traffic sources", 
+               description = "Returns traffic source breakdown. Note: Detailed source tracking requires ViewEvent entity (coming soon). Currently shows aggregate views as 'direct'.")
+    public ApiResponse<TrafficSourcesDataResponse> getTrafficSources(
             @RequestParam(defaultValue = "30") int days,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
-        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.TrafficSourcesResponse>builder()
-                .message("Traffic sources retrieved (placeholder data)")
+        return ApiResponse.<TrafficSourcesDataResponse>builder()
+                .message("Traffic sources retrieved successfully")
                 .result(sellerService.getTrafficSources(sellerId, days))
                 .build();
     }
 
     @GetMapping("/analytics/conversion")
     @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
-    @Operation(summary = "Get conversion funnel (STUB)", 
-               description = "Returns conversion funnel stages. NOTE: Currently returns placeholder data.")
-    public ApiResponse<com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse> getConversionFunnel(
+    @Operation(summary = "Get conversion funnel", 
+               description = "Returns funnel: Views → Wishlist → Cart → Purchase. Computed from real data.")
+    public ApiResponse<ConversionFunnelDataResponse> getConversionFunnel(
             @RequestParam(defaultValue = "30") int days,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
-        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.ConversionFunnelResponse>builder()
-                .message("Conversion funnel retrieved (placeholder data)")
+        return ApiResponse.<ConversionFunnelDataResponse>builder()
+                .message("Conversion funnel retrieved successfully")
                 .result(sellerService.getConversionFunnel(sellerId, days))
                 .build();
     }
 
     @GetMapping("/analytics/customers")
     @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
-    @Operation(summary = "Get customer insights (STUB)", 
-               description = "Returns customer analytics. NOTE: Currently returns placeholder data.")
-    public ApiResponse<com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse> getCustomerInsights(
+    @Operation(summary = "Get customer insights", 
+               description = "Returns customer analytics: total, new, returning, repeat rate, AOV")
+    public ApiResponse<CustomerInsightsResponse> getCustomerInsights(
             @RequestParam(defaultValue = "30") int days,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
-        return ApiResponse.<com.example.bookverseserver.dto.response.Seller.CustomerInsightsResponse>builder()
-                .message("Customer insights retrieved (placeholder data)")
+        return ApiResponse.<CustomerInsightsResponse>builder()
+                .message("Customer insights retrieved successfully")
                 .result(sellerService.getCustomerInsights(sellerId, days))
                 .build();
     }
