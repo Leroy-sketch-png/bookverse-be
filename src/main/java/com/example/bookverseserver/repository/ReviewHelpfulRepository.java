@@ -18,6 +18,9 @@ public interface ReviewHelpfulRepository extends JpaRepository<ReviewHelpful, Lo
   // Delete vote by user and review
   void deleteByUserIdAndReviewId(Long userId, Long reviewId);
 
+  // Delete all votes for a review (used when deleting review)
+  void deleteByReviewId(Long reviewId);
+
   // Count helpful votes for a review
   long countByReviewId(Long reviewId);
 }

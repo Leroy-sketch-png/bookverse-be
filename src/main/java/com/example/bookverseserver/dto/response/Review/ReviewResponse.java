@@ -5,6 +5,12 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 
+/**
+ * Response DTO for transaction-based reviews.
+ * 
+ * Reviews are on ORDER ITEMS (verified purchases).
+ * They build SELLER trust in the marketplace.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,16 +18,23 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReviewResponse {
     Long id;
-    Long bookId;
-    Long userId;
-    String userName;
-    String userAvatar;
     Integer rating;
     String comment;
+    Boolean verifiedPurchase;
+    Integer helpfulCount;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
-    Integer helpful; // Match frontend naming (not helpfulCount)
-    Boolean verified; // verified purchase
+    
+    // Reviewer info (anonymized for privacy)
+    String reviewerName;
+    String reviewerInitials;
+    String reviewerAvatarUrl;
+    
+    // Links to marketplace entities
+    Long listingId;
+    Long sellerId;
+    
+    // Current user context (set by service)
     Boolean isCurrentUserReview;
     Boolean userHasVotedHelpful;
 }

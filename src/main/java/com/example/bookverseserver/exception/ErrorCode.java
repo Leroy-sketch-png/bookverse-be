@@ -104,11 +104,13 @@ public enum ErrorCode {
     LISTING_EXISTED(409, "Listing already exists", HttpStatus.CONFLICT),
     VOUCHER_ALREADY_EXISTS(409, "Voucher code already exists", HttpStatus.CONFLICT),
     VOUCHER_EXPIRED(409, "Voucher code expired", HttpStatus.CONFLICT),
-    REVIEW_ALREADY_EXISTS(409, "You have already reviewed this book", HttpStatus.CONFLICT),
+    REVIEW_ALREADY_EXISTS(409, "You have already reviewed this order item", HttpStatus.CONFLICT),
     ALREADY_VOTED_HELPFUL(409, "You have already voted this review as helpful", HttpStatus.CONFLICT),
+    CANNOT_VOTE_OWN_REVIEW(400, "You cannot vote on your own review", HttpStatus.BAD_REQUEST),
 
     // --- Purchase Verification ---
     PURCHASE_REQUIRED_FOR_REVIEW(403, "You must purchase this item before reviewing", HttpStatus.FORBIDDEN),
+    ORDER_NOT_DELIVERED(400, "Order must be delivered before you can review", HttpStatus.BAD_REQUEST),
     ORDER_ITEM_NOT_FOUND(404, "Order item not found", HttpStatus.NOT_FOUND),
 
     // --- Stock Operations ---

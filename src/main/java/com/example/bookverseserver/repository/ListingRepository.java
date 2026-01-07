@@ -129,4 +129,28 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Count listings by status (for admin stats).
      */
     long countByStatus(ListingStatus status);
+
+    /**
+     * Count all listings by seller ID.
+     */
+    long countBySellerId(Long sellerId);
+
+    /**
+     * Find seller listings by status and category with pagination.
+     */
+    @Query("""
+            SELECT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.listingPhotos p
+            WHERE l.seller.id = :sellerId
+            AND l.status = :status
+            AND l.category.slug = :categorySlug
+            AND l.deletedAt IS NULL
+        """)
+    List<Listing> findBySellerIdAndStatusAndCategorySlug(
+            @Param("sellerId") Long sellerId, 
+            @Param("status") ListingStatus status, 
+            @Param("categorySlug") String categorySlug, 
+            Pageable pageable);
 }

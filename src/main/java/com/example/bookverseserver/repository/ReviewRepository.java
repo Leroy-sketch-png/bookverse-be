@@ -11,39 +11,138 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository for transaction-based reviews.
+ * 
+ * MARKETPLACE MODEL: Reviews are on ORDER ITEMS (verified purchases).
+ * - One review per order item (unique constraint)
+ * - Reviews build SELLER reputation, not book ratings
+ */
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-  // Find reviews by book (paginated, visible only)
-  Page<Review> findByBookMetaIdAndIsVisibleTrueAndIsHiddenFalse(Long bookId, Pageable pageable);
+    // =========================================================================
+    // Core Review Operations
+    // =========================================================================
 
-  // Find reviews by book filtered by rating
-  Page<Review> findByBookMetaIdAndRatingAndIsVisibleTrueAndIsHiddenFalse(Long bookId, Integer rating,
-      Pageable pageable);
+    /**
+     * Check if an order item already has a review.
+     */
+    boolean existsByOrderItemId(Long orderItemId);
 
-  // Find reviews by user (paginated)
-  Page<Review> findByUserId(Long userId, Pageable pageable);
+    /**
+     * Find review by order item ID.
+     */
+    Optional<Review> findByOrderItemId(Long orderItemId);
 
-  // Check if user already reviewed this book
-  boolean existsByUserIdAndBookMetaId(Long userId, Long bookId);
+    /**
+     * Find review by ID and user (for owner check).
+     */
+    Optional<Review> findByIdAndUserId(Long id, Long userId);
 
-  // Find review by ID and user (for owner check)
-  Optional<Review> findByIdAndUserId(Long id, Long userId);
+    /**
+     * Find reviews by user (paginated).
+     */
+    Page<Review> findByUserId(Long userId, Pageable pageable);
 
-  // Find review by user and book
-  Optional<Review> findByUserIdAndBookMetaId(Long userId, Long bookId);
+    // =========================================================================
+    // Listing Reviews (for product page)
+    // =========================================================================
 
-  // Count reviews by book
-  long countByBookMetaIdAndIsVisibleTrueAndIsHiddenFalse(Long bookId);
+    /**
+     * Find visible reviews for a specific listing.
+     */
+    Page<Review> findByListingIdAndIsVisibleTrueAndIsHiddenFalse(Long listingId, Pageable pageable);
 
-  // Get average rating for a book
-  @Query("SELECT AVG(r.rating) FROM Review r WHERE r.bookMeta.id = :bookId AND r.isVisible = true AND r.isHidden = false")
-  Double findAverageRatingByBookId(@Param("bookId") Long bookId);
+    /**
+     * Find visible reviews for a listing filtered by rating.
+     */
+    Page<Review> findByListingIdAndRatingAndIsVisibleTrueAndIsHiddenFalse(
+            Long listingId, Integer rating, Pageable pageable);
 
-  // Get rating distribution for a book
-  @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.bookMeta.id = :bookId AND r.isVisible = true AND r.isHidden = false GROUP BY r.rating")
-  List<Object[]> findRatingDistributionByBookId(@Param("bookId") Long bookId);
+    /**
+     * Count visible reviews for a listing.
+     */
+    long countByListingIdAndIsVisibleTrueAndIsHiddenFalse(Long listingId);
 
-  // Find all reviews by book (for admin)
-  Page<Review> findByBookMetaId(Long bookId, Pageable pageable);
+    /**
+     * Get average rating for a listing.
+     */
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.listing.id = :listingId AND r.isVisible = true AND r.isHidden = false")
+    Double findAverageRatingByListingId(@Param("listingId") Long listingId);
+
+    /**
+     * Get rating distribution for a listing.
+     */
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.listing.id = :listingId AND r.isVisible = true AND r.isHidden = false GROUP BY r.rating")
+    List<Object[]> findRatingDistributionByListingId(@Param("listingId") Long listingId);
+
+    // =========================================================================
+    // Seller Reviews (for seller profile & reputation)
+    // =========================================================================
+
+    /**
+     * Find visible reviews for a seller (across all their listings).
+     */
+    Page<Review> findBySellerIdAndIsVisibleTrueAndIsHiddenFalse(Long sellerId, Pageable pageable);
+
+    /**
+     * Find visible reviews for a seller filtered by rating.
+     */
+    Page<Review> findBySellerIdAndRatingAndIsVisibleTrueAndIsHiddenFalse(
+            Long sellerId, Integer rating, Pageable pageable);
+
+    /**
+     * Count visible reviews for a seller.
+     */
+    long countBySellerIdAndIsVisibleTrueAndIsHiddenFalse(Long sellerId);
+
+    /**
+     * Get average rating for a seller (SELLER REPUTATION).
+     */
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.seller.id = :sellerId AND r.isVisible = true AND r.isHidden = false")
+    Double calculateAverageRatingForSeller(@Param("sellerId") Long sellerId);
+
+    /**
+     * Get rating distribution for a seller.
+     */
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.seller.id = :sellerId AND r.isVisible = true AND r.isHidden = false GROUP BY r.rating")
+    List<Object[]> getRatingDistributionForSeller(@Param("sellerId") Long sellerId);
+
+    /**
+     * Count reviews for a seller (for stats).
+     */
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.seller.id = :sellerId AND r.isVisible = true AND r.isHidden = false")
+    Integer countByListingSellerId(@Param("sellerId") Long sellerId);
+
+    /**
+     * Find reviews for a seller with pagination (for public seller profile).
+     */
+    @Query("""
+        SELECT r FROM Review r
+        WHERE r.seller.id = :sellerId
+        AND r.isVisible = true
+        AND r.isHidden = false
+        ORDER BY r.createdAt DESC
+        """)
+    List<Review> findByListingSellerId(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    // =========================================================================
+    // Admin/Moderation
+    // =========================================================================
+
+    /**
+     * Find all reviews for a listing (including hidden, for admin).
+     */
+    Page<Review> findByListingId(Long listingId, Pageable pageable);
+
+    /**
+     * Find all reviews for a seller (including hidden, for admin).
+     */
+    Page<Review> findBySellerId(Long sellerId, Pageable pageable);
+
+    /**
+     * Find hidden/flagged reviews for moderation.
+     */
+    Page<Review> findByIsHiddenTrue(Pageable pageable);
 }
