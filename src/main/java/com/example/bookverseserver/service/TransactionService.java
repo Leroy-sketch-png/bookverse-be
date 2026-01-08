@@ -196,4 +196,68 @@ public class TransactionService {
                 .createdAt(payment.getCreatedAt())
                 .build());
     }
+    
+    /**
+     * Process refund for an order's payment via Stripe.
+     * 
+     * @param order The order to refund
+     * @return RefundResult with status and Stripe refund ID
+     */
+    @Transactional
+    public RefundResult processRefund(Order order) {
+        // Find the paid payment for this order
+        Payment payment = order.getPayments().stream()
+                .filter(p -> p.getStatus() == PaymentStatus.PAID && p.getPaymentIntentId() != null)
+                .findFirst()
+                .orElse(null);
+        
+        if (payment == null) {
+            log.warn("No paid payment found for order {}, skipping refund", order.getId());
+            return RefundResult.builder()
+                    .success(false)
+                    .message("No paid payment found to refund")
+                    .build();
+        }
+        
+        try {
+            // Create Stripe refund
+            com.stripe.param.RefundCreateParams params = com.stripe.param.RefundCreateParams.builder()
+                    .setPaymentIntent(payment.getPaymentIntentId())
+                    .setReason(com.stripe.param.RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER)
+                    .build();
+            
+            com.stripe.model.Refund refund = com.stripe.model.Refund.create(params);
+            
+            // Update payment status
+            payment.setStatus(PaymentStatus.REFUNDED);
+            payment.setTransactionId(refund.getId());
+            transactionRepository.save(payment);
+            
+            log.info("Refund processed successfully for order {}: refund_id={}", 
+                    order.getId(), refund.getId());
+            
+            return RefundResult.builder()
+                    .success(true)
+                    .refundId(refund.getId())
+                    .amount(payment.getAmount())
+                    .message("Refund processed successfully")
+                    .build();
+            
+        } catch (StripeException e) {
+            log.error("Stripe refund failed for order {}: {}", order.getId(), e.getMessage());
+            return RefundResult.builder()
+                    .success(false)
+                    .message("Refund failed: " + e.getMessage())
+                    .build();
+        }
+    }
+    
+    @lombok.Data
+    @lombok.Builder
+    public static class RefundResult {
+        private boolean success;
+        private String refundId;
+        private BigDecimal amount;
+        private String message;
+    }
 }

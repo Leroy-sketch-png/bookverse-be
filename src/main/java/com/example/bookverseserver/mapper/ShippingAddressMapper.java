@@ -7,30 +7,22 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+/**
+ * Mapper for shipping addresses - aligned with Vision/FE ShippingAddressData
+ */
 @Mapper(componentModel = "spring")
 public interface ShippingAddressMapper {
 
     ShippingAddress toShippingAddress(ShippingAddressRequest request);
 
-    @Mapping(target = "phone", source = "phoneNumber")
-    @Mapping(target = "street", expression = "java(combineAddressLines(shippingAddress))")
-    @Mapping(target = "zipCode", source = "postalCode")
-    @Mapping(target = "state", source = "district")
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "phoneNumber", source = "phoneNumber")
+    @Mapping(target = "addressLine1", source = "addressLine1")
+    @Mapping(target = "addressLine2", source = "addressLine2")
+    @Mapping(target = "postalCode", source = "postalCode")
     ShippingAddressResponse toShippingAddressResponse(ShippingAddress shippingAddress);
 
     void updateShippingAddress(@MappingTarget ShippingAddress shippingAddress, ShippingAddressRequest request);
-
-    default String combineAddressLines(ShippingAddress address) {
-        StringBuilder street = new StringBuilder();
-        if (address.getAddressLine1() != null) {
-            street.append(address.getAddressLine1());
-        }
-        if (address.getAddressLine2() != null) {
-            if (street.length() > 0) street.append(", ");
-            street.append(address.getAddressLine2());
-        }
-        return street.length() > 0 ? street.toString() : null;
-    }
 }
 
 

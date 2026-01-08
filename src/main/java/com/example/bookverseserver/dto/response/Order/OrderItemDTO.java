@@ -1,10 +1,16 @@
 package com.example.bookverseserver.dto.response.Order;
 
+import com.example.bookverseserver.enums.BookCondition;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 
+/**
+ * Order item DTO matching Vision API_CONTRACTS.md
+ * 
+ * FE expects nested listing: { id, book: { title, coverImage }, condition }
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,22 +18,26 @@ import java.math.BigDecimal;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItemDTO {
   Long id;
-  Long bookId;
-  String title;
-  String author;
-  String coverImage;
+  ListingInfo listing;
   Integer quantity;
-  BigDecimal price;
-  BigDecimal subtotal;
-  public SellerInfo seller;
+  BigDecimal priceAtPurchase;
 
   @Data
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
-  public static class SellerInfo {
+  public static class ListingInfo {
     Long id;
-    String name;
-    String slug;
+    BookInfo book;
+    BookCondition condition;
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class BookInfo {
+    String title;
+    String coverImage;
   }
 }

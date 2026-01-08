@@ -22,6 +22,7 @@ public enum ErrorCode {
     OTP_NOT_FOUND(400, "Invalid changing password request", HttpStatus.BAD_REQUEST),
     PASSWORDS_MISMATCH(400, "Passwords do not match", HttpStatus.BAD_REQUEST),
     TERMS_NOT_ACCEPTED(400, "Terms not accepted", HttpStatus.BAD_REQUEST),
+    ALREADY_SELLER(409, "User is already a seller", HttpStatus.CONFLICT),
 
     // Cart & Order Logic
     CART_EMPTY(400, "Cart is empty", HttpStatus.BAD_REQUEST),
@@ -88,6 +89,9 @@ public enum ErrorCode {
     SHIPPING_ADDRESS_NOT_FOUND(404, "Shipping address not found", HttpStatus.NOT_FOUND),
     VOUCHER_NOT_FOUND(404, "Voucher not found or invalid", HttpStatus.NOT_FOUND),
     CHECKOUT_SESSION_NOT_FOUND(404, "Checkout session not found", HttpStatus.NOT_FOUND),
+    CHECKOUT_SESSION_EXPIRED(410, "Checkout session has expired", HttpStatus.GONE),
+    ADDRESS_NOT_FOUND(404, "Address not found", HttpStatus.NOT_FOUND),
+    PAYMENT_PROCESSING_ERROR(500, "Payment processing error", HttpStatus.INTERNAL_SERVER_ERROR),
     COLLECTION_NOT_FOUND(404, "Curated collection not found", HttpStatus.NOT_FOUND),
     PROMOTION_NOT_FOUND(404, "Promotion not found", HttpStatus.NOT_FOUND),
     MODERATION_ACTION_NOT_FOUND(404, "Moderation action not found", HttpStatus.NOT_FOUND),

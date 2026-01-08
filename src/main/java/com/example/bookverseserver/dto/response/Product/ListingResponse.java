@@ -2,16 +2,22 @@ package com.example.bookverseserver.dto.response.Product;
 
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.dto.response.Book.CategoryResponse;
-import com.example.bookverseserver.entity.Product.ListingPhoto;
 import com.example.bookverseserver.enums.BookCondition;
-import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Listing response matching Vision API_CONTRACTS.md §Listings.
+ * 
+ * Uses nested structures for book, seller, and stats per Vision contract:
+ * - book: { id, title, authors, isbn, coverImage }
+ * - seller: { id, name, avatar, isPro, rating }
+ * - stats: { views, favorites, soldCount }
+ * - photos: string[] (URLs only)
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,43 +26,76 @@ import java.util.List;
 public class ListingResponse {
 
     Long id;
-
-    // Book information
-    Long bookMetaId;
-    String bookTitle;
-    List<AuthorResponse> authors; // Author details
-    String bookCoverImage;
-    String isbn;
-
-    // Category information
+    
+    // Nested book info (Vision: "book" object)
+    BookInfo book;
+    
+    // Category info
     CategoryResponse category;
-
-    Long sellerId;
-    String sellerName;
-
-    String titleOverride;
+    
+    // Nested seller info (Vision: "seller" object)
+    SellerInfo seller;
+    
+    // Pricing
     BigDecimal price;           // Base/list price
-    BigDecimal originalPrice;   // Original price before discount (if any)
-    BigDecimal finalPrice;      // Actual selling price (per Vision API_CONTRACTS.md)
-    String currency;
-
+    BigDecimal originalPrice;   // Original price before discount
+    BigDecimal finalPrice;      // Actual selling price
+    
     BookCondition condition;
     Integer quantity;
-    String location;
+    
+    // Photos as string URLs (Vision: photos: string[])
+    List<String> photos;
+    
+    // Nested stats (Vision: "stats" object)
+    ListingStats stats;
+    
+    String createdAt;  // ISO timestamp
 
-    ListingStatus status;
-    Boolean visibility;
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INNER CLASSES FOR NESTED STRUCTURE
+    // ═══════════════════════════════════════════════════════════════════════════
 
-    BigDecimal platformFeePercent;
-    BigDecimal suggestedPriceLow;
-    BigDecimal suggestedPriceHigh;
-
-    Integer views;
-    Integer likes;
-    Integer soldCount;
-
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
-
-    List<ListingPhotoResponse> photos;
+    /**
+     * Compact book info nested in listing (Vision: BookMetaCompact)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BookInfo {
+        Long id;
+        String title;
+        List<AuthorResponse> authors;
+        String isbn;
+        String coverImage;
     }
+
+    /**
+     * Compact seller info nested in listing (Vision: SellerCompact)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SellerInfo {
+        Long id;
+        String name;
+        String avatar;
+        Boolean isPro;
+        BigDecimal rating;
+    }
+
+    /**
+     * Listing stats (Vision: stats object)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ListingStats {
+        Integer views;
+        Integer favorites;  // Was "likes" in old structure
+        Integer soldCount;
+    }
+}

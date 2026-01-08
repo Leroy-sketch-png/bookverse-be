@@ -9,6 +9,12 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 
+/**
+ * Shipping address response matching Vision/FE ShippingAddressData type.
+ * 
+ * FE expects: id, userId, fullName, phoneNumber, addressLine1, addressLine2, 
+ *             city, postalCode, country, isDefault, createdAt, updatedAt
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,33 +23,25 @@ import java.time.LocalDateTime;
 public class ShippingAddressResponse {
 
     Long id;
+    Long userId;
 
     String fullName;
-
-    String phone; // Match frontend naming (not phoneNumber)
-
-    // Frontend expects: street, city, state, zipCode
-    String street; // Maps from addressLine1 + addressLine2
+    String phoneNumber; // Matches FE ShippingAddressData.phoneNumber
     
-    String ward; // Additional Vietnamese address field
-    
-    String district; // Additional Vietnamese address field (can map to state)
+    String addressLine1;
+    String addressLine2;
 
     String city;
-    
-    String state; // Can be mapped from district for frontend compatibility
-
-    String zipCode; // Match frontend naming (not postalCode)
-    
-    String postalCode; // Keep for backward compatibility
-    
+    String postalCode;
     String country;
-    
-    String note; // Additional field from entity
 
     Boolean isDefault;
 
     LocalDateTime createdAt;
-
     LocalDateTime updatedAt;
+    
+    // Additional fields for order context (not in FE ShippingAddressData but useful)
+    String ward;
+    String district;
+    String note;
 }

@@ -44,6 +44,7 @@ public class OrderService {
   OrderTimelineRepository orderTimelineRepository;
   UserRepository userRepository;
   OrderMapper orderMapper;
+  TransactionService transactionService;
   
   // Valid status transitions for seller
   private static final Set<OrderStatus> SELLER_ALLOWED_STATUSES = Set.of(
@@ -121,12 +122,21 @@ public class OrderService {
     });
 
     orderRepository.save(order);
+    
+    // Process refund via Stripe
+    TransactionService.RefundResult refundResult = transactionService.processRefund(order);
+    
+    String refundStatus = refundResult.isSuccess() ? "REFUNDED" : "PENDING";
+    if (!refundResult.isSuccess()) {
+      log.warn("Refund not processed for order {}: {}", orderId, refundResult.getMessage());
+    }
 
     return CancelOrderResponse.builder()
         .orderId(order.getId())
         .status(order.getStatus())
-        .refundAmount(order.getTotal())
-        .refundStatus("PENDING")
+        .refundAmount(refundResult.getAmount() != null ? refundResult.getAmount() : order.getTotal())
+        .refundStatus(refundStatus)
+        .refundId(refundResult.getRefundId())
         .cancelledAt(order.getCancelledAt())
         .build();
   }

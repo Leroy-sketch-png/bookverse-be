@@ -17,5 +17,6 @@ public class CancelOrderResponse {
   OrderStatus status;
   BigDecimal refundAmount;
   String refundStatus;
+  String refundId;  // Stripe refund ID when successfully refunded
   LocalDateTime cancelledAt;
 }

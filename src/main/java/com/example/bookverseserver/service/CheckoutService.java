@@ -1,16 +1,25 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.request.Order.CreateCheckoutRequest;
-import com.example.bookverseserver.dto.response.Order.CheckoutResponse;
-import com.example.bookverseserver.dto.response.Order.UnavailableItemDTO;
+import com.example.bookverseserver.dto.request.Order.UpdateCheckoutSessionRequest;
+import com.example.bookverseserver.dto.response.Order.*;
+import com.example.bookverseserver.dto.response.Order.CheckoutSessionResponse.*;
+import com.example.bookverseserver.dto.response.ShippingAddress.ShippingAddressResponse;
 import com.example.bookverseserver.entity.Order_Payment.*;
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.entity.User.ShippingAddress;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.entity.User.UserProfile;
 import com.example.bookverseserver.enums.OrderStatus;
+import com.example.bookverseserver.enums.PaymentStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.exception.OutOfStockException;
+import com.example.bookverseserver.mapper.ShippingAddressMapper;
 import com.example.bookverseserver.repository.*;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.param.PaymentIntentCreateParams;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,10 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,148 +40,550 @@ import java.util.UUID;
 @Slf4j
 public class CheckoutService {
 
-  CartRepository cartRepository;
-  OrderRepository orderRepository;
-  OrderItemRepository orderItemRepository;
-  CheckoutSessionRepository checkoutSessionRepository;
-  OrderTimelineRepository orderTimelineRepository;
-  ListingRepository listingRepository;
-  UserRepository userRepository;
-  VoucherService voucherService;
+    CartRepository cartRepository;
+    OrderRepository orderRepository;
+    OrderItemRepository orderItemRepository;
+    CheckoutSessionRepository checkoutSessionRepository;
+    OrderTimelineRepository orderTimelineRepository;
+    ListingRepository listingRepository;
+    UserRepository userRepository;
+    ShippingAddressRepository shippingAddressRepository;
+    TransactionRepository transactionRepository;
+    VoucherRepository voucherRepository;
+    VoucherService voucherService;
+    ShippingAddressMapper shippingAddressMapper;
 
-  @NonFinal
-  @Value("${checkout.tax-rate:0.08}")
-  BigDecimal taxRate;
+    @NonFinal
+    @Value("${checkout.tax-rate:0.08}")
+    BigDecimal taxRate;
 
-  @NonFinal
-  @Value("${checkout.shipping-flat-fee:5.00}")
-  BigDecimal shippingFlatFee;
+    @NonFinal
+    @Value("${checkout.shipping-flat-fee:5.00}")
+    BigDecimal shippingFlatFee;
 
-  @Transactional
-  public CheckoutResponse createCheckoutSession(Long userId, CreateCheckoutRequest request) {
-    User currentUser = userRepository.findById(userId)
-        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    @NonFinal
+    @Value("${stripe.publishable.key:pk_test_placeholder}")
+    String stripePublishableKey;
 
-    Cart cart = cartRepository.findById(request.getCartId())
-        .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
+    // ============================================================================
+    // NEW API: Step 1 - Create Session from Cart
+    // ============================================================================
+    
+    @Transactional
+    public CheckoutSessionResponse createSession(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-    if (!cart.getUser().getId().equals(currentUser.getId())) {
-      throw new AppException(ErrorCode.UNAUTHORIZED);
+        // Get user's cart
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
+
+        if (cart.getCartItems().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        // Validate stock
+        validateStock(cart);
+
+        // Calculate initial totals (no voucher yet)
+        BigDecimal subtotal = cart.getTotalPrice();
+        BigDecimal tax = subtotal.multiply(taxRate);
+        BigDecimal shipping = shippingFlatFee;
+        BigDecimal total = subtotal.add(tax).add(shipping);
+
+        // Create checkout session (no order yet - order is created on complete)
+        CheckoutSession session = CheckoutSession.builder()
+                .user(user)
+                .cart(cart)
+                .amount(total)
+                .currency("VND")
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusHours(24))
+                .build();
+
+        CheckoutSession savedSession = checkoutSessionRepository.save(session);
+        log.info("Created checkout session {} for user {}", savedSession.getId(), userId);
+
+        return buildSessionResponse(savedSession, cart, subtotal, tax, shipping, BigDecimal.ZERO, null);
     }
 
-    if (cart.getCartItems().isEmpty()) {
-      throw new AppException(ErrorCode.INVALID_REQUEST);
+    // ============================================================================
+    // Get Session
+    // ============================================================================
+    
+    @Transactional(readOnly = true)
+    public CheckoutSessionResponse getSession(Long userId, Long sessionId) {
+        CheckoutSession session = getValidSession(userId, sessionId);
+        Cart cart = session.getCart();
+        
+        BigDecimal subtotal = cart.getTotalPrice();
+        BigDecimal tax = subtotal.multiply(taxRate);
+        BigDecimal shipping = shippingFlatFee;
+        BigDecimal discount = BigDecimal.ZERO;
+        VoucherInfoDTO voucherInfo = null;
+        
+        // Check for applied voucher
+        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
+            String voucherCode = session.getClientSecret().substring(8);
+            try {
+                Voucher voucher = voucherRepository.findByCode(voucherCode).orElse(null);
+                if (voucher != null) {
+                    discount = voucherService.calculateDiscount(voucherCode, subtotal);
+                    voucherInfo = VoucherInfoDTO.builder()
+                            .code(voucher.getCode())
+                            .discountType(voucher.getDiscountType().name())
+                            .discountValue(voucher.getDiscountValue())
+                            .discountAmount(discount)
+                            .build();
+                }
+            } catch (Exception e) {
+                // Voucher no longer valid, ignore
+            }
+        }
+        
+        return buildSessionResponse(session, cart, subtotal, tax, shipping, discount, voucherInfo);
     }
 
-    // Validate stock
-    validateStock(cart);
-
-    // Calculate totals
-    BigDecimal subtotal = cart.getTotalPrice();
-    BigDecimal tax = subtotal.multiply(taxRate);
-    BigDecimal shipping = shippingFlatFee;
-    BigDecimal discount = BigDecimal.ZERO;
-
-    if (request.getPromoCode() != null && !request.getPromoCode().isEmpty()) {
-      try {
-        discount = voucherService.calculateDiscount(request.getPromoCode(), subtotal);
-      } catch (AppException e) {
-        throw new AppException(ErrorCode.INVALID_PROMO_CODE);
-      }
+    // ============================================================================
+    // Step 2: Update Session (Set Shipping Address)
+    // ============================================================================
+    
+    @Transactional
+    public CheckoutSessionResponse updateSession(Long userId, Long sessionId, UpdateCheckoutSessionRequest request) {
+        CheckoutSession session = getValidSession(userId, sessionId);
+        
+        if (request.getShippingAddressId() != null) {
+            // Validate address belongs to user
+            ShippingAddress address = shippingAddressRepository.findById(request.getShippingAddressId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+            
+            if (!address.getUser().getId().equals(userId)) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+            
+            // Store address ID in session (we'll use paymentIntentId field temporarily)
+            session.setPaymentIntentId("addr:" + request.getShippingAddressId());
+            session.setStatus("SHIPPING_SELECTED");
+        }
+        
+        checkoutSessionRepository.save(session);
+        
+        return getSession(userId, sessionId);
     }
 
-    BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount);
-
-    // Create Order (PENDING)
-    Order order = Order.builder()
-        .user(currentUser)
-        .orderNumber(generateOrderNumber())
-        .status(OrderStatus.PENDING)
-        .subtotal(subtotal)
-        .tax(tax)
-        .shipping(shipping)
-        .discount(discount)
-        .total(total)
-        .promoCode(request.getPromoCode())
-        .notes(request.getNotes())
-        .build();
-
-    Order savedOrder = orderRepository.save(order);
-
-    // Create Order Items and deduct stock
-    List<OrderItem> orderItems = new ArrayList<>();
-    cart.getCartItems().forEach(cartItem -> {
-      OrderItem orderItem = OrderItem.fromCartItem(cartItem, savedOrder);
-      orderItems.add(orderItem);
-
-      // Deduct stock
-      Listing listing = cartItem.getListing();
-      listing.setQuantity(listing.getQuantity() - cartItem.getQuantity());
-      listing.setSoldCount(listing.getSoldCount() + cartItem.getQuantity());
-      listingRepository.save(listing);
-    });
-    orderItemRepository.saveAll(orderItems);
-
-    // Add to timeline
-    OrderTimeline timeline = OrderTimeline.builder()
-        .order(savedOrder)
-        .status("PENDING")
-        .note("Order created from checkout session")
-        .build();
-    orderTimelineRepository.save(timeline);
-
-    // Create Checkout Session
-    CheckoutSession session = CheckoutSession.builder()
-        .user(currentUser)
-        .cart(cart)
-        .order(savedOrder)
-        .amount(total)
-        .currency("USD")
-        .status("PENDING")
-        .expiresAt(LocalDateTime.now().plusHours(24))
-        .paymentIntentId("pi_" + UUID.randomUUID().toString()) // Stripe placeholder
-        .clientSecret("secret_" + UUID.randomUUID().toString()) // Stripe placeholder
-        .build();
-
-    CheckoutSession savedSession = checkoutSessionRepository.save(session);
-
-    // Clear cart
-    cart.getCartItems().clear();
-    cart.setTotalPrice(BigDecimal.ZERO);
-    cartRepository.save(cart);
-
-    return CheckoutResponse.builder()
-        .sessionId(savedSession.getId())
-        .orderId(savedOrder.getId())
-        .paymentIntentId(savedSession.getPaymentIntentId())
-        .clientSecret(savedSession.getClientSecret())
-        .amount(savedSession.getAmount())
-        .currency(savedSession.getCurrency())
-        .status("PENDING_PAYMENT")
-        .expiresAt(savedSession.getExpiresAt())
-        .build();
-  }
-
-  private void validateStock(Cart cart) {
-    List<UnavailableItemDTO> unavailableItems = new ArrayList<>();
-
-    for (CartItem item : cart.getCartItems()) {
-      if (item.getListing().getQuantity() < item.getQuantity()) {
-        unavailableItems.add(UnavailableItemDTO.builder()
-            .bookId(item.getListing().getBookMeta().getId())
-            .title(item.getListing().getBookMeta().getTitle())
-            .requestedQuantity(item.getQuantity())
-            .availableStock(item.getListing().getQuantity())
-            .build());
-      }
+    // ============================================================================
+    // Step 3: Apply Voucher
+    // ============================================================================
+    
+    @Transactional
+    public ApplyVoucherResponse applyVoucher(Long userId, Long sessionId, String code) {
+        CheckoutSession session = getValidSession(userId, sessionId);
+        Cart cart = session.getCart();
+        
+        BigDecimal subtotal = cart.getTotalPrice();
+        
+        // Validate and calculate discount
+        BigDecimal discountAmount = voucherService.calculateDiscount(code, subtotal);
+        
+        // Get voucher details
+        Voucher voucher = voucherRepository.findByCode(code)
+                .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
+        
+        // Store voucher in session (using clientSecret field temporarily)
+        session.setClientSecret("voucher:" + code);
+        checkoutSessionRepository.save(session);
+        
+        // Calculate new total
+        BigDecimal tax = subtotal.multiply(taxRate);
+        BigDecimal shipping = shippingFlatFee;
+        BigDecimal newTotal = subtotal.add(tax).add(shipping).subtract(discountAmount);
+        
+        return ApplyVoucherResponse.builder()
+                .code(voucher.getCode())
+                .discountType(voucher.getDiscountType().name())
+                .discountValue(voucher.getDiscountValue())
+                .discountAmount(discountAmount)
+                .newTotal(newTotal)
+                .build();
     }
 
-    if (!unavailableItems.isEmpty()) {
-      throw new OutOfStockException(unavailableItems);
+    // ============================================================================
+    // Remove Voucher
+    // ============================================================================
+    
+    @Transactional
+    public CheckoutSessionResponse removeVoucher(Long userId, Long sessionId) {
+        CheckoutSession session = getValidSession(userId, sessionId);
+        
+        // Clear voucher
+        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
+            session.setClientSecret(null);
+            checkoutSessionRepository.save(session);
+        }
+        
+        return getSession(userId, sessionId);
     }
-  }
 
-  private String generateOrderNumber() {
-    return "BV-" + LocalDateTime.now().getYear() + "-" + String.format("%06d", new Random().nextInt(1000000));
-  }
+    // ============================================================================
+    // Step 4: Complete Checkout - Create Order + REAL Stripe Payment Intent
+    // ============================================================================
+    
+    @Transactional
+    public CompleteCheckoutResponse completeCheckout(Long userId, Long sessionId, String paymentMethod) {
+        CheckoutSession session = getValidSession(userId, sessionId);
+        User user = session.getUser();
+        Cart cart = session.getCart();
+        
+        // Re-validate stock
+        validateStock(cart);
+        
+        // Get shipping address
+        Long shippingAddressId = null;
+        ShippingAddress shippingAddress = null;
+        if (session.getPaymentIntentId() != null && session.getPaymentIntentId().startsWith("addr:")) {
+            shippingAddressId = Long.parseLong(session.getPaymentIntentId().substring(5));
+            shippingAddress = shippingAddressRepository.findById(shippingAddressId)
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+        }
+        
+        // Calculate totals
+        BigDecimal subtotal = cart.getTotalPrice();
+        BigDecimal tax = subtotal.multiply(taxRate);
+        BigDecimal shipping = shippingFlatFee;
+        BigDecimal discount = BigDecimal.ZERO;
+        String promoCode = null;
+        
+        // Check for voucher
+        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
+            promoCode = session.getClientSecret().substring(8);
+            try {
+                discount = voucherService.calculateDiscount(promoCode, subtotal);
+            } catch (Exception e) {
+                log.warn("Voucher {} no longer valid, ignoring", promoCode);
+                promoCode = null;
+            }
+        }
+        
+        BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount);
+        
+        // Create Order
+        Order order = Order.builder()
+                .user(user)
+                .orderNumber(generateOrderNumber())
+                .status(OrderStatus.PENDING)
+                .subtotal(subtotal)
+                .tax(tax)
+                .shipping(shipping)
+                .discount(discount)
+                .total(total)
+                .promoCode(promoCode)
+                .shippingAddress(shippingAddress)
+                .build();
+        
+        Order savedOrder = orderRepository.save(order);
+        
+        // Create Order Items and deduct stock
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CartItem cartItem : cart.getCartItems()) {
+            OrderItem orderItem = OrderItem.fromCartItem(cartItem, savedOrder);
+            orderItems.add(orderItem);
+            
+            // Deduct stock
+            Listing listing = cartItem.getListing();
+            listing.setQuantity(listing.getQuantity() - cartItem.getQuantity());
+            listing.setSoldCount(listing.getSoldCount() + cartItem.getQuantity());
+            listingRepository.save(listing);
+        }
+        orderItemRepository.saveAll(orderItems);
+        
+        // Add to timeline
+        OrderTimeline timeline = OrderTimeline.builder()
+                .order(savedOrder)
+                .status("PENDING")
+                .note("Order created, awaiting payment")
+                .build();
+        orderTimelineRepository.save(timeline);
+        
+        // Create REAL Stripe Payment Intent
+        PaymentIntent stripeIntent;
+        try {
+            long amountInCents = total.multiply(BigDecimal.valueOf(100)).longValue();
+            
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                    .setAmount(amountInCents)
+                    .setCurrency("vnd")
+                    .setAutomaticPaymentMethods(
+                            PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
+                                    .setEnabled(true)
+                                    .build()
+                    )
+                    .putMetadata("order_id", String.valueOf(savedOrder.getId()))
+                    .putMetadata("user_id", String.valueOf(user.getId()))
+                    .putMetadata("order_number", savedOrder.getOrderNumber())
+                    .build();
+            
+            stripeIntent = PaymentIntent.create(params);
+            log.info("Created Stripe payment intent {} for order {}", stripeIntent.getId(), savedOrder.getId());
+            
+        } catch (StripeException e) {
+            log.error("Stripe error creating payment intent", e);
+            throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
+        }
+        
+        // Save payment record
+        Payment payment = Payment.builder()
+                .order(savedOrder)
+                .user(user)
+                .paymentIntentId(stripeIntent.getId())
+                .amount(total)
+                .status(PaymentStatus.PENDING)
+                .paymentMethod("STRIPE")
+                .build();
+        transactionRepository.save(payment);
+        
+        // Update checkout session
+        session.setOrder(savedOrder);
+        session.setPaymentIntentId(stripeIntent.getId());
+        session.setClientSecret(stripeIntent.getClientSecret());
+        session.setStatus("READY_FOR_PAYMENT");
+        checkoutSessionRepository.save(session);
+        
+        // Clear cart
+        cart.getCartItems().clear();
+        cart.setTotalPrice(BigDecimal.ZERO);
+        cartRepository.save(cart);
+        
+        return CompleteCheckoutResponse.builder()
+                .orderId(savedOrder.getId())
+                .orderNumber(savedOrder.getOrderNumber())
+                .paymentIntent(CompleteCheckoutResponse.PaymentIntentDTO.builder()
+                        .id(stripeIntent.getId())
+                        .clientSecret(stripeIntent.getClientSecret())
+                        .amount(total)
+                        .currency("VND")
+                        .status(stripeIntent.getStatus())
+                        .publishableKey(stripePublishableKey)
+                        .build())
+                .build();
+    }
+
+    // ============================================================================
+    // Helper Methods
+    // ============================================================================
+    
+    private CheckoutSession getValidSession(Long userId, Long sessionId) {
+        CheckoutSession session = checkoutSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AppException(ErrorCode.CHECKOUT_SESSION_NOT_FOUND));
+        
+        if (!session.getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        
+        if (session.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CHECKOUT_SESSION_EXPIRED);
+        }
+        
+        return session;
+    }
+    
+    private CheckoutSessionResponse buildSessionResponse(
+            CheckoutSession session, 
+            Cart cart, 
+            BigDecimal subtotal, 
+            BigDecimal tax, 
+            BigDecimal shipping, 
+            BigDecimal discount,
+            VoucherInfoDTO voucherInfo) {
+        
+        User user = session.getUser();
+        
+        // Build cart items list (Vision structure)
+        List<CartItemDTO> cartItems = cart.getCartItems().stream()
+                .map(item -> {
+                    Listing listing = item.getListing();
+                    User seller = listing.getSeller();
+                    UserProfile sellerProfile = seller.getUserProfile();
+                    
+                    return CartItemDTO.builder()
+                            .id(item.getId())
+                            .listing(ListingDTO.builder()
+                                    .id(listing.getId())
+                                    .book(BookDTO.builder()
+                                            .title(listing.getBookMeta().getTitle())
+                                            .coverImage(listing.getBookMeta().getCoverImageUrl())
+                                            .build())
+                                    .price(listing.getPrice())
+                                    .finalPrice(listing.getPrice()) // Could include promotions
+                                    .quantity(listing.getQuantity())
+                                    .condition(listing.getCondition().name())
+                                    .seller(SellerDTO.builder()
+                                            .id(seller.getId())
+                                            .name(sellerProfile != null ? sellerProfile.getFullName() : seller.getUsername())
+                                            .build())
+                                    .build())
+                            .quantity(item.getQuantity())
+                            .build();
+                })
+                .collect(Collectors.toList());
+        
+        // Build cart DTO with summary
+        BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount);
+        CartDTO cartDTO = CartDTO.builder()
+                .id(cart.getId())
+                .cartItems(cartItems)
+                .summary(SummaryDTO.builder()
+                        .subtotal(subtotal)
+                        .discount(discount)
+                        .total(total)
+                        .build())
+                .itemCount(cart.getCartItems().size())
+                .build();
+        
+        // Get user's shipping addresses (per Vision)
+        List<ShippingAddress> userAddresses = shippingAddressRepository.findByUserId(user.getId());
+        List<ShippingAddressResponse> addressResponses = userAddresses.stream()
+                .map(shippingAddressMapper::toShippingAddressResponse)
+                .collect(Collectors.toList());
+        
+        // Extract selected address ID if set
+        Long selectedAddressId = null;
+        if (session.getPaymentIntentId() != null && session.getPaymentIntentId().startsWith("addr:")) {
+            selectedAddressId = Long.parseLong(session.getPaymentIntentId().substring(5));
+        }
+        
+        return CheckoutSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus())
+                .cart(cartDTO)
+                .shippingAddresses(addressResponses)
+                .selectedAddressId(selectedAddressId)
+                .voucher(voucherInfo)
+                .expiresAt(session.getExpiresAt())
+                .createdAt(session.getCreatedAt())
+                .build();
+    }
+
+    private void validateStock(Cart cart) {
+        List<UnavailableItemDTO> unavailableItems = new ArrayList<>();
+
+        for (CartItem item : cart.getCartItems()) {
+            if (item.getListing().getQuantity() < item.getQuantity()) {
+                unavailableItems.add(UnavailableItemDTO.builder()
+                        .bookId(item.getListing().getBookMeta().getId())
+                        .title(item.getListing().getBookMeta().getTitle())
+                        .requestedQuantity(item.getQuantity())
+                        .availableStock(item.getListing().getQuantity())
+                        .build());
+            }
+        }
+
+        if (!unavailableItems.isEmpty()) {
+            throw new OutOfStockException(unavailableItems);
+        }
+    }
+
+    private String generateOrderNumber() {
+        return "BV-" + LocalDateTime.now().getYear() + "-" + String.format("%06d", new Random().nextInt(1000000));
+    }
+
+    // ============================================================================
+    // LEGACY: Keep for backward compatibility
+    // ============================================================================
+    
+    @Transactional
+    public CheckoutResponse createCheckoutSession(Long userId, CreateCheckoutRequest request) {
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        Cart cart = cartRepository.findById(request.getCartId())
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
+
+        if (!cart.getUser().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (cart.getCartItems().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        validateStock(cart);
+
+        BigDecimal subtotal = cart.getTotalPrice();
+        BigDecimal tax = subtotal.multiply(taxRate);
+        BigDecimal shipping = shippingFlatFee;
+        BigDecimal discount = BigDecimal.ZERO;
+
+        if (request.getPromoCode() != null && !request.getPromoCode().isEmpty()) {
+            try {
+                discount = voucherService.calculateDiscount(request.getPromoCode(), subtotal);
+            } catch (AppException e) {
+                throw new AppException(ErrorCode.INVALID_PROMO_CODE);
+            }
+        }
+
+        BigDecimal total = subtotal.add(tax).add(shipping).subtract(discount);
+
+        Order order = Order.builder()
+                .user(currentUser)
+                .orderNumber(generateOrderNumber())
+                .status(OrderStatus.PENDING)
+                .subtotal(subtotal)
+                .tax(tax)
+                .shipping(shipping)
+                .discount(discount)
+                .total(total)
+                .promoCode(request.getPromoCode())
+                .notes(request.getNotes())
+                .build();
+
+        Order savedOrder = orderRepository.save(order);
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        cart.getCartItems().forEach(cartItem -> {
+            OrderItem orderItem = OrderItem.fromCartItem(cartItem, savedOrder);
+            orderItems.add(orderItem);
+
+            Listing listing = cartItem.getListing();
+            listing.setQuantity(listing.getQuantity() - cartItem.getQuantity());
+            listing.setSoldCount(listing.getSoldCount() + cartItem.getQuantity());
+            listingRepository.save(listing);
+        });
+        orderItemRepository.saveAll(orderItems);
+
+        OrderTimeline timeline = OrderTimeline.builder()
+                .order(savedOrder)
+                .status("PENDING")
+                .note("Order created from checkout session")
+                .build();
+        orderTimelineRepository.save(timeline);
+
+        CheckoutSession session = CheckoutSession.builder()
+                .user(currentUser)
+                .cart(cart)
+                .order(savedOrder)
+                .amount(total)
+                .currency("USD")
+                .status("PENDING")
+                .expiresAt(LocalDateTime.now().plusHours(24))
+                .paymentIntentId("pi_" + UUID.randomUUID().toString())
+                .clientSecret("secret_" + UUID.randomUUID().toString())
+                .build();
+
+        CheckoutSession savedSession = checkoutSessionRepository.save(session);
+
+        cart.getCartItems().clear();
+        cart.setTotalPrice(BigDecimal.ZERO);
+        cartRepository.save(cart);
+
+        return CheckoutResponse.builder()
+                .sessionId(savedSession.getId())
+                .orderId(savedOrder.getId())
+                .paymentIntentId(savedSession.getPaymentIntentId())
+                .clientSecret(savedSession.getClientSecret())
+                .amount(savedSession.getAmount())
+                .currency(savedSession.getCurrency())
+                .status("PENDING_PAYMENT")
+                .expiresAt(savedSession.getExpiresAt())
+                .build();
+    }
 }

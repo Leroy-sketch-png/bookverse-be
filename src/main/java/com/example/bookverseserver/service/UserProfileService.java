@@ -7,6 +7,7 @@ import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
+import com.example.bookverseserver.enums.AccountType;
 import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
@@ -106,8 +107,15 @@ public class UserProfileService {
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
 
         User user = profile.getUser();
+        
+        // Check if user already has SELLER role
+        boolean alreadySeller = user.getRoles().stream()
+                .anyMatch(role -> role.getName() == RoleName.SELLER || role.getName() == RoleName.PRO_SELLER);
+        if (alreadySeller) {
+            throw new AppException(ErrorCode.ALREADY_SELLER);
+        }
 
-        Role sellerRole = roleRepository.findByName(RoleName.USER)
+        Role sellerRole = roleRepository.findByName(RoleName.SELLER)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         // Add SELLER role to existing roles
@@ -115,7 +123,8 @@ public class UserProfileService {
         roles.add(sellerRole);
         user.setRoles(roles);
         
-        profile.setAccountType("SELLER");
+        // Update account type
+        profile.setAccountType(AccountType.SELLER.name());
 
         userRepository.save(user);
         userProfileRepository.save(profile);

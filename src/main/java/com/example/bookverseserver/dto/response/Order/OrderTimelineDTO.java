@@ -3,8 +3,10 @@ package com.example.bookverseserver.dto.response.Order;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-
+/**
+ * Order Timeline DTO - matches Vision API_CONTRACTS.md
+ * FE expects timestamp as ISO string
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,6 +14,6 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderTimelineDTO {
   String status;
-  LocalDateTime timestamp;
+  String timestamp; // ISO string format for FE compatibility
   String note;
 }

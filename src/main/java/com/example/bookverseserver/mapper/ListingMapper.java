@@ -30,7 +30,7 @@ public abstract class ListingMapper {
     public abstract Listing toListing(ListingRequest request);
 
     /**
-     * Map listing to listing response with author details.
+     * Map listing to listing response with nested structure per Vision API_CONTRACTS.md.
      */
     public ListingResponse toListingResponse(Listing listing) {
         if (listing == null) {
@@ -38,44 +38,47 @@ public abstract class ListingMapper {
         }
 
         BookMeta bookMeta = listing.getBookMeta();
+        User seller = listing.getSeller();
+        UserProfile profile = seller != null ? seller.getUserProfile() : null;
         
         return ListingResponse.builder()
                 .id(listing.getId())
-                .bookMetaId(bookMeta != null ? bookMeta.getId() : null)
-                .bookTitle(bookMeta != null ? bookMeta.getTitle() : null)
-                .authors(bookMeta != null && bookMeta.getAuthors() != null 
-                    ? bookMeta.getAuthors().stream()
-                        .map(authorMapper::toAuthorResponse)
-                        .collect(Collectors.toList())
-                    : List.of())
-                .bookCoverImage(bookMeta != null ? bookMeta.getCoverImageUrl() : null)
-                .isbn(bookMeta != null ? bookMeta.getIsbn() : null)
+                // Nested book info
+                .book(ListingResponse.BookInfo.builder()
+                        .id(bookMeta != null ? bookMeta.getId() : null)
+                        .title(bookMeta != null ? bookMeta.getTitle() : null)
+                        .authors(bookMeta != null && bookMeta.getAuthors() != null 
+                            ? bookMeta.getAuthors().stream()
+                                .map(authorMapper::toAuthorResponse)
+                                .collect(Collectors.toList())
+                            : List.of())
+                        .isbn(bookMeta != null ? bookMeta.getIsbn() : null)
+                        .coverImage(bookMeta != null ? bookMeta.getCoverImageUrl() : null)
+                        .build())
                 .category(listing.getCategory() != null ? categoryMapper.toCategoryResponse(listing.getCategory()) : null)
-                .sellerId(listing.getSeller() != null ? listing.getSeller().getId() : null)
-                .sellerName(listing.getSeller() != null ? listing.getSeller().getUsername() : null)
-                .titleOverride(listing.getTitleOverride())
+                // Nested seller info
+                .seller(ListingResponse.SellerInfo.builder()
+                        .id(seller != null ? seller.getId() : null)
+                        .name(profile != null ? profile.getDisplayName() : (seller != null ? seller.getUsername() : null))
+                        .avatar(profile != null ? profile.getAvatarUrl() : null)
+                        .isPro(profile != null ? profile.getIsProSeller() : false)
+                        .rating(profile != null && profile.getRatingAvg() != null 
+                            ? java.math.BigDecimal.valueOf(profile.getRatingAvg()) : null)
+                        .build())
                 .price(listing.getPrice())
                 .originalPrice(listing.getOriginalPrice())
                 .finalPrice(listing.getPrice()) // finalPrice = price (current selling price per Vision)
-                .currency(listing.getCurrency())
                 .condition(listing.getCondition())
                 .quantity(listing.getQuantity())
-                .location(listing.getLocation())
-                .status(listing.getStatus())
-                .visibility(listing.getVisibility())
-                .platformFeePercent(listing.getPlatformFeePercent())
-                .suggestedPriceLow(listing.getSuggestedPriceLow())
-                .suggestedPriceHigh(listing.getSuggestedPriceHigh())
-                .views(listing.getViews())
-                .likes(listing.getLikes())
-                .soldCount(listing.getSoldCount())
-                .createdAt(listing.getCreatedAt())
-                .updatedAt(listing.getUpdatedAt())
-                .photos(listing.getPhotos() != null 
-                    ? listing.getPhotos().stream()
-                        .map(this::toListingPhotoResponse)
-                        .collect(Collectors.toList())
-                    : List.of())
+                // Photos as URL strings only
+                .photos(extractPhotoUrls(listing.getPhotos()))
+                // Nested stats
+                .stats(ListingResponse.ListingStats.builder()
+                        .views(listing.getViews())
+                        .favorites(listing.getLikes())  // "likes" → "favorites" per Vision
+                        .soldCount(listing.getSoldCount())
+                        .build())
+                .createdAt(listing.getCreatedAt() != null ? listing.getCreatedAt().toString() : null)
                 .build();
     }
 
