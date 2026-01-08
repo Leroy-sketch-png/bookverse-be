@@ -1,5 +1,6 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.configuration.CustomJwtDecoder;
 import com.example.bookverseserver.dto.request.CartItem.CartItemRequest;
 import com.example.bookverseserver.dto.response.CartItem.CartItemResponse;
 import com.example.bookverseserver.service.AuthenticationService;
@@ -43,6 +44,9 @@ class CartItemControllerTest {
   @MockBean
   private AuthenticationService authenticationService;
 
+  @MockBean
+  private CustomJwtDecoder customJwtDecoder;
+
   private final Long TEST_USER_ID = 1L;
   private final Long TEST_LISTING_ID = 1L;
   private CartItemResponse cartItemResponse;
@@ -66,7 +70,7 @@ class CartItemControllerTest {
         .thenReturn(cartItemResponse);
 
     // Act & Assert
-    mockMvc.perform(post("/api/v1/cart/items")
+    mockMvc.perform(post("/api/cart/items")
         .with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
@@ -82,7 +86,7 @@ class CartItemControllerTest {
     CartItemRequest request = new CartItemRequest(TEST_LISTING_ID, 2);
 
     // Act & Assert
-    mockMvc.perform(post("/api/v1/cart/items")
+    mockMvc.perform(post("/api/cart/items")
         .with(csrf())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
@@ -98,7 +102,7 @@ class CartItemControllerTest {
     when(cartItemService.updateCartItem(TEST_USER_ID, TEST_LISTING_ID, 5)).thenReturn(cartItemResponse);
 
     // Act & Assert
-    mockMvc.perform(put("/api/v1/cart/items/{listingId}", TEST_LISTING_ID)
+    mockMvc.perform(put("/api/cart/items/{listingId}", TEST_LISTING_ID)
         .with(csrf())
         .param("quantity", "5"))
         .andExpect(status().isOk())
@@ -114,7 +118,7 @@ class CartItemControllerTest {
     when(cartItemService.deleteCartItem(TEST_USER_ID, TEST_LISTING_ID)).thenReturn(cartItemResponse);
 
     // Act & Assert
-    mockMvc.perform(delete("/api/v1/cart/items/{listingId}", TEST_LISTING_ID)
+    mockMvc.perform(delete("/api/cart/items/{listingId}", TEST_LISTING_ID)
         .with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code", is(200)))

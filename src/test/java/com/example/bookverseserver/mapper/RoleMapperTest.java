@@ -4,17 +4,19 @@ import com.example.bookverseserver.dto.request.Authentication.RoleRequest;
 import com.example.bookverseserver.dto.response.Authentication.RoleResponse;
 import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.enums.RoleName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class RoleMapperTest {
 
-    @Autowired
     private RoleMapper roleMapper;
+
+    @BeforeEach
+    void setUp() {
+        roleMapper = new RoleMapperImpl();
+    }
 
     @Test
     void testToRole() {

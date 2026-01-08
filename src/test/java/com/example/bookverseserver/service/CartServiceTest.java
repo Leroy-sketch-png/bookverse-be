@@ -1,6 +1,7 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.Cart.CartResponse;
+import com.example.bookverseserver.dto.response.Cart.CartSummary;
 import com.example.bookverseserver.entity.Order_Payment.Cart;
 import com.example.bookverseserver.entity.Order_Payment.Voucher;
 import com.example.bookverseserver.entity.User.User;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -91,7 +93,9 @@ class CartServiceTest {
     // Then
     assertNotNull(result);
     assertEquals(1L, result.id());
-    assertEquals(BigDecimal.valueOf(100), result.subtotal());
+    // CartResponse uses nested summary per Vision API_CONTRACTS.md
+    assertNotNull(result.summary());
+    assertEquals(BigDecimal.valueOf(100), result.summary().subtotal());
   }
 
   @Test
@@ -113,7 +117,8 @@ class CartServiceTest {
 
     // Then
     assertNotNull(result);
-    assertEquals(BigDecimal.ZERO, result.subtotal());
+    assertNotNull(result.summary());
+    assertEquals(BigDecimal.ZERO, result.summary().subtotal());
     verify(cartRepository).save(any(Cart.class));
   }
 

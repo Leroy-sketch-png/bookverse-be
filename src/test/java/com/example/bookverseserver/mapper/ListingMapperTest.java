@@ -8,19 +8,25 @@ import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.BookCondition;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class ListingMapperTest {
 
-    @Autowired
     private ListingMapper listingMapper;
+
+    @BeforeEach
+    void setUp() {
+        listingMapper = new ListingMapperImpl();
+        // ListingMapper depends on these mappers
+        ReflectionTestUtils.setField(listingMapper, "authorMapper", new AuthorMapperImpl());
+        ReflectionTestUtils.setField(listingMapper, "categoryMapper", new CategoryMapperImpl());
+    }
 
     @Test
     void testToListing() {
@@ -59,10 +65,13 @@ class ListingMapperTest {
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getPrice()).isEqualTo(BigDecimal.valueOf(100));
-        assertThat(response.getBookMetaId()).isEqualTo(2L);
-        assertThat(response.getBookTitle()).isEqualTo("Test Book");
-        assertThat(response.getSellerId()).isEqualTo(3L);
-        assertThat(response.getSellerName()).isEqualTo("test_seller");
+        // Nested structure per Vision API_CONTRACTS.md
+        assertThat(response.getBook()).isNotNull();
+        assertThat(response.getBook().getId()).isEqualTo(2L);
+        assertThat(response.getBook().getTitle()).isEqualTo("Test Book");
+        assertThat(response.getSeller()).isNotNull();
+        assertThat(response.getSeller().getId()).isEqualTo(3L);
+        assertThat(response.getSeller().getName()).isEqualTo("test_seller");
     }
 
     @Test

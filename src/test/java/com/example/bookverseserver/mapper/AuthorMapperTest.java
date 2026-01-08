@@ -5,17 +5,19 @@ import com.example.bookverseserver.dto.request.Book.AuthorRequest;
 import com.example.bookverseserver.dto.response.Book.AuthorDetailResponse;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.entity.Product.Author;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class AuthorMapperTest {
 
-    @Autowired
     private AuthorMapper authorMapper;
+
+    @BeforeEach
+    void setUp() {
+        authorMapper = new AuthorMapperImpl();
+    }
 
     @Test
     void testToAuthor() {

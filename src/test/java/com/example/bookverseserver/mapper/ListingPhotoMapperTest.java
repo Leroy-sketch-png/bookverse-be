@@ -3,19 +3,21 @@ package com.example.bookverseserver.mapper;
 import com.example.bookverseserver.dto.request.Product.ListingPhotoRequest;
 import com.example.bookverseserver.dto.response.Product.ListingPhotoResponse;
 import com.example.bookverseserver.entity.Product.ListingPhoto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class ListingPhotoMapperTest {
 
-    @Autowired
     private ListingPhotoMapper listingPhotoMapper;
+
+    @BeforeEach
+    void setUp() {
+        listingPhotoMapper = new ListingPhotoMapperImpl();
+    }
 
     @Test
     void testToListingPhoto() {

@@ -5,17 +5,19 @@ import com.example.bookverseserver.dto.request.User.ProfileUpdateRequest;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class UserProfileMapperTest {
 
-    @Autowired
     private UserProfileMapper userProfileMapper;
+
+    @BeforeEach
+    void setUp() {
+        userProfileMapper = new UserProfileMapperImpl();
+    }
 
     @Test
     void testToEntity() {

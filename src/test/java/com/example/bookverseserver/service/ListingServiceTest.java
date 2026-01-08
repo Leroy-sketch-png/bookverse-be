@@ -124,7 +124,9 @@ class ListingServiceTest {
             when(listingMapper.toListingResponse(any(Listing.class)))
                     .thenReturn(ListingResponse.builder()
                             .id(301L)
-                            .sellerId(sellerId)
+                            .seller(ListingResponse.SellerInfo.builder()
+                                    .id(sellerId)
+                                    .build())
                             .build());
 
             // When
@@ -134,7 +136,7 @@ class ListingServiceTest {
             // Then
             assertNotNull(result);
             assertFalse(result.getData().isEmpty());
-            assertEquals(sellerId, result.getData().get(0).getSellerId());
+            assertEquals(sellerId, result.getData().get(0).getSeller().getId());
             verify(listingRepository).findAll(any(Specification.class), any(Pageable.class));
         }
 
@@ -150,7 +152,6 @@ class ListingServiceTest {
             when(listingMapper.toListingResponse(any(Listing.class)))
                     .thenReturn(ListingResponse.builder()
                             .id(301L)
-                            .status(ListingStatus.ACTIVE)
                             .build());
 
             // When
@@ -160,7 +161,8 @@ class ListingServiceTest {
             // Then
             assertNotNull(result);
             assertFalse(result.getData().isEmpty());
-            assertEquals(ListingStatus.ACTIVE, result.getData().get(0).getStatus());
+            // Status is not directly on ListingResponse per Vision - filtering is done server-side
+            assertNotNull(result.getData().get(0));
         }
 
         @Test
@@ -176,7 +178,9 @@ class ListingServiceTest {
             when(listingMapper.toListingResponse(any(Listing.class)))
                     .thenReturn(ListingResponse.builder()
                             .id(301L)
-                            .bookMetaId(bookId)
+                            .book(ListingResponse.BookInfo.builder()
+                                    .id(bookId)
+                                    .build())
                             .build());
 
             // When
@@ -186,7 +190,7 @@ class ListingServiceTest {
             // Then
             assertNotNull(result);
             assertFalse(result.getData().isEmpty());
-            assertEquals(bookId, result.getData().get(0).getBookMetaId());
+            assertEquals(bookId, result.getData().get(0).getBook().getId());
         }
 
         @Test
@@ -225,7 +229,7 @@ class ListingServiceTest {
             when(listingMapper.toDetailResponse(any(Listing.class)))
                     .thenReturn(ListingDetailResponse.builder()
                             .id(301L)
-                            .viewCount(101)
+                            .views(101)
                             .build());
             when(listingRepository.findRelatedListings(anyLong(), anyLong(), any(Pageable.class)))
                     .thenReturn(List.of());
@@ -248,7 +252,7 @@ class ListingServiceTest {
             when(listingMapper.toDetailResponse(any(Listing.class)))
                     .thenReturn(ListingDetailResponse.builder()
                             .id(301L)
-                            .viewCount(101)
+                            .views(101)
                             .build());
             when(listingRepository.findRelatedListings(anyLong(), anyLong(), any(Pageable.class)))
                     .thenReturn(List.of());
@@ -271,7 +275,7 @@ class ListingServiceTest {
             when(listingMapper.toDetailResponse(any(Listing.class)))
                     .thenReturn(ListingDetailResponse.builder()
                             .id(301L)
-                            .viewCount(100)
+                            .views(100)
                             .build());
             when(listingRepository.findRelatedListings(anyLong(), anyLong(), any(Pageable.class)))
                     .thenReturn(List.of());
@@ -361,8 +365,12 @@ class ListingServiceTest {
             when(listingMapper.toListingResponse(any(Listing.class)))
                     .thenReturn(ListingResponse.builder()
                             .id(301L)
-                            .bookMetaId(123L)
-                            .sellerId(50L)
+                            .book(ListingResponse.BookInfo.builder()
+                                    .id(123L)
+                                    .build())
+                            .seller(ListingResponse.SellerInfo.builder()
+                                    .id(50L)
+                                    .build())
                             .build());
 
             // When

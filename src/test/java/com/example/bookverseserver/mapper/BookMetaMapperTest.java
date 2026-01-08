@@ -3,19 +3,21 @@ package com.example.bookverseserver.mapper;
 import com.example.bookverseserver.dto.request.Book.BookMetaCreationRequest;
 import com.example.bookverseserver.dto.response.Book.BookResponse;
 import com.example.bookverseserver.entity.Product.BookMeta;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class BookMetaMapperTest {
 
-    @Autowired
     private BookMetaMapper bookMetaMapper;
+
+    @BeforeEach
+    void setUp() {
+        bookMetaMapper = new BookMetaMapperImpl();
+    }
 
     @Test
     void testToBookMeta() {

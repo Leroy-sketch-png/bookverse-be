@@ -1,6 +1,8 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.configuration.CustomJwtDecoder;
 import com.example.bookverseserver.dto.response.Cart.CartResponse;
+import com.example.bookverseserver.dto.response.Cart.CartSummary;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.CartService;
 import com.example.bookverseserver.utils.SecurityUtils;
@@ -14,7 +16,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.util.Set;
+import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,20 +41,23 @@ class CartControllerTest {
   @MockBean
   private AuthenticationService authenticationService;
 
+  @MockBean
+  private CustomJwtDecoder customJwtDecoder;
+
   private final Long TEST_USER_ID = 1L;
   private CartResponse cartResponse;
 
   @BeforeEach
   void setUp() {
+    // CartResponse uses nested summary per Vision API_CONTRACTS.md
     cartResponse = CartResponse.builder()
         .id(1L)
-        .userId(TEST_USER_ID)
-        .cartItems(Set.of())
-        .subtotal(BigDecimal.valueOf(100))
-        .tax(BigDecimal.valueOf(9))
-        .shipping(BigDecimal.ZERO)
-        .discount(BigDecimal.ZERO)
-        .total(BigDecimal.valueOf(109))
+        .cartItems(List.of())
+        .summary(CartSummary.builder()
+                .subtotal(BigDecimal.valueOf(100))
+                .discount(BigDecimal.ZERO)
+                .total(BigDecimal.valueOf(109))
+                .build())
         .itemCount(2)
         .build();
   }
@@ -64,19 +69,19 @@ class CartControllerTest {
     when(securityUtils.getCurrentUserId(any(Authentication.class))).thenReturn(TEST_USER_ID);
     when(cartService.getCartByUserId(TEST_USER_ID)).thenReturn(cartResponse);
 
-    // Act & Assert
-    mockMvc.perform(get("/api/v1/cart"))
+    // Act & Assert - CartResponse uses nested summary per Vision
+    mockMvc.perform(get("/api/cart"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code", is(200)))
         .andExpect(jsonPath("$.message", is("Cart retrieved successfully")))
-        .andExpect(jsonPath("$.result.subtotal", is(100)))
+        .andExpect(jsonPath("$.result.summary.subtotal", is(100)))
         .andExpect(jsonPath("$.result.itemCount", is(2)));
   }
 
   @Test
   void getCart_Unauthenticated_RedirectsToOAuth2() throws Exception {
     // Act & Assert
-    mockMvc.perform(get("/api/v1/cart"))
+    mockMvc.perform(get("/api/cart"))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrlPattern("**/oauth2/authorization/google"));
   }
@@ -84,26 +89,28 @@ class CartControllerTest {
   @Test
   @WithMockUser
   void applyVoucher_Success() throws Exception {
-    // Arrange
+    // Arrange - CartResponse uses nested summary per Vision
     CartResponse cartWithVoucher = CartResponse.builder()
         .id(1L)
-        .userId(TEST_USER_ID)
-        .subtotal(BigDecimal.valueOf(100))
-        .discount(BigDecimal.valueOf(20))
-        .total(BigDecimal.valueOf(89))
+        .cartItems(List.of())
+        .summary(CartSummary.builder()
+                .subtotal(BigDecimal.valueOf(100))
+                .discount(BigDecimal.valueOf(20))
+                .total(BigDecimal.valueOf(89))
+                .build())
         .build();
 
     when(securityUtils.getCurrentUserId(any(Authentication.class))).thenReturn(TEST_USER_ID);
     when(cartService.applyVoucherToCart(eq(TEST_USER_ID), eq("SUMMER20"))).thenReturn(cartWithVoucher);
 
     // Act & Assert
-    mockMvc.perform(post("/api/v1/cart/voucher")
+    mockMvc.perform(post("/api/cart/voucher")
         .with(csrf())
         .param("voucherCode", "SUMMER20"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code", is(200)))
         .andExpect(jsonPath("$.message", is("Voucher applied successfully")))
-        .andExpect(jsonPath("$.result.discount", is(20)));
+        .andExpect(jsonPath("$.result.summary.discount", is(20)));
   }
 
   @Test
@@ -114,7 +121,7 @@ class CartControllerTest {
     when(cartService.removeVoucherFromCart(TEST_USER_ID)).thenReturn(cartResponse);
 
     // Act & Assert
-    mockMvc.perform(patch("/api/v1/cart/voucher")
+    mockMvc.perform(patch("/api/cart/voucher")
         .with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.code", is(200)))

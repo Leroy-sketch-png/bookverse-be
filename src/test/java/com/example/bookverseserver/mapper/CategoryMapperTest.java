@@ -3,17 +3,19 @@ package com.example.bookverseserver.mapper;
 import com.example.bookverseserver.dto.request.Book.CategoryRequest;
 import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.entity.Product.Category;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
 class CategoryMapperTest {
 
-    @Autowired
     private CategoryMapper categoryMapper;
+
+    @BeforeEach
+    void setUp() {
+        categoryMapper = new CategoryMapperImpl();
+    }
 
     @Test
     void testToCategory() {
