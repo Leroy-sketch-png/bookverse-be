@@ -24,4 +24,7 @@ public interface ModerationActionRepository extends JpaRepository<ModerationActi
     List<ModerationAction> findByTargetTypeAndTargetId(String targetType, Long targetId);
     
     long countByModeratorIdAndCreatedAtBetween(Long moderatorId, LocalDateTime start, LocalDateTime end);
+    
+    // Recent actions for activity feed - per Vision features/moderation.md
+    List<ModerationAction> findTop10ByOrderByCreatedAtDesc();
 }

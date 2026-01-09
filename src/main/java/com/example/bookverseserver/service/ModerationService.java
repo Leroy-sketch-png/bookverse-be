@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.example.bookverseserver.enums.ModerationActionType.*;
+
 /**
  * Moderation Service - per Vision features/moderation.md.
  * Handles flagged listings, user reports, disputes, and moderation actions.
@@ -47,6 +49,21 @@ public class ModerationService {
 
     @Transactional(readOnly = true)
     public ModerationSummary getSummary() {
+        // Get recent actions for activity feed
+        var recentActions = moderationActionRepository.findTop10ByOrderByCreatedAtDesc()
+                .stream()
+                .map(action -> ModerationSummary.RecentAction.builder()
+                        .type(action.getActionType().name())
+                        .targetType(action.getTargetType())
+                        .targetId(action.getTargetId())
+                        .moderatorName(action.getModerator().getUserProfile() != null 
+                                ? action.getModerator().getUserProfile().getDisplayName()
+                                : action.getModerator().getUsername())
+                        .timestamp(action.getCreatedAt())
+                        .description(formatActionDescription(action))
+                        .build())
+                .toList();
+        
         return ModerationSummary.builder()
                 .flaggedListings(ModerationSummary.QueueStats.builder()
                         .pending(flaggedListingRepository.countByStatus(FlagStatus.PENDING))
@@ -63,7 +80,32 @@ public class ModerationService {
                         .reviewing(disputeRepository.countByStatus(DisputeStatus.INVESTIGATING))
                         .critical(0L) // Disputes don't have severity
                         .build())
+                .recentActions(recentActions)
                 .build();
+    }
+    
+    private String formatActionDescription(com.example.bookverseserver.entity.Moderation.ModerationAction action) {
+        String targetLabel = switch (action.getTargetType()) {
+            case "flagged_listing" -> "listing";
+            case "user_report" -> "report";
+            case "dispute" -> "dispute";
+            case "user" -> "user";
+            default -> action.getTargetType();
+        };
+        
+        String actionLabel = switch (action.getActionType()) {
+            case APPROVE -> "approved";
+            case REQUEST_CHANGES -> "requested changes for";
+            case REMOVE_LISTING -> "removed";
+            case BAN_LISTING -> "banned";
+            case WARN_USER -> "warned";
+            case SUSPEND_USER -> "suspended";
+            case BAN_USER -> "banned";
+            case REFUND_ORDER -> "refunded";
+            case DISMISS -> "dismissed";
+        };
+        
+        return String.format("%s %s #%d", actionLabel, targetLabel, action.getTargetId());
     }
 
     // ============ Flagged Listings ============
