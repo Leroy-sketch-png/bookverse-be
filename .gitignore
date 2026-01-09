@@ -59,3 +59,6 @@ replay_pid*
 # Ignore environment variable files
 .env
 
+check_schema.sql
+check_users.sql
+demo_seed.sql
