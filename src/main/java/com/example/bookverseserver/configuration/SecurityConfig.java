@@ -37,8 +37,11 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/auth/**",
+            "/api/author",           // GET all authors for browsing
+            "/api/author/{id}",      // GET single author
             "/api/author/name/{name}",
             "/api/categories",       // GET categories is public for browsing
+            "/api/categories/{id}",  // GET single category
             "/api/vouchers/{code}",
             "/api/v1/transactions/**",
             "/error"
@@ -48,6 +51,13 @@ public class SecurityConfig {
     private final String[] PUBLIC_BOOKS_GET = {
             "/api/books",       // GET all books
             "/api/books/{id}"   // GET book by ID
+    };
+    
+    // Listings endpoints - GET is public for browsing marketplace
+    private final String[] PUBLIC_LISTINGS_GET = {
+            "/api/listings",           // GET all listings (browse marketplace)
+            "/api/listings/{id}",      // GET single listing detail
+            "/api/listings/{id}/reviews"  // GET reviews for a listing
     };
 
     @Autowired
@@ -64,6 +74,7 @@ public class SecurityConfig {
                 request
                         .requestMatchers(PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_BOOKS_GET).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_LISTINGS_GET).permitAll()
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

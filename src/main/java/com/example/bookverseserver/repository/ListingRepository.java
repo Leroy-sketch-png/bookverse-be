@@ -142,7 +142,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH l.category c
-            LEFT JOIN FETCH l.listingPhotos p
+            LEFT JOIN FETCH l.photos p
             WHERE l.seller.id = :sellerId
             AND l.status = :status
             AND l.category.slug = :categorySlug
