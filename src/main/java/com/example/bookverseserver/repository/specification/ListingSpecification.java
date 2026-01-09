@@ -1,17 +1,67 @@
 package com.example.bookverseserver.repository.specification;
 
+import com.example.bookverseserver.entity.Product.Author;
+import com.example.bookverseserver.entity.Product.BookMeta;
 import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.ListingStatus;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JPA Specifications for dynamic Listing queries.
- * Enables flexible filtering by seller, book, status, and visibility.
+ * Enables flexible filtering by seller, book, status, visibility, and text search.
  */
 public class ListingSpecification {
 
     private ListingSpecification() {
         // Utility class - prevent instantiation
+    }
+
+    /**
+     * Full-text search across book title, author names, and listing description.
+     * Case-insensitive LIKE matching on multiple fields.
+     * 
+     * @param searchText the search query (e.g., "haruki murakami", "kafka shore")
+     * @return specification matching listings where any field contains the search text
+     */
+    public static Specification<Listing> containsSearchText(String searchText) {
+        return (root, query, cb) -> {
+            if (searchText == null || searchText.trim().isEmpty()) {
+                return cb.conjunction(); // Always true - no filter
+            }
+            
+            String pattern = "%" + searchText.toLowerCase().trim() + "%";
+            List<Predicate> predicates = new ArrayList<>();
+            
+            // Search in book title
+            Join<Listing, BookMeta> bookJoin = root.join("bookMeta", JoinType.LEFT);
+            predicates.add(cb.like(cb.lower(bookJoin.get("title")), pattern));
+            
+            // Search in listing title override
+            predicates.add(cb.like(cb.lower(root.get("titleOverride")), pattern));
+            
+            // Search in listing description
+            predicates.add(cb.like(cb.lower(root.get("description")), pattern));
+            
+            // Search in author names (requires join through bookMeta)
+            Join<BookMeta, Author> authorJoin = bookJoin.join("authors", JoinType.LEFT);
+            predicates.add(cb.like(cb.lower(authorJoin.get("name")), pattern));
+            
+            // Search in seller display name
+            Join<Listing, User> sellerJoin = root.join("seller", JoinType.LEFT);
+            predicates.add(cb.like(cb.lower(sellerJoin.get("username")), pattern));
+            
+            // Use distinct to prevent duplicate results from joins
+            query.distinct(true);
+            
+            return cb.or(predicates.toArray(new Predicate[0]));
+        };
     }
 
     /**

@@ -38,9 +38,10 @@ public class ListingController {
         // ============ List Listings with Filters ============
 
         /**
-         * Get paginated listings with optional filters.
+         * Get paginated listings with optional filters and full-text search.
          * 
          * Query Parameters:
+         * - q: full-text search query (searches book title, author names, listing description)
          * - sellerId: filter by seller
          * - bookId: filter by book
          * - categoryId: filter by category
@@ -52,6 +53,7 @@ public class ListingController {
          */
         @GetMapping
         public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getListings(
+                        @RequestParam(required = false) String q,
                         @RequestParam(required = false) Long sellerId,
                         @RequestParam(required = false) Long bookId,
                         @RequestParam(required = false) Long categoryId,
@@ -61,7 +63,7 @@ public class ListingController {
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                sellerId, bookId, categoryId, status, sortBy, sortOrder, page, size);
+                                q, sellerId, bookId, categoryId, status, sortBy, sortOrder, page, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

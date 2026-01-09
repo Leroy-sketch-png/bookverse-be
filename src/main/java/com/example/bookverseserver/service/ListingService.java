@@ -53,8 +53,9 @@ public class ListingService {
     // ============ Filtered Listings Query ============
 
     /**
-     * Get paginated listings with optional filters.
+     * Get paginated listings with optional filters and text search.
      * 
+     * @param query     full-text search query (searches title, author, description)
      * @param sellerId  filter by seller
      * @param bookId    filter by book
      * @param categoryId filter by category ID
@@ -67,6 +68,7 @@ public class ListingService {
      */
     @Transactional(readOnly = true)
     public PagedResponse<ListingResponse> getListingsFiltered(
+            String query,
             Long sellerId,
             Long bookId,
             Long categoryId,
@@ -77,6 +79,11 @@ public class ListingService {
             int size) {
         // Build specification
         Specification<Listing> spec = Specification.where(ListingSpecification.isNotDeleted());
+
+        // Text search across title, author, description
+        if (query != null && !query.trim().isEmpty()) {
+            spec = spec.and(ListingSpecification.containsSearchText(query));
+        }
 
         if (sellerId != null) {
             spec = spec.and(ListingSpecification.hasSeller(sellerId));
