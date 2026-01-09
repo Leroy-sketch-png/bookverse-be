@@ -50,7 +50,8 @@ public class SecurityConfig {
     // Books endpoints - GET is public, POST requires auth
     private final String[] PUBLIC_BOOKS_GET = {
             "/api/books",       // GET all books
-            "/api/books/{id}"   // GET book by ID
+            "/api/books/{id}",  // GET book by ID
+            "/api/books/lookup/{isbn}"  // GET book preview by ISBN (no auth, no DB write)
     };
     
     // Listings endpoints - GET is public for browsing marketplace

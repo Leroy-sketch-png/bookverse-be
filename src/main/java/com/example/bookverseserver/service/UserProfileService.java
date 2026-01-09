@@ -125,6 +125,16 @@ public class UserProfileService {
         
         // Update account type
         profile.setAccountType(AccountType.SELLER.name());
+        
+        // Save shop information
+        profile.setShopName(request.getShopName());
+        profile.setShopDescription(request.getShopDescription());
+        profile.setReturnPolicy(request.getReturnPolicy());
+        profile.setShippingPolicy(request.getShippingPolicy());
+        if (request.getResponseTime() != null) {
+            profile.setResponseTime(request.getResponseTime());
+        }
+        profile.setSellerSince(java.time.LocalDate.now());
 
         userRepository.save(user);
         userProfileRepository.save(profile);

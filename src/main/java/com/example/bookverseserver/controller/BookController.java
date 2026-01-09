@@ -2,6 +2,7 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Book.IsbnRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.service.BookEnrichmentService;
 import com.example.bookverseserver.service.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,10 +20,12 @@ import org.springframework.web.bind.annotation.*;
 public class BookController {
 
     private final BookService bookService;
+    private final BookEnrichmentService bookEnrichmentService;
 
     @Autowired
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, BookEnrichmentService bookEnrichmentService) {
         this.bookService = bookService;
+        this.bookEnrichmentService = bookEnrichmentService;
     }
 
     @GetMapping
@@ -89,6 +92,42 @@ public class BookController {
         @PathVariable String bookId
     ) {
         return bookService.getBookById(bookId);
+    }
+
+    @GetMapping("/lookup/{isbn}")
+    @Operation(
+        summary = "Preview book data by ISBN (no database write)",
+        description = "Fetches enriched book data from multiple external sources (OpenLibrary + Google Books) " +
+                     "WITHOUT creating the book in the database. " +
+                     "**Perfect for**: " +
+                     "- ISBN auto-fill preview in seller listing form " +
+                     "- Validating ISBN before creating a listing " +
+                     "- Previewing book metadata before import " +
+                     "**Features**: " +
+                     "- Multi-source enrichment (best data from OpenLibrary + Google Books) " +
+                     "- Normalized categories mapped to our canonical 10 categories " +
+                     "- Quality score (0-100) indicating data completeness " +
+                     "**Supports both ISBN-10 and ISBN-13**."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Book data retrieved (may be empty if not found)"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400", 
+            description = "Invalid ISBN format"
+        )
+    })
+    public ApiResponse<BookEnrichmentService.EnrichedBookResult> lookupBookByIsbn(
+        @Parameter(description = "ISBN-10 or ISBN-13 (hyphens allowed)", example = "978-0134685991", required = true)
+        @PathVariable String isbn
+    ) {
+        BookEnrichmentService.EnrichedBookResult result = bookEnrichmentService.fetchEnrichedBookData(isbn);
+        return ApiResponse.<BookEnrichmentService.EnrichedBookResult>builder()
+                .result(result)
+                .message(result.isFound() ? "Book found" : "Book not found in external sources")
+                .build();
     }
 
     @PostMapping("/from-open-library")

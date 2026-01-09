@@ -78,6 +78,22 @@ public class UserProfile {
 
     @Column(name = "seller_since")
     LocalDate sellerSince;
+    
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Seller Shop Information (set during seller onboarding)
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    @Column(name = "shop_name", length = 50)
+    String shopName;
+    
+    @Column(name = "shop_description", length = 500)
+    String shopDescription;
+    
+    @Column(name = "return_policy", length = 500)
+    String returnPolicy;
+    
+    @Column(name = "shipping_policy", length = 500)
+    String shippingPolicy;
 
     @Column(name = "preferences", columnDefinition = "text")
     /**

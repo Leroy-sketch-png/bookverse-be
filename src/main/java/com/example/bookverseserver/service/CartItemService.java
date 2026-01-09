@@ -54,6 +54,11 @@ public class CartItemService {
         Listing listing = listingRepository.findById(cartItemRequest.listingId())
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
 
+        // 3. Prevent self-purchase - sellers cannot buy their own listings
+        if (listing.getSeller() != null && listing.getSeller().getId().equals(userId)) {
+            throw new AppException(ErrorCode.CANNOT_PURCHASE_OWN_LISTING);
+        }
+
         int quantityToAdd = cartItemRequest.quantity();
         int currentStock = listing.getQuantity();
 

@@ -16,7 +16,7 @@ import java.util.List;
  * - Cross-platform: openLibraryId, goodreadsId
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 public class RichBookData {
     // ═══════════════════════════════════════════════════════════════════════════
     // BASIC METADATA

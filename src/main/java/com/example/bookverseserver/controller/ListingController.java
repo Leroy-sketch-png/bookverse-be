@@ -3,6 +3,7 @@ package com.example.bookverseserver.controller;
 import com.example.bookverseserver.dto.request.Product.ListingCreationRequest;
 import com.example.bookverseserver.dto.request.Product.ListingDeleteRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
+import com.example.bookverseserver.dto.request.Product.SimpleListingCreationRequest;
 import com.example.bookverseserver.dto.request.Product.UpdateStockRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
@@ -19,10 +20,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -159,6 +162,33 @@ public class ListingController {
                 return ApiResponse.<ListingResponse>builder()
                                 .result(listingService.createListing(request, authentication))
                                 .build();
+        }
+
+        /**
+         * Simple create endpoint with multipart form data.
+         * Accepts flat form fields + image files directly.
+         * Creates book metadata if not found by ISBN.
+         * 
+         * This is the primary endpoint used by the frontend seller dashboard.
+         */
+        @PreAuthorize("hasRole('SELLER')")
+        @PostMapping(value = "/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<ListingResponse>> createSimpleListing(
+                        @Valid @ModelAttribute SimpleListingCreationRequest request,
+                        @RequestParam(value = "images", required = false) List<MultipartFile> images,
+                        Authentication authentication) {
+                
+                log.info("Creating simple listing: title={}, category={}, images={}", 
+                        request.getTitle(), request.getCategory(), 
+                        images != null ? images.size() : 0);
+
+                ListingResponse created = listingService.createSimpleListing(request, images, authentication);
+
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.<ListingResponse>builder()
+                                                .result(created)
+                                                .message("Listing created successfully")
+                                                .build());
         }
 
         // ============ Update Listing ============

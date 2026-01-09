@@ -4,6 +4,7 @@ import com.example.bookverseserver.dto.request.Product.*;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Product.*;
 import com.example.bookverseserver.entity.Product.BookMeta;
+import com.example.bookverseserver.entity.Product.BookImage;
 import com.example.bookverseserver.entity.Product.Likes;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.Product.ListingPhoto;
@@ -15,6 +16,8 @@ import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.BookMetaMapper;
 import com.example.bookverseserver.mapper.ListingMapper;
 import com.example.bookverseserver.mapper.ListingPhotoMapper;
+import com.example.bookverseserver.entity.Product.Author;
+import com.example.bookverseserver.entity.Product.Category;
 import com.example.bookverseserver.repository.*;
 import com.example.bookverseserver.repository.specification.ListingSpecification;
 import com.example.bookverseserver.utils.SecurityUtils;
@@ -30,10 +33,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.example.bookverseserver.dto.response.External.RichBookData;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -45,9 +53,13 @@ public class ListingService {
     LikesRepository likesRepository;
     UserRepository userRepository;
     BookMetaRepository bookMetaRepository;
+    AuthorRepository authorRepository;
+    CategoryRepository categoryRepository;
     BookMetaMapper bookMetaMapper;
     ListingMapper listingMapper;
     ListingPhotoMapper listingPhotoMapper;
+    CloudStorageService cloudStorageService;
+    OpenLibraryService openLibraryService;
     SecurityUtils securityUtils;
 
     // ============ Filtered Listings Query ============
@@ -436,5 +448,244 @@ public class ListingService {
             }
         }
         return listingMapper.toListingResponse(listing);
+    }
+
+    // ============ Simple Listing Creation (Multipart) ============
+
+    /**
+     * Create a listing with book metadata and photos in a single request.
+     * Accepts flat form data + image files directly from frontend form.
+     * 
+     * CANONICAL FLOW (per Vision):
+     * 1. If ISBN provided → Fetch from Open Library for canonical metadata
+     * 2. If Open Library fails or no ISBN → Use seller-provided data (marked as unverified)
+     * 3. Create Listing with seller-specific data (price, condition, photos)
+     * 
+     * @param request  flat listing data
+     * @param images   optional image files to upload
+     * @param authentication current user
+     * @return created listing
+     */
+    @Transactional
+    public ListingResponse createSimpleListing(
+            SimpleListingCreationRequest request,
+            List<MultipartFile> images,
+            Authentication authentication) {
+        
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        User seller = userRepository.getReferenceById(userId);
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // STEP 1: Resolve BookMeta (Canonical Source: Open Library)
+        // ═══════════════════════════════════════════════════════════════════════════
+        BookMeta bookMeta = resolveBookMeta(request);
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // STEP 2: Create Listing (Seller-specific data)
+        // ═══════════════════════════════════════════════════════════════════════════
+        ListingStatus listingStatus;
+        try {
+            listingStatus = ListingStatus.valueOf(request.getStatus());
+        } catch (IllegalArgumentException e) {
+            listingStatus = ListingStatus.DRAFT;
+        }
+
+        Listing listing = Listing.builder()
+                .bookMeta(bookMeta)
+                .seller(seller)
+                .price(request.getPrice() != null ? java.math.BigDecimal.valueOf(request.getPrice()) : null)
+                .originalPrice(request.getOriginalPrice() != null ? java.math.BigDecimal.valueOf(request.getOriginalPrice()) : null)
+                .condition(request.getCondition())
+                .currency("VND")
+                .quantity(request.getStock())
+                .status(listingStatus)
+                .description(request.getDescription()) // Seller's description of THIS copy
+                .views(0)
+                .likes(0)
+                .soldCount(0)
+                .build();
+        
+        listing = listingRepository.save(listing);
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // STEP 3: Upload images and create ListingPhotos (Cloudinary)
+        // ═══════════════════════════════════════════════════════════════════════════
+        if (images != null && !images.isEmpty()) {
+            List<ListingPhoto> photos = new ArrayList<>();
+            int position = 0;
+            for (MultipartFile image : images) {
+                if (image != null && !image.isEmpty()) {
+                    String imageUrl = cloudStorageService.uploadFile(image);
+                    ListingPhoto photo = ListingPhoto.builder()
+                            .listing(listing)
+                            .url(imageUrl)
+                            .position(position++)
+                            .build();
+                    photos.add(listingPhotoRepository.save(photo));
+                }
+            }
+            listing.setPhotos(photos);
+        }
+
+        log.info("Created listing {} for seller {} with {} photos (bookMeta={})", 
+                listing.getId(), userId, 
+                listing.getPhotos() != null ? listing.getPhotos().size() : 0,
+                bookMeta.getId());
+
+        return listingMapper.toListingResponse(listing);
+    }
+
+    /**
+     * Resolve BookMeta using canonical sources.
+     * 
+     * Priority:
+     * 1. Check if BookMeta exists in DB by ISBN
+     * 2. If not, try Open Library API (canonical source)
+     * 3. If Open Library fails, create from seller input (unverified)
+     */
+    private BookMeta resolveBookMeta(SimpleListingCreationRequest request) {
+        String isbn = request.getIsbn();
+        
+        // Case 1: ISBN provided - try canonical sources
+        if (isbn != null && !isbn.isBlank()) {
+            String normalizedIsbn = isbn.replaceAll("[^0-9X]", ""); // Remove hyphens/spaces
+            
+            // 1a. Check if we already have this book
+            var existingBook = bookMetaRepository.findByIsbn(normalizedIsbn);
+            if (existingBook.isPresent()) {
+                log.info("Found existing BookMeta for ISBN {}", normalizedIsbn);
+                return existingBook.get();
+            }
+            
+            // 1b. Fetch from Open Library (canonical source)
+            try {
+                RichBookData openLibraryData = openLibraryService.fetchRichBookDetailsByIsbn(normalizedIsbn);
+                if (openLibraryData != null) {
+                    log.info("Fetched canonical data from Open Library for ISBN {}", normalizedIsbn);
+                    return createBookMetaFromOpenLibrary(openLibraryData, normalizedIsbn);
+                }
+            } catch (Exception e) {
+                log.warn("Open Library fetch failed for ISBN {}: {}", normalizedIsbn, e.getMessage());
+                // Fall through to manual creation
+            }
+        }
+        
+        // Case 2: No ISBN or Open Library failed - create from seller input
+        log.info("Creating BookMeta from seller input (no canonical source): {}", request.getTitle());
+        return createBookMetaFromSellerInput(request);
+    }
+
+    /**
+     * Create BookMeta from Open Library canonical data.
+     */
+    private BookMeta createBookMetaFromOpenLibrary(RichBookData data, String isbn) {
+        // Resolve authors (create if not exist)
+        var authors = new HashSet<Author>();
+        if (data.getAuthors() != null) {
+            for (String authorName : data.getAuthors()) {
+                Author author = authorRepository.findByName(authorName)
+                        .orElseGet(() -> authorRepository.save(Author.builder()
+                                .name(authorName)
+                                .openLibraryId(data.getAuthorKeys() != null && !data.getAuthorKeys().isEmpty() 
+                                        ? data.getAuthorKeys().get(0).replace("/authors/", "") : null)
+                                .build()));
+                authors.add(author);
+            }
+        }
+        
+        // Resolve categories from Open Library subjects
+        var categories = new HashSet<Category>();
+        if (data.getCategories() != null && !data.getCategories().isEmpty()) {
+            // Take first 3 subjects as categories
+            data.getCategories().stream().limit(3).forEach(subject -> {
+                Category cat = categoryRepository.findByName(subject)
+                        .orElseGet(() -> categoryRepository.save(Category.builder()
+                                .name(subject)
+                                .slug(subject.toLowerCase().replaceAll("\\s+", "-"))
+                                .build()));
+                categories.add(cat);
+            });
+        }
+        
+        // Parse published date
+        LocalDate publishedDate = null;
+        if (data.getPublishedDate() != null) {
+            try {
+                // Open Library uses various formats, try to extract year
+                String dateStr = data.getPublishedDate();
+                if (dateStr.length() >= 4) {
+                    int year = Integer.parseInt(dateStr.substring(0, 4));
+                    publishedDate = LocalDate.of(year, 1, 1);
+                }
+            } catch (Exception e) {
+                log.debug("Could not parse published date: {}", data.getPublishedDate());
+            }
+        }
+        
+        BookMeta bookMeta = BookMeta.builder()
+                .title(data.getTitle())
+                .isbn(isbn)
+                .description(data.getDescription())
+                .publisher(data.getPublisher())
+                .publishedDate(publishedDate)
+                .pages(data.getNumberOfPages() > 0 ? data.getNumberOfPages() : null)
+                .authors(authors)
+                .categories(categories)
+                .openLibraryId(data.getOpenLibraryId())
+                .goodreadsId(data.getGoodreadsId())
+                .firstLine(data.getFirstLine())
+                .subjectPlaces(data.getSubjectPlaces() != null ? String.join(", ", data.getSubjectPlaces()) : null)
+                .subjectPeople(data.getSubjectPeople() != null ? String.join(", ", data.getSubjectPeople()) : null)
+                .subjectTimes(data.getSubjectTimes() != null ? String.join(", ", data.getSubjectTimes()) : null)
+                .build();
+        
+        // Save first to get ID
+        BookMeta savedBookMeta = bookMetaRepository.save(bookMeta);
+        
+        // Add cover image from Open Library if available
+        if (data.getCoverUrl() != null && !data.getCoverUrl().isBlank()) {
+            BookImage coverImage = BookImage.builder()
+                    .bookMeta(savedBookMeta)
+                    .url(data.getCoverUrl())
+                    .isCover(true)
+                    .position(0)
+                    .altText(data.getTitle() + " cover")
+                    .build();
+            savedBookMeta.getImages().add(coverImage);
+            // Re-save with image (cascade will persist BookImage)
+            savedBookMeta = bookMetaRepository.save(savedBookMeta);
+        }
+        
+        return savedBookMeta;
+    }
+
+    /**
+     * Create BookMeta from seller-provided input (fallback, unverified).
+     */
+    private BookMeta createBookMetaFromSellerInput(SimpleListingCreationRequest request) {
+        // Resolve author
+        Author author = authorRepository.findByName(request.getAuthor())
+                .orElseGet(() -> authorRepository.save(Author.builder()
+                        .name(request.getAuthor())
+                        .build()));
+        
+        // Resolve category
+        Category category = categoryRepository.findByName(request.getCategory())
+                .orElseGet(() -> categoryRepository.save(Category.builder()
+                        .name(request.getCategory())
+                        .slug(request.getCategory().toLowerCase().replaceAll("\\s+", "-"))
+                        .build()));
+        
+        BookMeta bookMeta = BookMeta.builder()
+                .title(request.getTitle())
+                .isbn(request.getIsbn())
+                .description(request.getDescription())
+                .publisher(request.getPublisher())
+                .publishedDate(request.getPublishYear() != null ? LocalDate.of(request.getPublishYear(), 1, 1) : null)
+                .authors(new HashSet<>(List.of(author)))
+                .categories(new HashSet<>(List.of(category)))
+                .build();
+        
+        return bookMetaRepository.save(bookMeta);
     }
 }
