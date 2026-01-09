@@ -44,7 +44,7 @@ public class WishlistController {
         WishlistResponse response = wishlistService.getUserFavorites(userId, pageable);
 
         return ApiResponse.<WishlistResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Wishlist retrieved successfully")
                 .result(response)
                 .build();
@@ -67,7 +67,7 @@ public class WishlistController {
         WishlistItemDTO response = wishlistService.addToWishlist(userId, listingId);
 
         return ApiResponse.<WishlistItemDTO>builder()
-                .code(201)
+                .code(1000)
                 .message("Added to wishlist successfully")
                 .result(response)
                 .build();
@@ -103,7 +103,7 @@ public class WishlistController {
         Long userId = securityUtils.getCurrentUserId(authentication);
 
         return ApiResponse.<WishlistCheckDto>builder()
-                .code(200)
+                .code(1000)
                 .message("Check completed")
                 .result(wishlistService.checkIfInWishlist(userId, listingId))
                 .build();
@@ -122,7 +122,7 @@ public class WishlistController {
         Long userId = securityUtils.getCurrentUserId(authentication);
 
         return ApiResponse.<WishlistCountDto>builder()
-                .code(200)
+                .code(1000)
                 .message("Count retrieved successfully")
                 .result(wishlistService.getWishlistCount(userId))
                 .build();

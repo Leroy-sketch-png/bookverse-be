@@ -40,7 +40,7 @@ public class VoucherController {
     public ApiResponse<VoucherResponse> createVoucher(
             @RequestBody @Valid VoucherRequest voucherRequest) {
         return ApiResponse.<VoucherResponse>builder()
-                .code(201)
+                .code(1000)
                 .message("Voucher created successfully!")
                 .result(voucherService.createVoucher(voucherRequest))
                 .build();
@@ -56,7 +56,7 @@ public class VoucherController {
     public ApiResponse<VoucherResponse> getVoucher(
             @Parameter(description = "Voucher code", example = "SUMMER20") @PathVariable("code") String code) {
         return ApiResponse.<VoucherResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Voucher found!")
                 .result(voucherService.getVoucherByCode(code))
                 .build();

@@ -88,7 +88,7 @@ public class TransactionController {
 
             // 3. Trả về kết quả thành công
             return ApiResponse.<PaymentIntentResponse>builder()
-                    .code(200)
+                    .code(1000)
                     .message("Payment intent created successfully")
                     .result(response) // Truyền thẳng object DTO vào, không cần bọc trong Map
                     .build();
@@ -140,7 +140,7 @@ public class TransactionController {
             PaymentVerificationResponse response = transactionService.verifyPayment(request);
 
             return ApiResponse.<PaymentVerificationResponse>builder()
-                    .code(200)
+                    .code(1000)
                     .message("Payment verified successfully")
                     .result(response)
                     .build();
@@ -188,7 +188,7 @@ public class TransactionController {
             Page<PaymentAuditResponse> history = transactionService.getUserPaymentAudit(userId, page, limit);
 
             return ApiResponse.<Page<PaymentAuditResponse>>builder()
-                    .code(200)
+                    .code(1000)
                     .message("History retrieved successfully")
                     .result(history)
                     .build();

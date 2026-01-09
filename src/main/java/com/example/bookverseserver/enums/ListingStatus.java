@@ -1,45 +1,48 @@
 package com.example.bookverseserver.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Listing Status Enum
- * Frontend expects lowercase values: active, out_of_stock, draft
- * Backend maintains uppercase for Java conventions
  * 
- * Mapping:
- * - DRAFT -> draft
- * - ACTIVE -> active  
- * - SOLD_OUT -> out_of_stock
- * - PAUSED, INACTIVE, REMOVED -> Additional backend statuses
+ * Vision API Contract specifies UPPERCASE values:
+ * - DRAFT: Not yet published
+ * - ACTIVE: Available for sale
+ * - PAUSED: Temporarily paused by seller
+ * - SOLD_OUT: No stock available (auto-set when quantity = 0)
+ * - INACTIVE: Temporarily disabled by seller
+ * - REMOVED: Soft deleted
  */
 public enum ListingStatus {
-    DRAFT("draft"), // Not yet published
-    ACTIVE("active"), // Available for sale
-    PAUSED("paused"), // Temporarily paused by seller
-    SOLD_OUT("out_of_stock"), // No stock available (auto-set when quantity = 0)
-    INACTIVE("inactive"), // Temporarily disabled by seller
-    SOLD("sold"), // Legacy - kept for compatibility
-    REMOVED("removed"); // Soft deleted
-    
-    private final String value;
-    
-    ListingStatus(String value) {
-        this.value = value;
-    }
-    
+    DRAFT,
+    ACTIVE,
+    PAUSED,
+    SOLD_OUT,
+    INACTIVE,
+    SOLD, // Legacy - kept for compatibility
+    REMOVED;
+
     @JsonValue
-    public String getValue() {
-        return value;
+    public String toValue() {
+        return name();
     }
-    
-    // Helper method to convert from frontend string to enum
+
+    @JsonCreator
     public static ListingStatus fromValue(String value) {
-        for (ListingStatus status : ListingStatus.values()) {
-            if (status.value.equalsIgnoreCase(value)) {
-                return status;
-            }
+        if (value == null) {
+            return null;
         }
-        throw new IllegalArgumentException("Unknown listing status: " + value);
+        // Accept both uppercase and lowercase for backwards compatibility
+        String normalized = value.toUpperCase().replace("-", "_");
+        // Handle legacy "out_of_stock" -> "SOLD_OUT"
+        if ("OUT_OF_STOCK".equals(normalized)) {
+            return SOLD_OUT;
+        }
+        try {
+            return ListingStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown listing status: " + value);
+        }
     }
 }

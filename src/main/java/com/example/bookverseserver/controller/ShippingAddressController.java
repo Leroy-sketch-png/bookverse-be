@@ -37,7 +37,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         ShippingAddressResponse response = shippingAddressService.createShippingAddress(userId, request);
         return ApiResponse.<ShippingAddressResponse>builder()
-                .code(201)
+                .code(1000)
                 .message("Shipping address created successfully")
                 .result(response)
                 .build();
@@ -50,7 +50,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         List<ShippingAddressResponse> responses = shippingAddressService.getShippingAddressesByUserId(userId);
         return ApiResponse.<List<ShippingAddressResponse>>builder()
-                .code(200)
+                .code(1000)
                 .message("Shipping addresses retrieved successfully")
                 .result(responses)
                 .build();
@@ -66,7 +66,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         ShippingAddressResponse response = shippingAddressService.getShippingAddressById(userId, addressId);
         return ApiResponse.<ShippingAddressResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Shipping address retrieved successfully")
                 .result(response)
                 .build();
@@ -79,7 +79,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         ShippingAddressResponse response = shippingAddressService.getDefaultAddress(userId);
         return ApiResponse.<ShippingAddressResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Default shipping address retrieved successfully")
                 .result(response)
                 .build();
@@ -96,7 +96,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         ShippingAddressResponse response = shippingAddressService.updateShippingAddress(userId, addressId, request);
         return ApiResponse.<ShippingAddressResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Shipping address updated successfully")
                 .result(response)
                 .build();
@@ -112,7 +112,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         ShippingAddressResponse response = shippingAddressService.setDefaultAddress(userId, addressId);
         return ApiResponse.<ShippingAddressResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Default address set successfully")
                 .result(response)
                 .build();
@@ -128,7 +128,7 @@ public class ShippingAddressController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         shippingAddressService.deleteShippingAddress(userId, addressId);
         return ApiResponse.<Void>builder()
-                .code(200)
+                .code(1000)
                 .message("Shipping address deleted successfully")
                 .build();
     }

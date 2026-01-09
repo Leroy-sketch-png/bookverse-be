@@ -58,7 +58,15 @@ public class SecurityConfig {
     private final String[] PUBLIC_LISTINGS_GET = {
             "/api/listings",           // GET all listings (browse marketplace)
             "/api/listings/{id}",      // GET single listing detail
-            "/api/listings/{id}/reviews"  // GET reviews for a listing
+            "/api/listings/{id}/reviews",  // GET reviews for a listing
+            "/api/listings/seller/{sellerId}"  // GET seller's listings (public browsing)
+    };
+    
+    // Seller public profile - visible to anyone browsing (per Vision API_CONTRACTS.md §7.4)
+    private final String[] PUBLIC_SELLERS_GET = {
+            "/api/seller/{sellerSlug}/profile",           // GET seller public profile
+            "/api/seller/{sellerSlug}/profile/listings",  // GET seller's listings
+            "/api/seller/{sellerSlug}/profile/reviews"    // GET seller's reviews
     };
 
     @Autowired
@@ -76,6 +84,7 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_BOOKS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_LISTINGS_GET).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_SELLERS_GET).permitAll()
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

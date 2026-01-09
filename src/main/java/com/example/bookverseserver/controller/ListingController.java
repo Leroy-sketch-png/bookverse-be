@@ -94,6 +94,26 @@ public class ListingController {
         }
 
         /**
+         * Get listings by seller ID (public browsing).
+         * Endpoint: GET /api/listings/seller/{sellerId}
+         * Example: GET /api/listings/seller/2?page=0&size=20
+         */
+        @GetMapping("/seller/{sellerId}")
+        public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getListingsBySeller(
+                        @PathVariable Long sellerId,
+                        @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+                        @RequestParam(required = false, defaultValue = "desc") String sortOrder,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+                PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
+                                null, sellerId, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, page, size);
+
+                return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
+                                .result(result)
+                                .build());
+        }
+
+        /**
          * Legacy endpoint for listing all listings (no pagination).
          * Kept for backwards compatibility.
          */

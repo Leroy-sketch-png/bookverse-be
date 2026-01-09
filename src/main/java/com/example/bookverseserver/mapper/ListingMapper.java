@@ -174,13 +174,13 @@ public abstract class ListingMapper {
         UserProfile profile = seller.getUserProfile();
 
         return SellerSummaryDto.builder()
-                .id(seller.getId()) // Sử dụng Long trực tiếp
+                .id(seller.getId())
                 .username(seller.getUsername())
-                .businessName(profile != null ? profile.getDisplayName() : seller.getUsername())
+                .name(profile != null ? profile.getDisplayName() : seller.getUsername()) // Vision: name
                 .avatar(profile != null ? profile.getAvatarUrl() : null)
-                .rating(profile != null ? profile.getRatingAvg() : 0.0)
-                .totalReviews(profile != null ? profile.getRatingCount() : 0)
-                .isProSeller(profile != null ? profile.getIsProSeller() : false)
+                .rating(profile != null && profile.getRatingAvg() != null ? profile.getRatingAvg() : null)
+                .totalReviews(profile != null && profile.getRatingCount() != null ? profile.getRatingCount() : 0)
+                .isPro(profile != null && profile.getIsProSeller() != null ? profile.getIsProSeller() : false) // Vision: isPro
                 .memberSince(seller.getCreatedAt())
                 .build();
     }

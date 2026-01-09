@@ -6,8 +6,12 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
 /**
- * Summary DTO for seller information in listing responses.
- * Contains seller profile data for listing display.
+ * Summary DTO for seller information in listing detail responses.
+ * Extends basic seller info with additional stats.
+ * 
+ * Vision field mapping:
+ * - name → seller's display name (consistent with SellerInfo)
+ * - isPro → PRO seller status (consistent with SellerInfo)
  */
 @Data
 @NoArgsConstructor
@@ -17,11 +21,11 @@ import java.time.LocalDateTime;
 public class SellerSummaryDto {
     Long id;
     String username;
-    String businessName; // From displayName in profile
+    String name; // Display name (renamed from businessName for consistency)
     String avatar; // From avatarUrl in profile
     Double rating; // Average rating
     Integer totalSales; // Total sold count
     Integer totalReviews; // Rating count
-    Boolean isProSeller; // Pro seller status
+    Boolean isPro; // PRO seller status (renamed from isProSeller for consistency)
     LocalDateTime memberSince; // Account creation date
 }

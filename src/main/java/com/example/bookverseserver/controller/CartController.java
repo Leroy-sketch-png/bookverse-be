@@ -61,7 +61,7 @@ public class CartController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartResponse cartResponse = cartService.getCartByUserId(userId);
         return ApiResponse.<CartResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Cart retrieved successfully")
                 .result(cartResponse)
                 .build();
@@ -106,7 +106,7 @@ public class CartController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartResponse cartResponse = cartService.applyVoucherToCart(userId, voucherCode);
         return ApiResponse.<CartResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Voucher applied successfully")
                 .result(cartResponse)
                 .build();
@@ -140,7 +140,7 @@ public class CartController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartResponse cartResponse = cartService.removeVoucherFromCart(userId);
         return ApiResponse.<CartResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Voucher removed successfully")
                 .result(cartResponse)
                 .build();

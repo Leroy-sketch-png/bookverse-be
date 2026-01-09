@@ -29,7 +29,7 @@ import java.util.List;
 public class AuthorController {
     AuthorService authorService;
 
-    @GetMapping({"/{id}"})
+    @GetMapping("/ol/{olid}")
     @Operation(
         summary = "Get author by OpenLibrary ID",
         description = "Retrieve detailed author information including biography, birth date, and list of books. " +
@@ -53,10 +53,10 @@ public class AuthorController {
     })
     ApiResponse<AuthorDetailResponse> getAuthorByOLID(
         @Parameter(description = "OpenLibrary Author ID (format: OL23919A)", example = "OL23919A", required = true)
-        @PathVariable("id") String id
+        @PathVariable("olid") String olid
     ) {
         return ApiResponse.<AuthorDetailResponse>builder()
-                .result(authorService.getAuthorByOLID(id))
+                .result(authorService.getAuthorByOLID(olid))
                 .build();
     }
 
@@ -123,20 +123,31 @@ public class AuthorController {
                 .result(authorService.getAllAuthorsByNationality(national))
                 .build();
     }
-//
-//    @GetMapping("/name/{name}")
-//    ApiResponse<List<AuthorResponse>> getAllAuthorsByName(@PathVariable("name") String name) {
-//        return ApiResponse.<List<AuthorResponse>>builder()
-//                .result(authorService.getAllAuthorsByName(name))
-//                .build();
-//    }
 
-//    @GetMapping("/{id}")
-//    ApiResponse<AuthorResponse> getAuthorById(@PathVariable("id") Long id) {
-//        return ApiResponse.<AuthorResponse>builder()
-//                .result(authorService.getAuthorById(id))
-//                .build();
-//    }
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Get author by ID",
+        description = "Retrieve a single author by their database ID. " +
+                     "Returns full author details including bio and works."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Author found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Author not found"
+        )
+    })
+    ApiResponse<AuthorResponse> getAuthorById(
+        @Parameter(description = "Author ID", example = "1", required = true)
+        @PathVariable("id") Long id
+    ) {
+        return ApiResponse.<AuthorResponse>builder()
+                .result(authorService.getAuthorById(id))
+                .build();
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")

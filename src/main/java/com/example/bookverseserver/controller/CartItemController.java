@@ -72,7 +72,7 @@ public class CartItemController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartItemResponse cartItemResponse = cartItemService.createCartItem(userId, cartItemRequest);
         return ApiResponse.<CartItemResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Cart item created successfully")
                 .result(cartItemResponse)
                 .build();
@@ -119,7 +119,7 @@ public class CartItemController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartItemResponse cartItemResponse = cartItemService.updateCartItem(userId, listingId, quantity);
         return ApiResponse.<CartItemResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Cart item updated successfully")
                 .result(cartItemResponse)
                 .build();
@@ -155,7 +155,7 @@ public class CartItemController {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CartItemResponse cartItemResponse = cartItemService.deleteCartItem(userId, listingId);
         return ApiResponse.<CartItemResponse>builder()
-                .code(200)
+                .code(1000)
                 .message("Cart item deleted successfully")
                 .result(cartItemResponse)
                 .build();
