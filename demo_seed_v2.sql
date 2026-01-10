@@ -4,14 +4,15 @@
 -- ============================================
 
 -- ============================================
--- 1. CREATE DEMO USERS (password: password123)
+-- 1. CREATE DEMO USERS (password: admin)
+-- BCrypt hash for "admin": $2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS
 -- ============================================
 
 INSERT INTO "user" (id, username, email, password_hash, enabled, failed_login_count, auth_provider, created_at, updated_at)
 VALUES 
-    (2, 'tinvo', 'tinvo@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true, 0, 'LOCAL', NOW(), NOW()),
-    (3, 'seller1', 'seller1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true, 0, 'LOCAL', NOW(), NOW()),
-    (4, 'buyer1', 'buyer1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true, 0, 'LOCAL', NOW(), NOW())
+    (2, 'tinvo', 'tinvo@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (3, 'seller1', 'seller1@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (4, 'buyer1', 'buyer1@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Assign roles
