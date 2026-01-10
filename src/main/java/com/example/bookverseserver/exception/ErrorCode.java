@@ -121,6 +121,7 @@ public enum ErrorCode {
     REVIEW_ALREADY_EXISTS(409, "You have already reviewed this order item", HttpStatus.CONFLICT),
     ALREADY_VOTED_HELPFUL(409, "You have already voted this review as helpful", HttpStatus.CONFLICT),
     CANNOT_VOTE_OWN_REVIEW(400, "You cannot vote on your own review", HttpStatus.BAD_REQUEST),
+    REVIEW_UPDATE_EXPIRED(403, "Reviews can only be edited within 30 days of creation", HttpStatus.FORBIDDEN),
 
     // --- Purchase Verification ---
     PURCHASE_REQUIRED_FOR_REVIEW(403, "You must purchase this item before reviewing", HttpStatus.FORBIDDEN),

@@ -49,6 +49,8 @@ public class AdminService {
     ProSellerApplicationRepository proApplicationRepository;
     FlaggedListingRepository flaggedListingRepository;
     DisputeRepository disputeRepository;
+    UserProfileRepository userProfileRepository;
+    TransactionRepository transactionRepository;
 
     /**
      * Assign a role to a user.
@@ -111,12 +113,12 @@ public class AdminService {
      * Per Vision API_CONTRACTS.md - GET /admin/stats
      */
     public PlatformStatsResponse getPlatformStats(int periodDays) {
-        // User stats
+        // User stats - REAL counts
         long totalUsers = userRepository.count();
-        // Simplified: count by account type would require profile repository query
-        // For now, using placeholder estimates
-        long sellers = totalUsers / 3; // ~33% are sellers (estimate)
-        long proSellers = sellers / 10; // ~10% of sellers are PRO (estimate)
+        // Count by account type from UserProfile
+        long proSellers = userProfileRepository.countByIsProSellerTrue();
+        long sellers = userProfileRepository.countByAccountType(
+                com.example.bookverseserver.enums.AccountType.SELLER) + proSellers;
         long buyers = totalUsers - sellers;
 
         // Listing stats
@@ -124,8 +126,14 @@ public class AdminService {
         long soldOutListings = listingRepository.countByStatus(ListingStatus.SOLD_OUT);
         long draftListings = listingRepository.countByStatus(ListingStatus.DRAFT);
 
-        // Order stats (simplified)
+        // Order stats
         long totalOrders = orderRepository.count();
+        
+        // Revenue stats - REAL calculation from completed payments
+        BigDecimal totalRevenue = transactionRepository.sumAmountByStatus(
+                com.example.bookverseserver.enums.PaymentStatus.PAID);
+        // Platform fee at 8% standard or 3% for PRO (using simplified 5% avg)
+        BigDecimal platformFee = totalRevenue.multiply(BigDecimal.valueOf(0.05));
 
         // Issue stats
         long pendingModeration = flaggedListingRepository.countByStatus(
@@ -141,26 +149,26 @@ public class AdminService {
         return PlatformStatsResponse.builder()
                 .users(PlatformStatsResponse.UserStats.builder()
                         .total(totalUsers)
-                        .trend(5.2) // Placeholder
+                        .trend(0.0) // Trend calculation requires historical data
                         .buyers(buyers)
                         .sellers(sellers)
                         .proSellers(proSellers)
                         .build())
                 .revenue(PlatformStatsResponse.RevenueStats.builder()
-                        .total(BigDecimal.valueOf(285000000)) // Placeholder
-                        .trend(18.2) // Placeholder
-                        .platformFee(BigDecimal.valueOf(12825000)) // Placeholder
+                        .total(totalRevenue)
+                        .trend(0.0) // Trend calculation requires historical data
+                        .platformFee(platformFee)
                         .transactionCount(totalOrders)
                         .build())
                 .listings(PlatformStatsResponse.ListingStats.builder()
                         .active(activeListings)
-                        .trend(15.1) // Placeholder
+                        .trend(0.0) // Trend calculation requires historical data
                         .available(activeListings + draftListings)
                         .sold(soldOutListings)
                         .build())
                 .issues(PlatformStatsResponse.IssueStats.builder()
                         .pending(pendingModeration + pendingDisputes + pendingProApplications)
-                        .trend(-5.0) // Placeholder
+                        .trend(0.0) // Trend calculation requires historical data
                         .moderation(pendingModeration)
                         .disputes(pendingDisputes)
                         .verifications(pendingProApplications)

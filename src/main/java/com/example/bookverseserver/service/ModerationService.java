@@ -49,6 +49,8 @@ public class ModerationService {
     ListingRepository listingRepository;
     UserRepository userRepository;
     OrderRepository orderRepository;
+    TransactionService transactionService;
+    ReviewRepository reviewRepository;
 
     // ============ Dashboard Summary ============
 
@@ -287,7 +289,16 @@ public class ModerationService {
         // Handle refund if requested
         if (Boolean.TRUE.equals(request.getRefundBuyer())) {
             dispute.setRefundAmount(dispute.getDisputedAmount());
-            // TODO: Trigger actual refund via payment service
+            // Process actual refund via Stripe
+            Order order = dispute.getOrder();
+            if (order != null) {
+                TransactionService.RefundResult refundResult = transactionService.processRefund(order);
+                if (refundResult.isSuccess()) {
+                    log.info("Dispute {} refund processed: refund_id={}", disputeId, refundResult.getRefundId());
+                } else {
+                    log.warn("Dispute {} refund failed: {}", disputeId, refundResult.getMessage());
+                }
+            }
         }
         
         Dispute saved = disputeRepository.save(dispute);
@@ -536,9 +547,9 @@ public class ModerationService {
                         .seller(FlaggedListingResponse.SellerSummary.builder()
                                 .id(seller.getId())
                                 .name(seller.getUsername())
-                                .rating(null) // TODO: Get from profile
+                                .rating(reviewRepository.calculateAverageRatingForSeller(seller.getId()))
                                 .joinedAt(seller.getCreatedAt())
-                                .listingCount(null) // TODO: Calculate
+                                .listingCount((int) listingRepository.countBySellerId(seller.getId()))
                                 .build())
                         .build())
                 .flagType(f.getFlagType())
@@ -553,13 +564,14 @@ public class ModerationService {
     }
 
     private UserReportResponse toUserReportResponse(UserReport r) {
+        long submittedCount = userReportRepository.countByReporterId(r.getReporter().getId());
         return UserReportResponse.builder()
                 .id(r.getId())
                 .reporter(UserReportResponse.ReporterInfo.builder()
                         .id(r.getReporter().getId())
                         .name(r.getReporter().getUsername())
                         .reportHistory(UserReportResponse.ReportHistory.builder()
-                                .submitted(0) // TODO: Calculate
+                                .submitted((int) submittedCount)
                                 .valid(0)
                                 .build())
                         .build())

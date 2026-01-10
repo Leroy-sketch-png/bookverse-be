@@ -12,6 +12,7 @@ import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.ListingRepository;
+import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import lombok.AccessLevel;
@@ -48,6 +49,7 @@ public class PublicSellerService {
     UserRepository userRepository;
     ListingRepository listingRepository;
     ReviewRepository reviewRepository;
+    OrderItemRepository orderItemRepository;
 
     /**
      * Get a seller's public profile by username/slug.
@@ -68,6 +70,11 @@ public class PublicSellerService {
                 ? seller.getCreatedAt().toLocalDate() 
                 : LocalDate.now();
         String membershipDuration = formatMembershipDuration(memberSince);
+        
+        // Calculate repeat buyer rate
+        long totalBuyers = orderItemRepository.countDistinctBuyersBySellerId(seller.getId());
+        long repeatBuyers = orderItemRepository.countRepeatBuyersBySellerId(seller.getId());
+        double repeatBuyerRate = totalBuyers > 0 ? (repeatBuyers * 100.0 / totalBuyers) : 0.0;
 
         SellerProfileResponse.SellerStats stats = SellerProfileResponse.SellerStats.builder()
                 .totalSales(totalSales.intValue())
@@ -77,7 +84,7 @@ public class PublicSellerService {
                         ? profile.getFulfillmentRate().doubleValue() : 100.0)
                 .responseTime(profile != null && profile.getResponseTime() != null 
                         ? profile.getResponseTime() : "< 1 hour")
-                .repeatBuyerRate(0.0) // TODO: Calculate from order data
+                .repeatBuyerRate(repeatBuyerRate)
                 .membershipDuration(membershipDuration)
                 .build();
 

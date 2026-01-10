@@ -23,6 +23,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -205,10 +207,10 @@ public class ReviewService {
         Review review = reviewRepository.findByIdAndUserId(reviewId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
         
-        // TODO: Add 30-day limit per Vision spec
-        // if (review.getCreatedAt().plusDays(30).isBefore(LocalDateTime.now())) {
-        //     throw new AppException(ErrorCode.REVIEW_UPDATE_EXPIRED);
-        // }
+        // 30-day limit per Vision spec - reviews can only be edited within 30 days of creation
+        if (review.getCreatedAt().plusDays(30).isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.REVIEW_UPDATE_EXPIRED);
+        }
         
         if (request.getRating() != null) {
             review.setRating(request.getRating());

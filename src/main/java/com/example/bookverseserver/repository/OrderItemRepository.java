@@ -50,4 +50,20 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
      * Find all order items for a seller (for payout calculation).
      */
     List<OrderItem> findBySeller(User seller);
+    
+    /**
+     * Count unique buyers for a seller (for repeat buyer rate calculation).
+     */
+    @Query("SELECT COUNT(DISTINCT oi.order.user.id) FROM OrderItem oi WHERE oi.seller.id = :sellerId")
+    long countDistinctBuyersBySellerId(@Param("sellerId") Long sellerId);
+    
+    /**
+     * Count repeat buyers for a seller (buyers who ordered more than once).
+     */
+    @Query("SELECT COUNT(*) FROM (" +
+           "SELECT oi.order.user.id AS userId FROM OrderItem oi " +
+           "WHERE oi.seller.id = :sellerId " +
+           "GROUP BY oi.order.user.id " +
+           "HAVING COUNT(DISTINCT oi.order.id) > 1) AS repeatBuyers")
+    long countRepeatBuyersBySellerId(@Param("sellerId") Long sellerId);
 }

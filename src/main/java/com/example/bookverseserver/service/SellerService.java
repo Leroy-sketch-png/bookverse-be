@@ -18,6 +18,7 @@ import com.example.bookverseserver.repository.CartItemRepository;
 import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.OrderRepository;
+import com.example.bookverseserver.repository.ReviewRepository;
 import com.example.bookverseserver.repository.WishlistRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class SellerService {
     OrderItemRepository orderItemRepository;
     CartItemRepository cartItemRepository;
     WishlistRepository wishlistRepository;
+    ReviewRepository reviewRepository;
     ListingMapper listingMapper;
     OrderMapper orderMapper;
 
@@ -91,8 +93,32 @@ public class SellerService {
 
         // Pending orders (not delivered yet)
         long pendingOrders = orderItems.stream()
-                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.PENDING 
-                        || oi.getOrder().getStatus() == OrderStatus.PROCESSING)
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.PENDING)
+                .map(oi -> oi.getOrder().getId())
+                .distinct()
+                .count();
+
+        // Order status breakdown - count unique orders by status
+        long processingOrders = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.PROCESSING)
+                .map(oi -> oi.getOrder().getId())
+                .distinct()
+                .count();
+        
+        long shippedOrders = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.SHIPPED)
+                .map(oi -> oi.getOrder().getId())
+                .distinct()
+                .count();
+        
+        long deliveredOrders = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
+                .map(oi -> oi.getOrder().getId())
+                .distinct()
+                .count();
+        
+        long cancelledOrders = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.CANCELLED)
                 .map(oi -> oi.getOrder().getId())
                 .distinct()
                 .count();
@@ -102,9 +128,17 @@ public class SellerService {
                 .mapToInt(l -> l.getViews() != null ? l.getViews() : 0)
                 .sum();
 
-        // Average rating (from seller profile, or calculate from reviews)
-        Double avgRating = 4.5; // TODO: Calculate from actual reviews
-        Integer ratingCount = 0;
+        // Average rating - REAL calculation from reviews
+        Double avgRating = reviewRepository.calculateAverageRatingForSeller(sellerId);
+        long ratingCount = reviewRepository.countBySellerIdAndIsVisibleTrueAndIsHiddenFalse(sellerId);
+        
+        // Conversion rate: sales / views (as percentage)
+        double conversionRate = totalViews > 0 
+                ? ((double) totalSales / totalViews) * 100.0 
+                : 0.0;
+        
+        // Wishlist adds - count how many times seller's listings are in wishlists
+        long wishlistAdds = listingIds.isEmpty() ? 0 : wishlistRepository.countByListingIdIn(listingIds);
 
         // Build response
         return SellerStatsResponse.builder()
@@ -118,10 +152,10 @@ public class SellerService {
                         .build())
                 .orders(OrdersBreakdown.builder()
                         .pending((int) pendingOrders)
-                        .processing(0)
-                        .shipped(0)
-                        .delivered(0)
-                        .cancelled(0)
+                        .processing((int) processingOrders)
+                        .shipped((int) shippedOrders)
+                        .delivered((int) deliveredOrders)
+                        .cancelled((int) cancelledOrders)
                         .build())
                 .listings(ListingsStats.builder()
                         .total(totalListings)
@@ -134,15 +168,15 @@ public class SellerService {
                         .trend(0.0)
                         .build())
                 .rating(RatingData.builder()
-                        .average(avgRating)
-                        .count(ratingCount)
+                        .average(avgRating != null ? avgRating : 0.0)
+                        .count((int) ratingCount)
                         .build())
                 .avgOrderValue(totalSales > 0 
                         ? totalRevenue.divide(BigDecimal.valueOf(totalSales), 2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO)
-                .conversionRate(0.0) // TODO: Calculate from views/sales
+                .conversionRate(conversionRate)
                 .wishlistAdds(SellerStatsResponse.WishlistData.builder()
-                        .total(0)
+                        .total((int) wishlistAdds)
                         .trend(0.0)
                         .build())
                 .build();

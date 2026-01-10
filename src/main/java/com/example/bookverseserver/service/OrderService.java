@@ -149,6 +149,17 @@ public class OrderService {
     Order order = orderRepository.findByIdAndUser(orderId, currentUser)
         .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+    // Get timeline events for this order
+    var timelineEvents = orderTimelineRepository.findByOrderOrderByCreatedAtAsc(order);
+    var events = timelineEvents.stream()
+        .map(t -> OrderTrackingDTO.TrackingEvent.builder()
+            .status(t.getStatus())
+            .timestamp(t.getCreatedAt())
+            .description(t.getNote())
+            .location(null) // Location comes from shipping provider, not timeline
+            .build())
+        .toList();
+
     return OrderTrackingDTO.builder()
         .orderId(order.getId())
         .orderNumber(order.getOrderNumber())
@@ -157,7 +168,7 @@ public class OrderService {
         .trackingUrl(order.getTrackingUrl())
         .status(order.getStatus().name())
         .estimatedDelivery(order.getEstimatedDelivery())
-        .events(Collections.emptyList()) // Placeholder for tracking events logic
+        .events(events)
         .build();
   }
   
