@@ -42,6 +42,8 @@ public class PayoutService {
     OrderItemRepository orderItemRepository;
     UserRepository userRepository;
     PayoutMapper payoutMapper;
+    SmsService smsService;
+    StripeConnectService stripeConnectService;
 
     private static final BigDecimal PRO_COMMISSION_RATE = new BigDecimal("0.03");  // 3%
     private static final BigDecimal CASUAL_COMMISSION_RATE = new BigDecimal("0.08"); // 8%
@@ -172,14 +174,34 @@ public class PayoutService {
             throw new AppException(ErrorCode.INVALID_PAYOUT_STATUS);
         }
         
-        // In production, this would trigger actual payment processing
-        // For simulation, we mark it as COMPLETED immediately
+        User seller = payout.getSeller();
+        UserProfile profile = seller.getUserProfile();
+        
+        // Attempt real Stripe Connect transfer if seller has connected account
+        String transferId = null;
+        if (profile != null && profile.getStripeAccountId() != null) {
+            // Convert to VND cents (smallest unit)
+            long amountInCents = payout.getAmount().multiply(BigDecimal.valueOf(100)).longValue();
+            transferId = stripeConnectService.transferToSeller(
+                    profile.getStripeAccountId(),
+                    amountInCents,
+                    "PAYOUT-" + payoutId
+            );
+            log.info("Stripe transfer {} created for payout {}", transferId, payoutId);
+        } else {
+            log.info("Seller {} has no Connect account, simulating payout", seller.getId());
+            transferId = "SIM-" + System.currentTimeMillis();
+        }
+        
         payout.setStatus(SellerPayoutStatus.COMPLETED);
         payout.setPaidAt(LocalDateTime.now());
-        payout.setExternalReference("SIM-" + System.currentTimeMillis()); // Simulated reference
+        payout.setExternalReference(transferId);
         
         payout = payoutRepository.save(payout);
         log.info("Payout {} approved for seller {}", payoutId, payout.getSeller().getId());
+        
+        // Send SMS notification to seller
+        sendPayoutStatusSms(payout, true);
         
         return payoutMapper.toResponse(payout);
     }
@@ -199,6 +221,9 @@ public class PayoutService {
         payout.setStatus(SellerPayoutStatus.FAILED);
         payout = payoutRepository.save(payout);
         log.info("Payout {} rejected for seller {}", payoutId, payout.getSeller().getId());
+        
+        // Send SMS notification to seller
+        sendPayoutStatusSms(payout, false);
         
         return payoutMapper.toResponse(payout);
     }
@@ -242,5 +267,48 @@ public class PayoutService {
                 .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
                 .map(OrderItem::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Send SMS notification about payout status
+     */
+    private void sendPayoutStatusSms(SellerPayout payout, boolean approved) {
+        try {
+            User seller = payout.getSeller();
+            UserProfile profile = seller.getUserProfile();
+            String phoneNumber = null;
+            
+            // Try to get phone from profile
+            if (profile != null && profile.getPhoneNumber() != null 
+                    && !profile.getPhoneNumber().isBlank()) {
+                phoneNumber = profile.getPhoneNumber();
+            }
+            
+            if (phoneNumber == null) {
+                log.debug("No phone number available for seller {} - skipping SMS", seller.getId());
+                return;
+            }
+            
+            String sellerName = profile != null && profile.getDisplayName() != null 
+                    ? profile.getDisplayName() 
+                    : seller.getUsername();
+            String formattedAmount = "$" + payout.getAmount().setScale(2).toPlainString();
+            
+            if (approved) {
+                smsService.sendPayoutNotification(phoneNumber, formattedAmount, "COMPLETED");
+                log.info("Sent payout success SMS to seller {}", seller.getId());
+            } else {
+                // Use a generic notification for rejected payouts
+                String message = String.format(
+                    "Hi %s, your payout request for %s was not approved. Please contact support for details.",
+                    sellerName, formattedAmount
+                );
+                smsService.sendSms(phoneNumber, message);
+                log.info("Sent payout rejection SMS to seller {}", seller.getId());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send payout SMS notification: {}", e.getMessage());
+            // Don't fail the payout operation if SMS fails
+        }
     }
 }

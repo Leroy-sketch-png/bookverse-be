@@ -32,6 +32,7 @@ public class ShippingAddressResponse {
     String addressLine2;
 
     String city;
+    Integer provinceId;
     String postalCode;
     String country;
 
@@ -42,6 +43,8 @@ public class ShippingAddressResponse {
     
     // Additional fields for order context (not in FE ShippingAddressData but useful)
     String ward;
+    String wardCode;
     String district;
+    Integer districtId;
     String note;
 }

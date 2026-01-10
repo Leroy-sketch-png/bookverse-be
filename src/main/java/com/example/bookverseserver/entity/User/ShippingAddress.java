@@ -40,11 +40,20 @@ public class ShippingAddress {
     @Column(nullable = false, length = 100)
     String city;
     
+    @Column(name = "province_id")
+    Integer provinceId;
+    
     @Column(length = 100)
     String ward;
     
+    @Column(name = "ward_code", length = 20)
+    String wardCode;
+    
     @Column(length = 100)
     String district;
+    
+    @Column(name = "district_id")
+    Integer districtId;
 
     @Column(name = "postal_code", length = 20)
     String postalCode;

@@ -29,6 +29,8 @@ public class ShippingAddressRequest {
     @NotBlank(message = "SHIPPING_ADDRESS_CITY_REQUIRED")
     @Size(max = 100, message = "SHIPPING_ADDRESS_CITY_TOO_LONG")
     String city;
+    
+    Integer provinceId; // GHN Province ID for shipping calculation
 
     @Size(max = 20, message = "SHIPPING_ADDRESS_POSTAL_CODE_TOO_LONG")
     String postalCode;
@@ -36,6 +38,14 @@ public class ShippingAddressRequest {
     @NotBlank(message = "SHIPPING_ADDRESS_COUNTRY_REQUIRED")
     @Size(max = 100, message = "SHIPPING_ADDRESS_COUNTRY_TOO_LONG")
     String country;
+    
+    String ward;
+    String wardCode; // GHN Ward Code for shipping calculation
+    
+    String district;
+    Integer districtId; // GHN District ID for shipping calculation
+    
+    String note;
 
     @Builder.Default
     Boolean isDefault = false;

@@ -52,6 +52,7 @@ public class CheckoutService {
     VoucherRepository voucherRepository;
     VoucherService voucherService;
     ShippingAddressMapper shippingAddressMapper;
+    SmsService smsService;
 
     @NonFinal
     @Value("${checkout.tax-rate:0.08}")
@@ -354,6 +355,12 @@ public class CheckoutService {
         cart.setTotalPrice(BigDecimal.ZERO);
         cartRepository.save(cart);
         
+        // Send order confirmation SMS to buyer (async, fails silently)
+        sendOrderConfirmationSms(savedOrder, shippingAddress);
+        
+        // Notify sellers about new order (async, fails silently)
+        notifySellersNewOrder(savedOrder);
+        
         return CompleteCheckoutResponse.builder()
                 .orderId(savedOrder.getId())
                 .orderNumber(savedOrder.getOrderNumber())
@@ -586,5 +593,90 @@ public class CheckoutService {
                 .status("PENDING_PAYMENT")
                 .expiresAt(savedSession.getExpiresAt())
                 .build();
+    }
+    
+    /**
+     * Send order confirmation SMS to buyer.
+     * Fails silently - SMS is not critical to checkout flow.
+     */
+    private void sendOrderConfirmationSms(Order order, ShippingAddress shippingAddress) {
+        try {
+            String buyerPhone = null;
+            if (shippingAddress != null && shippingAddress.getPhoneNumber() != null) {
+                buyerPhone = shippingAddress.getPhoneNumber();
+            } else if (order.getUser().getUserProfile() != null && order.getUser().getUserProfile().getPhoneNumber() != null) {
+                buyerPhone = order.getUser().getUserProfile().getPhoneNumber();
+            }
+            
+            if (buyerPhone == null || buyerPhone.isBlank()) {
+                log.debug("No phone number for order {} buyer, skipping SMS", order.getId());
+                return;
+            }
+            
+            String totalAmount = order.getTotalAmount().toPlainString();
+            boolean sent = smsService.sendOrderConfirmation(buyerPhone, order.getOrderNumber(), totalAmount);
+            
+            if (sent) {
+                log.info("Order confirmation SMS sent to {} for order {}", buyerPhone, order.getOrderNumber());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send order confirmation SMS for order {}: {}", order.getId(), e.getMessage());
+            // Don't rethrow - SMS failure shouldn't break checkout flow
+        }
+    }
+    
+    /**
+     * Notify all sellers in the order about the new order.
+     * Each order item may belong to a different seller.
+     * Fails silently - notifications shouldn't break checkout.
+     */
+    private void notifySellersNewOrder(Order order) {
+        try {
+            // Group items by seller to send one notification per seller
+            java.util.Map<Long, java.util.List<OrderItem>> itemsBySeller = order.getItems().stream()
+                    .filter(item -> item.getListing() != null && item.getListing().getSeller() != null)
+                    .collect(java.util.stream.Collectors.groupingBy(item -> item.getListing().getSeller().getId()));
+            
+            for (java.util.Map.Entry<Long, java.util.List<OrderItem>> entry : itemsBySeller.entrySet()) {
+                try {
+                    User seller = entry.getValue().get(0).getListing().getSeller();
+                    UserProfile profile = seller.getUserProfile();
+                    
+                    // Get seller phone
+                    String sellerPhone = null;
+                    if (profile != null && profile.getPhoneNumber() != null && !profile.getPhoneNumber().isBlank()) {
+                        sellerPhone = profile.getPhoneNumber();
+                    }
+                    
+                    // Calculate seller's portion of the order
+                    BigDecimal sellerTotal = entry.getValue().stream()
+                            .map(OrderItem::getSubtotal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+                    int itemCount = entry.getValue().size();
+                    String sellerName = profile != null && profile.getDisplayName() != null 
+                            ? profile.getDisplayName() : seller.getUsername();
+                    
+                    // Send SMS if phone available
+                    if (sellerPhone != null) {
+                        String message = String.format(
+                            "New order! %s, you have %d new item(s) to fulfill. Order #%s, total: $%s. Check your dashboard!",
+                            sellerName, itemCount, order.getOrderNumber(), sellerTotal.setScale(2).toPlainString()
+                        );
+                        smsService.sendSms(sellerPhone, message);
+                        log.info("Sent new order SMS to seller {} for order {}", seller.getId(), order.getOrderNumber());
+                    }
+                    
+                    // TODO: Also send email notification to seller
+                    
+                } catch (Exception e) {
+                    log.warn("Failed to notify seller {}: {}", entry.getKey(), e.getMessage());
+                    // Continue notifying other sellers
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to notify sellers for order {}: {}", order.getId(), e.getMessage());
+            // Don't rethrow - notification failure shouldn't break checkout
+        }
     }
 }

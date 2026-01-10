@@ -45,6 +45,7 @@ public class OrderService {
   UserRepository userRepository;
   OrderMapper orderMapper;
   TransactionService transactionService;
+  SmsService smsService;
   
   // Valid status transitions for seller
   private static final Set<OrderStatus> SELLER_ALLOWED_STATUSES = Set.of(
@@ -232,6 +233,9 @@ public class OrderService {
         .build();
     orderTimelineRepository.save(timeline);
     
+    // Send SMS notification to buyer (async, don't block on failure)
+    sendOrderStatusSms(order, newStatus);
+    
     log.info("Seller {} updated order {} status from {} to {}", 
         sellerId, orderId, previousStatus, newStatus);
     
@@ -260,5 +264,46 @@ public class OrderService {
     }
     
     return note.toString();
+  }
+  
+  /**
+   * Send SMS notification based on order status change.
+   * Fails silently - SMS is not critical to order flow.
+   */
+  private void sendOrderStatusSms(Order order, OrderStatus status) {
+    try {
+      // Get buyer's phone from shipping address or profile
+      String buyerPhone = null;
+      if (order.getShippingAddress() != null && order.getShippingAddress().getPhoneNumber() != null) {
+        buyerPhone = order.getShippingAddress().getPhoneNumber();
+      } else if (order.getUser().getUserProfile() != null && order.getUser().getUserProfile().getPhoneNumber() != null) {
+        buyerPhone = order.getUser().getUserProfile().getPhoneNumber();
+      }
+      
+      if (buyerPhone == null || buyerPhone.isBlank()) {
+        log.debug("No phone number for order {} buyer, skipping SMS", order.getId());
+        return;
+      }
+      
+      boolean sent = false;
+      switch (status) {
+        case SHIPPED:
+          sent = smsService.sendOrderShipped(buyerPhone, order.getOrderNumber(), order.getTrackingNumber());
+          break;
+        case DELIVERED:
+          sent = smsService.sendOrderDelivered(buyerPhone, order.getOrderNumber());
+          break;
+        default:
+          // No SMS for other statuses
+          break;
+      }
+      
+      if (sent) {
+        log.info("SMS sent to {} for order {} status {}", buyerPhone, order.getOrderNumber(), status);
+      }
+    } catch (Exception e) {
+      log.warn("Failed to send SMS for order {}: {}", order.getId(), e.getMessage());
+      // Don't rethrow - SMS failure shouldn't break order flow
+    }
   }
 }
