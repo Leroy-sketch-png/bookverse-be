@@ -47,6 +47,12 @@ public class SecurityConfig {
             "/error"
     };
     
+    // Stripe webhook endpoint - must be public for Stripe to call it
+    // Security is handled via Stripe signature verification in the controller
+    private final String[] PUBLIC_POST_ENDPOINTS = {
+            "/api/stripe/webhook"    // Stripe webhook (signature verified in controller)
+    };
+    
     // Books endpoints - GET is public, POST requires auth
     private final String[] PUBLIC_BOOKS_GET = {
             "/api/books",       // GET all books
@@ -85,6 +91,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_BOOKS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_LISTINGS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_SELLERS_GET).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

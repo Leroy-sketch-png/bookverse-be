@@ -149,6 +149,9 @@ public class AuthenticationService {
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        
+        // P0 Security Fix: Verify email before allowing login
+        if (!user.getEnabled()) throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);

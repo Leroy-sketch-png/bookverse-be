@@ -61,6 +61,7 @@ public enum ErrorCode {
     // --- 401 UNAUTHORIZED (Chưa đăng nhập / Token sai) ---
     UNAUTHENTICATED(401, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     INVALID_SUBJECT_IN_JWT(401, "Invalid subject in JWT", HttpStatus.UNAUTHORIZED),
+    EMAIL_NOT_VERIFIED(401, "Email not verified. Please verify your email before logging in.", HttpStatus.UNAUTHORIZED),
 
     // --- 403 FORBIDDEN (Không có quyền) ---
     UNAUTHORIZED(403, "You do not have permission", HttpStatus.FORBIDDEN),
