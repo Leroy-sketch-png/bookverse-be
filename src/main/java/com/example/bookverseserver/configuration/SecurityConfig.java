@@ -74,6 +74,16 @@ public class SecurityConfig {
             "/api/seller/{sellerSlug}/profile/listings",  // GET seller's listings
             "/api/seller/{sellerSlug}/profile/reviews"    // GET seller's reviews
     };
+    
+    // Shipping endpoints - public for rate calculation and address lookup
+    private final String[] PUBLIC_SHIPPING_GET = {
+            "/api/shipping/calculate",       // GET shipping rate calculation
+            "/api/shipping/services",        // GET available shipping services
+            "/api/shipping/track/**",        // GET tracking info
+            "/api/shipping/provinces",       // GET provinces list
+            "/api/shipping/provinces/*/districts",  // GET districts by province
+            "/api/shipping/districts/*/wards"       // GET wards by district
+    };
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
@@ -91,6 +101,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_BOOKS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_LISTINGS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_SELLERS_GET).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_SHIPPING_GET).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token

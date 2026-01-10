@@ -152,6 +152,14 @@ public enum ErrorCode {
     NOT_A_SELLER(403, "You must be a seller to access this resource", HttpStatus.FORBIDDEN),
     INVALID_PAYOUT_STATUS(400, "Payout is not in a valid status for this operation", HttpStatus.BAD_REQUEST),
 
+    // --- Stripe Integration ---
+    STRIPE_CONNECT_ERROR(500, "Error connecting to Stripe Connect", HttpStatus.INTERNAL_SERVER_ERROR),
+    STRIPE_SUBSCRIPTION_ERROR(500, "Error processing subscription", HttpStatus.INTERNAL_SERVER_ERROR),
+    STRIPE_TRANSFER_ERROR(500, "Error creating transfer to seller", HttpStatus.INTERNAL_SERVER_ERROR),
+    CONNECT_ACCOUNT_NOT_READY(400, "Your seller account is not ready for payouts. Please complete onboarding.", HttpStatus.BAD_REQUEST),
+    SUBSCRIPTION_NOT_FOUND(404, "Subscription not found", HttpStatus.NOT_FOUND),
+    ALREADY_SUBSCRIBED(409, "You already have an active subscription", HttpStatus.CONFLICT),
+
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
     ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY),

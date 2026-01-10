@@ -94,6 +94,22 @@ public class UserProfile {
     
     @Column(name = "shipping_policy", length = 500)
     String shippingPolicy;
+    
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Stripe Integration Fields (for Connect + Subscriptions)
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    @Column(name = "stripe_customer_id", length = 100)
+    String stripeCustomerId;
+    
+    @Column(name = "stripe_account_id", length = 100)
+    String stripeAccountId; // Stripe Connect account for seller payouts
+    
+    @Column(name = "stripe_subscription_id", length = 100)
+    String stripeSubscriptionId; // PRO seller subscription
+    
+    @Column(name = "subscription_status", length = 50)
+    String subscriptionStatus; // active, cancelled, past_due, etc.
 
     @Column(name = "preferences", columnDefinition = "text")
     /**

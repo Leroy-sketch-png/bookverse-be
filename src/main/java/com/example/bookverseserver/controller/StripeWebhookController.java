@@ -6,12 +6,9 @@ import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.enums.PaymentStatus;
 import com.example.bookverseserver.repository.OrderRepository;
 import com.example.bookverseserver.repository.TransactionRepository;
+import com.example.bookverseserver.service.SubscriptionService;
 import com.stripe.exception.SignatureVerificationException;
-import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.Refund;
-import com.stripe.model.StripeObject;
+import com.stripe.model.*;
 import com.stripe.net.Webhook;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +32,8 @@ import java.util.Optional;
  * - payment_intent.succeeded: Mark payment as PAID, update order to PROCESSING
  * - payment_intent.payment_failed: Mark payment as FAILED
  * - charge.refunded: Mark payment as REFUNDED, update order to REFUNDED
+ * - customer.subscription.created: Activate PRO seller subscription
+ * - customer.subscription.deleted: Downgrade from PRO seller
  * 
  * @see <a href="https://stripe.com/docs/webhooks">Stripe Webhooks Documentation</a>
  */
@@ -47,6 +46,7 @@ public class StripeWebhookController {
 
     private final TransactionRepository transactionRepository;
     private final OrderRepository orderRepository;
+    private final SubscriptionService subscriptionService;
 
     @Value("${stripe.webhook.secret}")
     private String webhookSecret;
@@ -107,6 +107,10 @@ public class StripeWebhookController {
                 case "payment_intent.succeeded" -> handlePaymentSucceeded((PaymentIntent) stripeObject);
                 case "payment_intent.payment_failed" -> handlePaymentFailed((PaymentIntent) stripeObject);
                 case "charge.refunded" -> handleRefund((Refund) stripeObject);
+                case "customer.subscription.created", "customer.subscription.updated" -> 
+                        handleSubscriptionCreated((Subscription) stripeObject);
+                case "customer.subscription.deleted" -> 
+                        handleSubscriptionDeleted((Subscription) stripeObject);
                 default -> log.info("Unhandled event type: {}", eventType);
             }
         } catch (Exception e) {
@@ -212,5 +216,26 @@ public class StripeWebhookController {
         }
 
         log.info("Refund for payment {} processed", paymentIntentId);
+    }
+
+    /**
+     * Handle subscription created/updated
+     * - Upgrade user to PRO_SELLER
+     */
+    private void handleSubscriptionCreated(Subscription subscription) {
+        log.info("Subscription created/updated: {}", subscription.getId());
+        
+        if ("active".equals(subscription.getStatus())) {
+            subscriptionService.handleSubscriptionCreated(subscription);
+        }
+    }
+
+    /**
+     * Handle subscription deleted
+     * - Downgrade user from PRO_SELLER to CASUAL_SELLER
+     */
+    private void handleSubscriptionDeleted(Subscription subscription) {
+        log.info("Subscription deleted: {}", subscription.getId());
+        subscriptionService.handleSubscriptionEnded(subscription);
     }
 }
