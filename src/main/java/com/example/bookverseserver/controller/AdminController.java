@@ -6,7 +6,9 @@ import com.example.bookverseserver.dto.response.Admin.ProApplicationDetailRespon
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.User.ProSellerApplicationResponse;
+import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.enums.ApplicationStatus;
+import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.service.AdminService;
 import com.example.bookverseserver.service.ProSellerService;
 import com.example.bookverseserver.utils.SecurityUtils;
@@ -97,8 +99,45 @@ public class AdminController {
                 .build();
     }
 
+    // ============ Role Management ============
+
+    @PostMapping("/users/{userId}/roles")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Assign role to user",
+               description = "Assign a role (MODERATOR, SELLER, etc.) to a user. Admin only.")
+    public ApiResponse<UserResponse> assignRole(
+            @PathVariable Long userId,
+            @RequestBody RoleRequest request,
+            Authentication authentication) {
+        Long adminId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<UserResponse>builder()
+                .message("Role " + request.role + " assigned to user successfully")
+                .result(adminService.assignRole(userId, request.role, adminId))
+                .build();
+    }
+
+    @DeleteMapping("/users/{userId}/roles/{roleName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remove role from user",
+               description = "Remove a role from a user. Admin only.")
+    public ApiResponse<UserResponse> removeRole(
+            @PathVariable Long userId,
+            @PathVariable RoleName roleName,
+            Authentication authentication) {
+        Long adminId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<UserResponse>builder()
+                .message("Role " + roleName + " removed from user")
+                .result(adminService.removeRole(userId, roleName, adminId))
+                .build();
+    }
+
     /**
      * Simple request body for review actions.
      */
     public record ReviewRequest(String notes) {}
+    
+    /**
+     * Request body for role assignment.
+     */
+    public record RoleRequest(RoleName role) {}
 }

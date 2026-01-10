@@ -4,10 +4,17 @@ import com.example.bookverseserver.dto.response.Admin.PlatformStatsResponse;
 import com.example.bookverseserver.dto.response.Admin.ProApplicationDetailResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.User.ProSellerApplicationResponse;
+import com.example.bookverseserver.dto.response.User.UserResponse;
 import com.example.bookverseserver.entity.User.ProSellerApplication;
+import com.example.bookverseserver.entity.User.Role;
+import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.ApplicationStatus;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.enums.OrderStatus;
+import com.example.bookverseserver.enums.RoleName;
+import com.example.bookverseserver.exception.AppException;
+import com.example.bookverseserver.exception.ErrorCode;
+import com.example.bookverseserver.mapper.UserMapper;
 import com.example.bookverseserver.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +24,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -33,11 +42,69 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     UserRepository userRepository;
+    RoleRepository roleRepository;
+    UserMapper userMapper;
     ListingRepository listingRepository;
     OrderRepository orderRepository;
     ProSellerApplicationRepository proApplicationRepository;
     FlaggedListingRepository flaggedListingRepository;
     DisputeRepository disputeRepository;
+
+    /**
+     * Assign a role to a user.
+     * Used by ADMIN to promote users to MODERATOR, ADMIN, etc.
+     * 
+     * @param userId The user to assign the role to
+     * @param roleName The role to assign
+     * @param adminId The admin performing the action (for audit)
+     * @return Updated user response
+     */
+    @Transactional
+    public UserResponse assignRole(Long userId, RoleName roleName, Long adminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        
+        // Add role to user's roles (don't replace existing roles)
+        Set<Role> roles = user.getRoles();
+        roles.add(role);
+        user.setRoles(roles);
+        
+        userRepository.save(user);
+        
+        log.info("Admin {} assigned role {} to user {}", adminId, roleName, userId);
+        
+        return userMapper.toUserResponse(user);
+    }
+    
+    /**
+     * Remove a role from a user.
+     * 
+     * @param userId The user to remove the role from
+     * @param roleName The role to remove
+     * @param adminId The admin performing the action
+     * @return Updated user response
+     */
+    @Transactional
+    public UserResponse removeRole(Long userId, RoleName roleName, Long adminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        
+        Set<Role> roles = user.getRoles();
+        roles.remove(role);
+        user.setRoles(roles);
+        
+        userRepository.save(user);
+        
+        log.info("Admin {} removed role {} from user {}", adminId, roleName, userId);
+        
+        return userMapper.toUserResponse(user);
+    }
 
     /**
      * Get platform-wide statistics for admin dashboard.
