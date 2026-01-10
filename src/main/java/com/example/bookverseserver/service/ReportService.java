@@ -2,6 +2,7 @@ package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.controller.ReportController.ReportSubmittedResponse;
 import com.example.bookverseserver.dto.request.Moderation.CreateReportRequest;
+import com.example.bookverseserver.dto.response.Moderation.UserReportResponse;
 import com.example.bookverseserver.entity.Moderation.UserReport;
 import com.example.bookverseserver.entity.Order_Payment.Order;
 import com.example.bookverseserver.entity.Product.Listing;
@@ -19,6 +20,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -116,5 +120,54 @@ public class ReportService {
             case SPAM, OTHER -> ReportPriority.LOW;
             default -> ReportPriority.MEDIUM;
         };
+    }
+    
+    /**
+     * Get reports submitted by the current user.
+     */
+    @Transactional(readOnly = true)
+    public Page<UserReportResponse> getMyReports(User reporter, int page, int limit) {
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(0, page - 1), 
+                Math.min(limit, 50), 
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        
+        Page<UserReport> reports = userReportRepository.findByReporterId(reporter.getId(), pageRequest);
+        return reports.map(this::toUserReportResponse);
+    }
+    
+    /**
+     * Convert UserReport entity to UserReportResponse DTO.
+     */
+    private UserReportResponse toUserReportResponse(UserReport r) {
+        UserReportResponse.ReportedEntityInfo entityInfo = UserReportResponse.ReportedEntityInfo.builder()
+                .type(r.getReportedEntityType())
+                .id(r.getReportedEntityId())
+                .name(r.getReportedUser() != null ? r.getReportedUser().getUsername() : "Unknown")
+                .build();
+        
+        UserReportResponse.RelatedOrderInfo orderInfo = null;
+        if (r.getRelatedOrder() != null) {
+            orderInfo = UserReportResponse.RelatedOrderInfo.builder()
+                    .id(r.getRelatedOrder().getId())
+                    .orderNumber(r.getRelatedOrder().getOrderNumber())
+                    .date(r.getRelatedOrder().getCreatedAt())
+                    .build();
+        }
+        
+        return UserReportResponse.builder()
+                .id(r.getId())
+                .reportedEntity(entityInfo)
+                .reportType(r.getReportType())
+                .description(r.getDescription())
+                .evidenceUrls(r.getEvidenceUrls())
+                .priority(r.getPriority())
+                .status(r.getStatus())
+                .relatedOrder(orderInfo)
+                .resolutionNote(r.getResolutionNote())
+                .createdAt(r.getCreatedAt())
+                .resolvedAt(r.getResolvedAt())
+                .build();
     }
 }

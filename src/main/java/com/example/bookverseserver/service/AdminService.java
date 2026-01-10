@@ -217,4 +217,86 @@ public class AdminService {
                 .reviewedBy(app.getReviewedBy())
                 .build();
     }
+
+    /**
+     * Get all users for admin management.
+     * Supports search and role filtering (can combine both).
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<UserResponse> getUsers(String search, RoleName role, int page, int limit) {
+        PageRequest pageable = PageRequest.of(
+                Math.max(0, page - 1), 
+                Math.min(limit, 50), 
+                Sort.by("id").descending()
+        );
+
+        Page<User> userPage;
+        boolean hasSearch = search != null && !search.isBlank();
+        boolean hasRole = role != null;
+        
+        if (hasSearch && hasRole) {
+            // Combined: search + role filter
+            String searchLower = "%" + search.toLowerCase() + "%";
+            userPage = userRepository.searchUsersByRole(searchLower, role, pageable);
+        } else if (hasSearch) {
+            // Search only
+            String searchLower = "%" + search.toLowerCase() + "%";
+            userPage = userRepository.searchUsers(searchLower, pageable);
+        } else if (hasRole) {
+            // Role filter only
+            userPage = userRepository.findByRoleName(role, pageable);
+        } else {
+            // No filters
+            userPage = userRepository.findAll(pageable);
+        }
+
+        List<UserResponse> responses = userPage.getContent().stream()
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
+
+        return PagedResponse.ofOneIndexed(
+                responses,
+                page,
+                limit,
+                userPage.getTotalElements(),
+                userPage.getTotalPages()
+        );
+    }
+
+    /**
+     * Suspend a user account.
+     */
+    @Transactional
+    public UserResponse suspendUser(Long userId, String reason, Long adminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        // Prevent suspending self
+        if (userId.equals(adminId)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        
+        user.setEnabled(false);
+        userRepository.save(user);
+        
+        log.info("Admin {} suspended user {} for reason: {}", adminId, userId, reason);
+        
+        return userMapper.toUserResponse(user);
+    }
+
+    /**
+     * Reactivate a suspended user account.
+     */
+    @Transactional
+    public UserResponse reactivateUser(Long userId, Long adminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        user.setEnabled(true);
+        userRepository.save(user);
+        
+        log.info("Admin {} reactivated user {}", adminId, userId);
+        
+        return userMapper.toUserResponse(user);
+    }
 }

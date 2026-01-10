@@ -1,9 +1,11 @@
 package com.example.bookverseserver.service;
 
+import com.example.bookverseserver.dto.request.DisputeRequest;
 import com.example.bookverseserver.dto.request.Moderation.ModerationActionRequest;
 import com.example.bookverseserver.dto.response.Moderation.*;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.entity.Moderation.*;
+import com.example.bookverseserver.entity.Order_Payment.Order;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.*;
@@ -17,10 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +48,7 @@ public class ModerationService {
     SuspensionRepository suspensionRepository;
     ListingRepository listingRepository;
     UserRepository userRepository;
+    OrderRepository orderRepository;
 
     // ============ Dashboard Summary ============
 
@@ -292,6 +297,87 @@ public class ModerationService {
                 dispute.getSeller(), request.getReason(), request.getNote());
         
         return toDisputeResponse(saved);
+    }
+
+    /**
+     * File a new dispute for an order (buyer-facing).
+     * Per CRITICAL_GAPS.md P1: Buyer Dispute Form.
+     */
+    @Transactional
+    public DisputeResponse createDispute(DisputeRequest request, Authentication authentication) {
+        String username = authentication.getName();
+        User buyer = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        // Verify the user is the buyer of this order
+        if (!order.getUser().getId().equals(buyer.getId())) {
+            throw new AppException(ErrorCode.NOT_ORDER_BUYER);
+        }
+        
+        // Check order status - can only dispute SHIPPED or DELIVERED orders
+        if (!order.getStatus().equals(OrderStatus.SHIPPED) && 
+            !order.getStatus().equals(OrderStatus.DELIVERED)) {
+            throw new AppException(ErrorCode.ORDER_NOT_DISPUTABLE);
+        }
+        
+        // Check if dispute already exists for this order
+        if (disputeRepository.findByOrderId(order.getId()).isPresent()) {
+            throw new AppException(ErrorCode.DISPUTE_ALREADY_EXISTS);
+        }
+        
+        // Get seller from first order item (all items in an order are from same seller in this model)
+        User seller = order.getItems().get(0).getSeller();
+        
+        // Create the dispute
+        Dispute dispute = Dispute.builder()
+                .order(order)
+                .buyer(buyer)
+                .seller(seller)
+                .reason(request.getReason())
+                .description(request.getDescription())
+                .disputedAmount(request.getDisputedAmount() != null 
+                        ? request.getDisputedAmount() 
+                        : order.getTotalAmount())
+                .evidenceUrls(request.getEvidenceUrls() != null 
+                        ? new ArrayList<>(request.getEvidenceUrls()) 
+                        : new ArrayList<>())
+                .status(DisputeStatus.OPEN)
+                .build();
+        
+        Dispute saved = disputeRepository.save(dispute);
+        
+        log.info("Dispute filed by buyer {} for order {} - reason: {}", 
+                username, order.getOrderNumber(), request.getReason());
+        
+        return toDisputeResponse(saved);
+    }
+
+    /**
+     * Get disputes filed by the current user (buyer).
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<DisputeResponse> getMyDisputes(Authentication authentication, int page, int limit) {
+        String username = authentication.getName();
+        User buyer = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        PageRequest pageRequest = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Page<Dispute> disputesPage = disputeRepository.findByBuyerId(buyer.getId(), pageRequest);
+        
+        List<DisputeResponse> responses = disputesPage.getContent().stream()
+                .map(this::toDisputeResponse)
+                .collect(Collectors.toList());
+        
+        return PagedResponse.ofOneIndexed(
+                responses,
+                page,
+                limit,
+                disputesPage.getTotalElements(),
+                disputesPage.getTotalPages()
+        );
     }
 
     // ============ Private Helpers ============

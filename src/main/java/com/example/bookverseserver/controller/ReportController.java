@@ -2,6 +2,8 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Moderation.CreateReportRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
+import com.example.bookverseserver.dto.response.Moderation.UserReportResponse;
+import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,6 +51,32 @@ public class ReportController {
         return ApiResponse.<ReportSubmittedResponse>builder()
                 .result(response)
                 .message("Report submitted successfully. Our team will review it within 24-48 hours.")
+                .build();
+    }
+    
+    @GetMapping("/my")
+    @Operation(summary = "Get my reports", description = "Get reports submitted by the current user")
+    public ApiResponse<PagedResponse<UserReportResponse>> getMyReports(
+            @AuthenticationPrincipal User reporter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        
+        Page<UserReportResponse> reports = reportService.getMyReports(reporter, page, limit);
+        
+        PagedResponse<UserReportResponse> pagedResponse = PagedResponse.<UserReportResponse>builder()
+                .data(reports.getContent())
+                .meta(PagedResponse.PaginationMeta.builder()
+                        .page(reports.getNumber() + 1)
+                        .limit(reports.getSize())
+                        .totalItems(reports.getTotalElements())
+                        .totalPages(reports.getTotalPages())
+                        .hasNext(reports.hasNext())
+                        .hasPrev(reports.hasPrevious())
+                        .build())
+                .build();
+        
+        return ApiResponse.<PagedResponse<UserReportResponse>>builder()
+                .result(pagedResponse)
                 .build();
     }
     

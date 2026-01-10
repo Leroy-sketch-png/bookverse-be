@@ -100,6 +100,14 @@ public enum ErrorCode {
     FLAGGED_LISTING_NOT_FOUND(404, "Flagged listing not found", HttpStatus.NOT_FOUND),
     USER_REPORT_NOT_FOUND(404, "User report not found", HttpStatus.NOT_FOUND),
     DISPUTE_NOT_FOUND(404, "Dispute not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_DISPUTABLE(400, "This order cannot be disputed", HttpStatus.BAD_REQUEST),
+    DISPUTE_ALREADY_EXISTS(409, "A dispute already exists for this order", HttpStatus.CONFLICT),
+    NOT_ORDER_BUYER(403, "You are not the buyer of this order", HttpStatus.FORBIDDEN),
+    DISPUTE_REASON_REQUIRED(400, "Dispute reason is required", HttpStatus.BAD_REQUEST),
+    DISPUTE_REASON_TOO_LONG(400, "Dispute reason is too long", HttpStatus.BAD_REQUEST),
+    DISPUTE_DESCRIPTION_REQUIRED(400, "Dispute description is required", HttpStatus.BAD_REQUEST),
+    DISPUTE_DESCRIPTION_TOO_SHORT(400, "Dispute description must be at least 20 characters", HttpStatus.BAD_REQUEST),
+    DISPUTE_DESCRIPTION_TOO_LONG(400, "Dispute description is too long (max 2000 characters)", HttpStatus.BAD_REQUEST),
 
     // --- 409 CONFLICT (Trùng lặp dữ liệu) ---
     USER_EXISTED(409, "User already exists", HttpStatus.CONFLICT),
@@ -136,6 +144,13 @@ public enum ErrorCode {
     ALREADY_PRO_SELLER(409, "You are already a PRO seller", HttpStatus.CONFLICT),
     PRO_APPLICATION_NOT_FOUND(404, "PRO seller application not found", HttpStatus.NOT_FOUND),
     PRO_APPLICATION_ALREADY_REVIEWED(400, "This application has already been reviewed", HttpStatus.BAD_REQUEST),
+
+    // --- Payout ---
+    PAYOUT_NOT_FOUND(404, "Payout not found", HttpStatus.NOT_FOUND),
+    MINIMUM_PAYOUT_AMOUNT(400, "Minimum payout amount is $10.00", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_BALANCE(400, "Insufficient balance for this payout", HttpStatus.BAD_REQUEST),
+    NOT_A_SELLER(403, "You must be a seller to access this resource", HttpStatus.FORBIDDEN),
+    INVALID_PAYOUT_STATUS(400, "Payout is not in a valid status for this operation", HttpStatus.BAD_REQUEST),
 
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),

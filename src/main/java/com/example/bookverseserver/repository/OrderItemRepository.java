@@ -45,4 +45,9 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("listingId") Long listingId,
             @Param("userId") Long userId,
             @Param("status") OrderStatus status);
+
+    /**
+     * Find all order items for a seller (for payout calculation).
+     */
+    List<OrderItem> findBySeller(User seller);
 }

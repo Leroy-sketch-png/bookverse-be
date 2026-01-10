@@ -131,6 +131,53 @@ public class AdminController {
                 .build();
     }
 
+    // ============ User Management ============
+
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List all users",
+               description = "Get paginated list of all users with optional search and role filter")
+    public ApiResponse<PagedResponse<UserResponse>> getUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) RoleName role,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return ApiResponse.<PagedResponse<UserResponse>>builder()
+                .message("Users retrieved successfully")
+                .result(adminService.getUsers(search, role, page, limit))
+                .build();
+    }
+
+    @PostMapping("/users/{userId}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Suspend a user",
+               description = "Suspend a user account. Admin only.")
+    public ApiResponse<UserResponse> suspendUser(
+            @PathVariable Long userId,
+            @RequestBody(required = false) SuspendRequest request,
+            Authentication authentication) {
+        Long adminId = securityUtils.getCurrentUserId(authentication);
+        String reason = request != null ? request.reason : "No reason provided";
+        return ApiResponse.<UserResponse>builder()
+                .message("User suspended successfully")
+                .result(adminService.suspendUser(userId, reason, adminId))
+                .build();
+    }
+
+    @PostMapping("/users/{userId}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reactivate a user",
+               description = "Reactivate a suspended user account. Admin only.")
+    public ApiResponse<UserResponse> reactivateUser(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        Long adminId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<UserResponse>builder()
+                .message("User reactivated successfully")
+                .result(adminService.reactivateUser(userId, adminId))
+                .build();
+    }
+
     /**
      * Simple request body for review actions.
      */
@@ -140,4 +187,9 @@ public class AdminController {
      * Request body for role assignment.
      */
     public record RoleRequest(RoleName role) {}
+
+    /**
+     * Request body for suspension.
+     */
+    public record SuspendRequest(String reason) {}
 }
