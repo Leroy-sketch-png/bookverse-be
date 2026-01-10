@@ -79,7 +79,7 @@ public class CheckoutService {
                 .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 
         if (cart.getCartItems().isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(ErrorCode.CART_EMPTY);
         }
 
         // Validate stock
@@ -272,6 +272,7 @@ public class CheckoutService {
                 .orderNumber(generateOrderNumber())
                 .status(OrderStatus.PENDING)
                 .subtotal(subtotal)
+                .totalAmount(total) // Required NOT NULL column
                 .tax(tax)
                 .shipping(shipping)
                 .discount(discount)
@@ -503,7 +504,7 @@ public class CheckoutService {
         }
 
         if (cart.getCartItems().isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(ErrorCode.CART_EMPTY);
         }
 
         validateStock(cart);

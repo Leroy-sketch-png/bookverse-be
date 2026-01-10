@@ -16,6 +16,7 @@ public class WishlistResponse {
     Integer totalBooks;
     Integer totalCollections;
     Long totalFavorites; // For pagination
+    List<WishlistItemDTO> items; // Actual wishlist items
     List<CollectionResponse> collections;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

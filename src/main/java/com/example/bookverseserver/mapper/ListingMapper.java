@@ -69,6 +69,7 @@ public abstract class ListingMapper {
                 .originalPrice(listing.getOriginalPrice())
                 .finalPrice(listing.getPrice()) // finalPrice = price (current selling price per Vision)
                 .condition(listing.getCondition())
+                .status(listing.getStatus())
                 .quantity(listing.getQuantity())
                 // Photos as URL strings only
                 .photos(extractPhotoUrls(listing.getPhotos()))

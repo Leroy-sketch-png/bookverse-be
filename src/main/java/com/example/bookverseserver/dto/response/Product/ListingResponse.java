@@ -3,6 +3,7 @@ package com.example.bookverseserver.dto.response.Product;
 import com.example.bookverseserver.dto.response.Book.AuthorResponse;
 import com.example.bookverseserver.dto.response.Book.CategoryResponse;
 import com.example.bookverseserver.enums.BookCondition;
+import com.example.bookverseserver.enums.ListingStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -42,6 +43,7 @@ public class ListingResponse {
     BigDecimal finalPrice;      // Actual selling price
     
     BookCondition condition;
+    ListingStatus status;
     Integer quantity;
     
     // Photos as string URLs (Vision: photos: string[])

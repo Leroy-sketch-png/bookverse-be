@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -41,11 +42,13 @@ public class WishlistService {
     public WishlistResponse getUserFavorites(Long userId, Pageable pageable) {
         Page<Wishlist> wishlistPage = wishlistRepository.findByUserId(userId, pageable);
 
-        // TODO: Convert Wishlist to CollectionResponse properly
-        // var items = wishlistPage.getContent().stream().map(this::mapToDTO).collect(Collectors.toList());
+        // Map wishlist items to WishlistItemDTO
+        List<WishlistItemDTO> items = wishlistPage.getContent().stream()
+                .map(this::mapToDTO)
+                .collect(java.util.stream.Collectors.toList());
 
         return WishlistResponse.builder()
-                .collections(java.util.Collections.emptyList()) // Temporary fix
+                .items(items) // Return actual items
                 .totalFavorites(wishlistPage.getTotalElements())
                 .build();
     }
