@@ -3,7 +3,6 @@ package com.example.bookverseserver.configuration;
 import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.entity.User.UserProfile;
-import com.example.bookverseserver.enums.AccountType;
 import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserRepository;
@@ -59,7 +58,7 @@ public class ApplicationInitConfig {
                 UserProfile adminProfile = UserProfile.builder()
                         .fullName("System Administrator")
                         .location("Bookverse HQ")
-                        .accountType(AccountType.BUYER)  // Default, admin doesn't sell
+                        .accountType("BUYER")  // Default, admin doesn't sell
                         .phoneNumber("+1-555-ADMIN")
                         .preferences("fiction,non-fiction,technology")
                         .bio("Platform administrator account")
@@ -71,7 +70,7 @@ public class ApplicationInitConfig {
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
                         .roles(roles)
                         .enabled(true)
-                        .profile(adminProfile)
+                        .userProfile(adminProfile)
                         .build();
 
                 adminProfile.setUser(user);  // Bidirectional relationship

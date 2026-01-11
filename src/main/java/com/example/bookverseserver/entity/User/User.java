@@ -47,6 +47,13 @@ public class User {
     @Column(name = "locked_until")
     LocalDateTime lockedUntil;
 
+    /**
+     * P1 Security Fix #H1: Track when password was last changed.
+     * Tokens issued before this timestamp should be rejected.
+     */
+    @Column(name = "password_changed_at")
+    LocalDateTime passwordChangedAt;
+
     @Column(name = "admin_note", columnDefinition = "TEXT")
     String adminNote;
 

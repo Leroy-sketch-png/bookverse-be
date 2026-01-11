@@ -120,6 +120,10 @@ public class UserService {
 
         // 4. Mã hóa mật khẩu MỚI và lưu
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        
+        // P1 Security Fix #H1: Update password change timestamp to invalidate old tokens
+        user.setPasswordChangedAt(LocalDateTime.now());
+        
         userRepository.save(user);
     }
 

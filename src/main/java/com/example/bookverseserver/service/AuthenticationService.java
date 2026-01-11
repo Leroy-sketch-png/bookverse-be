@@ -56,6 +56,13 @@ public class AuthenticationService {
     EmailService emailService;
     NimbusJwtService jwtService;
 
+    // P0 Security Fix #6: Brute-force protection constants
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final int LOCKOUT_DURATION_MINUTES = 15;
+    
+    // P0 Security Fix #5: OTP brute-force protection
+    private static final int MAX_OTP_ATTEMPTS = 5;
+
     @NonFinal
     @Value("${jwt.signerKey}")
     protected String SIGNER_KEY;
@@ -137,22 +144,53 @@ public class AuthenticationService {
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         String input = request.getEmailOrUsername();
-        var user = userRepository
-                .findByEmailOrUsername(input, input)
-                .orElseThrow(() -> {
-                    if (input.contains("@")) {
-                        return new AppException(ErrorCode.EMAIL_NOT_EXISTED);
-                    } else {
-                        return new AppException(ErrorCode.USERNAME_NOT_EXISTED);
-                    }
-                });
+        
+        // P0 Security Fix #17: Use case-insensitive lookup to prevent duplicate accounts
+        // P0 Security Fix #11: Use generic error to prevent account enumeration
+        var userOptional = userRepository.findByEmailOrUsernameIgnoreCase(input, input);
+        
+        if (userOptional.isEmpty()) {
+            // Don't reveal whether email/username exists
+            log.warn("Login attempt for non-existent account: {}", input);
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        
+        User user = userOptional.get();
+        
+        // P0 Security Fix #6: Check if account is locked
+        if (user.getLockedUntil() != null && LocalDateTime.now().isBefore(user.getLockedUntil())) {
+            log.warn("Login attempt on locked account: {}", input);
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+        }
+        
+        // Check password
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
-        if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (!authenticated) {
+            // P0 Security Fix #6: Increment failed login count
+            int failedAttempts = user.getFailedLoginCount() + 1;
+            user.setFailedLoginCount(failedAttempts);
+            
+            if (failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                // Lock the account
+                user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCKOUT_DURATION_MINUTES));
+                log.warn("Account locked after {} failed attempts: {}", failedAttempts, input);
+            }
+            
+            userRepository.save(user);
+            
+            // P0 Security Fix #11: Generic error message
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
         
         // P0 Security Fix: Verify email before allowing login
-        if (!user.getEnabled()) throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
+        if (!user.getEnabled()) {
+            throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
 
+        // Successful login - reset failed attempts
+        user.setFailedLoginCount(0);
+        user.setLockedUntil(null);
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
@@ -244,19 +282,30 @@ public class AuthenticationService {
             ForgotPasswordOtpStorage request = forgotPasswordRepository.findByEmail(forgotPasswordRequest.getEmail())
                     .orElseThrow(() -> new AppException(ErrorCode.OTP_NOT_FOUND));
 
-            // 3. Xác minh tính hợp lệ của OTP và thời gian hết hạn
-            // Kiểm tra OTP đã nhập có khớp với OTP đã hash trong database không
-            String inputOtpHash = signupRequestService.hmacOtp(forgotPasswordRequest.getOtp());
-
-            if (!inputOtpHash.equals(request.getOtpHash())) {
-                throw new AppException(ErrorCode.INVALID_OTP);
+            // P0 Security Fix #5: Check if too many OTP attempts
+            if (request.getAttempts() != null && request.getAttempts() >= MAX_OTP_ATTEMPTS) {
+                forgotPasswordRepository.delete(request);
+                log.warn("OTP brute-force attempt detected for email: {}", forgotPasswordRequest.getEmail());
+                throw new AppException(ErrorCode.TOO_MANY_OTP_ATTEMPTS);
             }
 
+            // 3. Xác minh tính hợp lệ của OTP và thời gian hết hạn
             // Kiểm tra OTP đã hết hạn chưa
             if (request.getExpiresAt().isBefore(Instant.now())) {
                 // Sau khi hết hạn, ta nên xóa bản ghi OTP cũ
                 forgotPasswordRepository.delete(request);
                 throw new AppException(ErrorCode.OTP_EXPIRED);
+            }
+
+            // Kiểm tra OTP đã nhập có khớp với OTP đã hash trong database không
+            String inputOtpHash = signupRequestService.hmacOtp(forgotPasswordRequest.getOtp());
+
+            if (!inputOtpHash.equals(request.getOtpHash())) {
+                // P0 Security Fix #5: Increment attempt count
+                request.setAttempts((request.getAttempts() == null ? 0 : request.getAttempts()) + 1);
+                forgotPasswordRepository.save(request);
+                log.warn("Invalid OTP attempt {} for email: {}", request.getAttempts(), forgotPasswordRequest.getEmail());
+                throw new AppException(ErrorCode.INVALID_OTP);
             }
 
             // 4. Cập nhật Mật khẩu
@@ -266,6 +315,10 @@ public class AuthenticationService {
 
             // Cập nhật mật khẩu mới (cần dùng passwordEncoder để mã hóa mật khẩu)
             user.setPasswordHash(passwordEncoder.encode(forgotPasswordRequest.getPassword()));
+            
+            // P1 Security Fix #H1: Update password change timestamp to invalidate old tokens
+            user.setPasswordChangedAt(LocalDateTime.now());
+            
             userRepository.save(user);
 
             // 5. Dọn dẹp

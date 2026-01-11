@@ -62,6 +62,15 @@ public enum ErrorCode {
     UNAUTHENTICATED(401, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     INVALID_SUBJECT_IN_JWT(401, "Invalid subject in JWT", HttpStatus.UNAUTHORIZED),
     EMAIL_NOT_VERIFIED(401, "Email not verified. Please verify your email before logging in.", HttpStatus.UNAUTHORIZED),
+    
+    // P0 Security Fix #11: Generic login error to prevent account enumeration
+    INVALID_CREDENTIALS(401, "Invalid email/username or password", HttpStatus.UNAUTHORIZED),
+    
+    // P0 Security Fix #6: Account lockout after too many failed attempts
+    ACCOUNT_LOCKED(423, "Account is temporarily locked due to too many failed login attempts. Please try again later.", HttpStatus.LOCKED),
+    
+    // P0 Security Fix #5: OTP brute-force protection
+    TOO_MANY_OTP_ATTEMPTS(429, "Too many failed OTP attempts. Please request a new OTP.", HttpStatus.TOO_MANY_REQUESTS),
 
     // --- 403 FORBIDDEN (Không có quyền) ---
     UNAUTHORIZED(403, "You do not have permission", HttpStatus.FORBIDDEN),

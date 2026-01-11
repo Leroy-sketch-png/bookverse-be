@@ -136,7 +136,8 @@ public class SignupRequestService {
             throw new IllegalArgumentException("Invalid OTP");
         }
 
-        if (userRepository.findByEmail(email).isPresent()) {
+        // P0 Security Fix #17: Case-insensitive email check prevents duplicate accounts
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
             signupRequestRepository.delete(req);
             throw new IllegalStateException("User already exists with this email");
         }
