@@ -70,14 +70,14 @@ public class OrderService {
     }
 
     return OrderListResponse.builder()
-        .orders(orderMapper.toOrderDTOList(orderPage.getContent()))
-        .pagination(OrderListResponse.PaginationInfo.builder()
+        .data(orderMapper.toOrderDTOList(orderPage.getContent()))
+        .meta(OrderListResponse.PaginationMeta.builder()
             .page(orderPage.getNumber())
             .limit(orderPage.getSize())
             .totalItems(orderPage.getTotalElements())
             .totalPages(orderPage.getTotalPages())
             .hasNext(orderPage.hasNext())
-            .hasPrevious(orderPage.hasPrevious())
+            .hasPrev(orderPage.hasPrevious())
             .build())
         .build();
   }

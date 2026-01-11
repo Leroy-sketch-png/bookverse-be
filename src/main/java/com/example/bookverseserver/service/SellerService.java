@@ -262,14 +262,14 @@ public class SellerService {
         List<OrderDTO> orderDTOs = orderMapper.toOrderDTOList(pagedOrders);
         
         return OrderListResponse.builder()
-                .orders(orderDTOs)
-                .pagination(OrderListResponse.PaginationInfo.builder()
+                .data(orderDTOs)
+                .meta(OrderListResponse.PaginationMeta.builder()
                         .page(page)
                         .limit(limit)
                         .totalItems(totalItems)
                         .totalPages(totalPages)
                         .hasNext(page < totalPages)
-                        .hasPrevious(page > 1)
+                        .hasPrev(page > 1)
                         .build())
                 .build();
     }

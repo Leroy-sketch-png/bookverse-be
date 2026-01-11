@@ -11,17 +11,17 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderListResponse {
-  List<OrderDTO> orders;
-  PaginationInfo pagination;
+  List<OrderDTO> data;
+  PaginationMeta meta;
 
   @Data
   @Builder
-  public static class PaginationInfo {
+  public static class PaginationMeta {
     int page;
     int limit;
     long totalItems;
     int totalPages;
     boolean hasNext;
-    boolean hasPrevious;
+    boolean hasPrev;
   }
 }
