@@ -1,6 +1,7 @@
 package com.example.bookverseserver.configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod; // Nhớ import cái này
@@ -22,14 +23,20 @@ import com.example.bookverseserver.security.CustomAuthenticationFailureHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List; // Dùng List.of cho gọn
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @Slf4j
 public class SecurityConfig {
+    
+    // CORS origins from application.properties (no more hardcoding!)
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private String allowedOrigins;
+    
     // Public endpoints for unauthenticated access (GET only for most)
     // Note: POST /api/books/from-open-library requires auth (handled by @SecurityRequirement)
     private final String[] PUBLIC_GET_ENDPOINTS = {
@@ -125,7 +132,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
+        // Parse comma-separated origins from config (no more hardcoded localhost!)
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        configuration.setAllowedOrigins(origins);
+        log.info("CORS configured with allowed origins: {}", origins);
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 

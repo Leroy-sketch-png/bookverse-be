@@ -17,6 +17,7 @@ import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.ReviewHelpfulRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
 import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.util.HtmlSanitizer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -56,6 +57,7 @@ public class ReviewService {
     ReviewHelpfulRepository reviewHelpfulRepository;
     OrderItemRepository orderItemRepository;
     UserRepository userRepository;
+    HtmlSanitizer htmlSanitizer;
 
     // =========================================================================
     // 1. Create Review (for completed order item)
@@ -98,14 +100,16 @@ public class ReviewService {
         User buyer = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         
-        // 6. Create review
+        // 6. Create review with XSS-sanitized comment
+        String sanitizedComment = htmlSanitizer.sanitizeBasic(request.getComment());
+        
         Review review = Review.builder()
                 .orderItem(orderItem)
                 .listing(orderItem.getListing())
                 .seller(orderItem.getSeller())
                 .user(buyer)
                 .rating(request.getRating())
-                .comment(request.getComment())
+                .comment(sanitizedComment)
                 .verifiedPurchase(true) // Always true - we verified the order
                 .build();
         
@@ -216,7 +220,8 @@ public class ReviewService {
             review.setRating(request.getRating());
         }
         if (request.getComment() != null) {
-            review.setComment(request.getComment());
+            // Sanitize user input to prevent XSS
+            review.setComment(htmlSanitizer.sanitizeBasic(request.getComment()));
         }
         
         Review savedReview = reviewRepository.save(review);

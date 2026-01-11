@@ -48,6 +48,7 @@ public class ListingController {
          * - sellerId: filter by seller
          * - bookId: filter by book
          * - categoryId: filter by category
+         * - authorId: filter by author
          * - status: filter by status (ACTIVE, SOLD_OUT, DRAFT, etc.)
          * - sortBy: createdAt, price, viewCount, soldCount
          * - sortOrder: asc, desc
@@ -60,13 +61,14 @@ public class ListingController {
                         @RequestParam(required = false) Long sellerId,
                         @RequestParam(required = false) Long bookId,
                         @RequestParam(required = false) Long categoryId,
+                        @RequestParam(required = false) Long authorId,
                         @RequestParam(required = false) ListingStatus status,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                q, sellerId, bookId, categoryId, status, sortBy, sortOrder, page, size);
+                                q, sellerId, bookId, categoryId, authorId, status, sortBy, sortOrder, page, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -106,7 +108,7 @@ public class ListingController {
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                null, sellerId, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, page, size);
+                                null, sellerId, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, page, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

@@ -2,6 +2,8 @@ package com.example.bookverseserver.configuration;
 
 import com.example.bookverseserver.entity.User.Role;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.entity.User.UserProfile;
+import com.example.bookverseserver.enums.AccountType;
 import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserRepository;
@@ -53,13 +55,26 @@ public class ApplicationInitConfig {
                 Set<Role> roles = new HashSet<>();
                 roles.add(adminRole);
 
+                // Create admin profile (admins shouldn't go through profile setup)
+                UserProfile adminProfile = UserProfile.builder()
+                        .fullName("System Administrator")
+                        .location("Bookverse HQ")
+                        .accountType(AccountType.BUYER)  // Default, admin doesn't sell
+                        .phoneNumber("+1-555-ADMIN")
+                        .preferences("fiction,non-fiction,technology")
+                        .bio("Platform administrator account")
+                        .build();
+
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .email("admin@bookverse.com")
                         .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
                         .roles(roles)
                         .enabled(true)
+                        .profile(adminProfile)
                         .build();
+
+                adminProfile.setUser(user);  // Bidirectional relationship
 
                 userRepository.save(user);
                 log.warn("Admin user created with default password: 'admin' — please change it.");

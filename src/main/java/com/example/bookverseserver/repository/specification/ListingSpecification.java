@@ -86,6 +86,19 @@ public class ListingSpecification {
     }
 
     /**
+     * Filter listings by author ID.
+     * Joins through bookMeta to find listings where the book has the specified author.
+     */
+    public static Specification<Listing> hasAuthor(Long authorId) {
+        return (root, query, cb) -> {
+            Join<Listing, BookMeta> bookJoin = root.join("bookMeta", JoinType.LEFT);
+            Join<BookMeta, Author> authorJoin = bookJoin.join("authors", JoinType.LEFT);
+            query.distinct(true); // Prevent duplicates from the join
+            return cb.equal(authorJoin.get("id"), authorId);
+        };
+    }
+
+    /**
      * Filter listings by status.
      */
     public static Specification<Listing> hasStatus(ListingStatus status) {

@@ -20,6 +20,7 @@ import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.entity.Product.Category;
 import com.example.bookverseserver.repository.*;
 import com.example.bookverseserver.repository.specification.ListingSpecification;
+import com.example.bookverseserver.util.HtmlSanitizer;
 import com.example.bookverseserver.utils.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,7 @@ public class ListingService {
     CloudStorageService cloudStorageService;
     OpenLibraryService openLibraryService;
     SecurityUtils securityUtils;
+    HtmlSanitizer htmlSanitizer;
 
     // ============ Filtered Listings Query ============
 
@@ -71,6 +73,7 @@ public class ListingService {
      * @param sellerId  filter by seller
      * @param bookId    filter by book
      * @param categoryId filter by category ID
+     * @param authorId  filter by author ID
      * @param status    filter by status
      * @param sortBy    field to sort by (createdAt, price, views)
      * @param sortOrder asc or desc
@@ -84,6 +87,7 @@ public class ListingService {
             Long sellerId,
             Long bookId,
             Long categoryId,
+            Long authorId,
             ListingStatus status,
             String sortBy,
             String sortOrder,
@@ -105,6 +109,9 @@ public class ListingService {
         }
         if (categoryId != null) {
             spec = spec.and(ListingSpecification.hasCategory(categoryId));
+        }
+        if (authorId != null) {
+            spec = spec.and(ListingSpecification.hasAuthor(authorId));
         }
         if (status != null) {
             spec = spec.and(ListingSpecification.hasStatus(status));
@@ -166,6 +173,7 @@ public class ListingService {
             case "price" -> "price";
             case "viewCount", "views" -> "views";
             case "soldCount" -> "soldCount";
+            case "publishedDate" -> "bookMeta.publishedDate"; // Sort by book's published date
             default -> "createdAt";
         };
 
@@ -297,6 +305,15 @@ public class ListingService {
         listing.setLikes(0);
         listing.setSoldCount(0);
         listing.setSeller(userRepository.getReferenceById(securityUtils.getCurrentUserId(authentication)));
+        
+        // Sanitize user-generated content to prevent XSS
+        if (listing.getDescription() != null) {
+            listing.setDescription(htmlSanitizer.sanitizeRelaxed(listing.getDescription()));
+        }
+        if (listing.getTitleOverride() != null) {
+            listing.setTitleOverride(htmlSanitizer.sanitizeStrict(listing.getTitleOverride()));
+        }
+        
         listing = listingRepository.save(listing);
 
         // Create photos
@@ -325,6 +342,15 @@ public class ListingService {
         log.info("SellerId={}, CurrentUserId={}", listing.getSeller().getId(), currentUserId);
         if (listing.getSeller().getId().equals(currentUserId)) {
             listingMapper.updateListing(listing, request);
+            
+            // Sanitize user-generated content to prevent XSS
+            if (listing.getDescription() != null) {
+                listing.setDescription(htmlSanitizer.sanitizeRelaxed(listing.getDescription()));
+            }
+            if (listing.getTitleOverride() != null) {
+                listing.setTitleOverride(htmlSanitizer.sanitizeStrict(listing.getTitleOverride()));
+            }
+            
             listing = listingRepository.save(listing);
             return listingMapper.toListingUpdateResponse(listing);
         } else {
