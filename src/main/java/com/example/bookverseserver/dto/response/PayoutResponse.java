@@ -20,6 +20,7 @@ public class PayoutResponse {
     String externalReference;
     LocalDateTime createdAt;
     LocalDateTime paidAt;
+    String rejectionReason;
     
     // Seller info for admin view
     Long sellerId;

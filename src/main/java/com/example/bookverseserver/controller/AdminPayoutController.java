@@ -51,13 +51,16 @@ public class AdminPayoutController {
     }
 
     /**
-     * Reject a payout
+     * Reject a payout with mandatory reason for seller transparency
      */
     @PostMapping("/{id}/reject")
-    @Operation(summary = "Reject payout", description = "Reject a pending payout request")
-    public ApiResponse<PayoutResponse> rejectPayout(@PathVariable Long id) {
+    @Operation(summary = "Reject payout", description = "Reject a pending payout request with reason")
+    public ApiResponse<PayoutResponse> rejectPayout(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String reason = body != null ? body.getOrDefault("reason", "No reason provided") : "No reason provided";
         return ApiResponse.<PayoutResponse>builder()
-                .result(payoutService.rejectPayout(id))
+                .result(payoutService.rejectPayout(id, reason))
                 .build();
     }
 
@@ -69,6 +72,20 @@ public class AdminPayoutController {
     public ApiResponse<Map<String, Long>> getPendingPayoutCount() {
         return ApiResponse.<Map<String, Long>>builder()
                 .result(Map.of("count", payoutService.getPendingPayoutCount()))
+                .build();
+    }
+
+    /**
+     * Get payout history for a specific seller
+     */
+    @GetMapping("/seller/{sellerId}")
+    @Operation(summary = "Get seller payout history", description = "Get all payouts for a specific seller")
+    public ApiResponse<PagedResponse<PayoutResponse>> getSellerPayoutHistory(
+            @PathVariable Long sellerId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ApiResponse.<PagedResponse<PayoutResponse>>builder()
+                .result(payoutService.getPayoutHistoryBySellerId(sellerId, page, limit))
                 .build();
     }
 }

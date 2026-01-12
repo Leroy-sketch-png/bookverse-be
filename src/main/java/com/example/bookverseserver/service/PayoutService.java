@@ -163,6 +163,28 @@ public class PayoutService {
     }
 
     /**
+     * Get payout history for a specific seller (admin only)
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<PayoutResponse> getPayoutHistoryBySellerId(Long sellerId, int page, int limit) {
+        User seller = userRepository.findById(sellerId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<SellerPayout> payouts = payoutRepository.findBySellerOrderByCreatedAtDesc(seller, pageable);
+        
+        List<PayoutResponse> data = payoutMapper.toResponseList(payouts.getContent());
+        
+        return PagedResponse.ofOneIndexed(
+                data,
+                page,
+                limit,
+                payouts.getTotalElements(),
+                payouts.getTotalPages()
+        );
+    }
+
+    /**
      * Approve a payout (admin only)
      */
     @Transactional
@@ -207,10 +229,10 @@ public class PayoutService {
     }
 
     /**
-     * Reject a payout (admin only)
+     * Reject a payout (admin only) with reason for seller transparency
      */
     @Transactional
-    public PayoutResponse rejectPayout(Long payoutId) {
+    public PayoutResponse rejectPayout(Long payoutId, String reason) {
         SellerPayout payout = payoutRepository.findById(payoutId)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYOUT_NOT_FOUND));
         
@@ -219,10 +241,11 @@ public class PayoutService {
         }
         
         payout.setStatus(SellerPayoutStatus.FAILED);
+        payout.setRejectionReason(reason);
         payout = payoutRepository.save(payout);
-        log.info("Payout {} rejected for seller {}", payoutId, payout.getSeller().getId());
+        log.info("Payout {} rejected for seller {} with reason: {}", payoutId, payout.getSeller().getId(), reason);
         
-        // Send SMS notification to seller
+        // Send SMS notification to seller with reason
         sendPayoutStatusSms(payout, false);
         
         return payoutMapper.toResponse(payout);

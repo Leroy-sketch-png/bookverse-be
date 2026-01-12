@@ -36,4 +36,6 @@ public class UserResponse {
     Set<String> roles;              // Array of role names (strings, not objects)
     String accountType;             // BUYER, CASUAL_SELLER, PRO_SELLER
     Boolean isVerified;             // Email verification status
+    Boolean enabled;                // Account enabled/suspended status (admin can suspend)
+    String createdAt;               // ISO timestamp of account creation
 }

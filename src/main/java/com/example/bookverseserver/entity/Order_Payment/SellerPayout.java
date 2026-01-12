@@ -45,4 +45,8 @@ public class SellerPayout {
 
     @Column(name = "paid_at")
     LocalDateTime paidAt;
+    
+    /** Admin-provided reason when payout is rejected, shown to seller for transparency */
+    @Column(name = "rejection_reason", length = 500)
+    String rejectionReason;
 }

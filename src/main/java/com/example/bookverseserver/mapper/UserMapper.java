@@ -70,6 +70,10 @@ public interface UserMapper {
                 .roles(roleNames)
                 .accountType(accountType)
                 .isVerified(user.getEnabled())  // enabled = email verified
+                .enabled(user.getEnabled())     // Account enabled/suspended status
+                .createdAt(user.getCreatedAt() != null 
+                        ? user.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME) 
+                        : null)
                 .build();
     }
 
