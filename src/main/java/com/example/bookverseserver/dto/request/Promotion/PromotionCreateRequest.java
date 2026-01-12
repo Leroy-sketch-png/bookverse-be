@@ -19,8 +19,8 @@ public class PromotionCreateRequest {
     String name;
     
     @NotNull(message = "DISCOUNT_PERCENTAGE_REQUIRED")
-    @Min(value = 1, message = "DISCOUNT_MIN_1")
-    @Max(value = 100, message = "DISCOUNT_MAX_100")
+    @Min(value = 5, message = "DISCOUNT_MIN_5")
+    @Max(value = 90, message = "DISCOUNT_MAX_90")
     Integer discountPercentage;
     
     @NotNull(message = "START_DATE_REQUIRED")

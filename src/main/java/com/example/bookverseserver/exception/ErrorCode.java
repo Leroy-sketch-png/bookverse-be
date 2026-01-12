@@ -147,6 +147,8 @@ public enum ErrorCode {
     
     // --- Promotion Validation ---
     INVALID_DATE_RANGE(400, "End date must be after start date", HttpStatus.BAD_REQUEST),
+    DISCOUNT_MIN_5(400, "Discount percentage must be at least 5%", HttpStatus.BAD_REQUEST),
+    DISCOUNT_MAX_90(400, "Discount percentage cannot exceed 90%", HttpStatus.BAD_REQUEST),
     
     // --- Order Status Validation ---
     INVALID_ORDER_STATUS(400, "Invalid order status for this operation", HttpStatus.BAD_REQUEST),
