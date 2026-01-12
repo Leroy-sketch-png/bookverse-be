@@ -40,6 +40,9 @@ import static com.example.bookverseserver.enums.ModerationActionType.*;
 @Slf4j
 public class ModerationService {
 
+    // Confidence score for user-reported listings (high confidence)
+    private static final Double USER_REPORT_CONFIDENCE = 0.8;
+
     FlaggedListingRepository flaggedListingRepository;
     UserReportRepository userReportRepository;
     DisputeRepository disputeRepository;
@@ -113,6 +116,97 @@ public class ModerationService {
         };
         
         return String.format("%s %s #%d", actionLabel, targetLabel, action.getTargetId());
+    }
+
+    // ============ Flag Creation ============
+
+    /**
+     * Flag a listing for moderation review.
+     * Can be called by moderators directly or automated systems.
+     * Prevents duplicate pending flags for the same listing.
+     */
+    @Transactional
+    public FlaggedListingResponse flagListing(
+            com.example.bookverseserver.dto.request.Moderation.FlagListingRequest request,
+            Long moderatorId) {
+        
+        Listing listing = listingRepository.findById(request.getListingId())
+                .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
+        
+        // Check for existing pending/reviewing flag
+        var activeStatuses = java.util.List.of(FlagStatus.PENDING, FlagStatus.REVIEWING);
+        if (flaggedListingRepository.existsByListingIdAndStatusIn(listing.getId(), activeStatuses)) {
+            log.info("Listing {} already has an active flag, skipping duplicate", listing.getId());
+            var existing = flaggedListingRepository.findByListingIdAndStatusIn(listing.getId(), activeStatuses)
+                    .orElseThrow(() -> new AppException(ErrorCode.FLAGGED_LISTING_NOT_FOUND));
+            return toFlaggedListingResponse(existing);
+        }
+        
+        FlaggedListing flagged = FlaggedListing.builder()
+                .listing(listing)
+                .flagType(request.getFlagType())
+                .flagReason(request.getFlagReason())
+                .severity(request.getSeverity() != null ? request.getSeverity() : FlagSeverity.MEDIUM)
+                .confidenceScore(request.getConfidenceScore())
+                .status(FlagStatus.PENDING)
+                .flaggedAt(LocalDateTime.now())
+                .build();
+        
+        FlaggedListing saved = flaggedListingRepository.save(flagged);
+        
+        log.info("Listing {} flagged for moderation: type={}, severity={}", 
+                listing.getId(), request.getFlagType(), request.getSeverity());
+        
+        return toFlaggedListingResponse(saved);
+    }
+    
+    /**
+     * Internal method to flag a listing from a user report.
+     * Maps ReportType to FlagType for automatic flagging.
+     */
+    @Transactional
+    public void flagListingFromReport(Listing listing, ReportType reportType, String reportDescription) {
+        FlagType flagType = mapReportTypeToFlagType(reportType);
+        FlagSeverity severity = mapReportTypeToSeverity(reportType);
+        
+        var activeStatuses = java.util.List.of(FlagStatus.PENDING, FlagStatus.REVIEWING);
+        if (flaggedListingRepository.existsByListingIdAndStatusIn(listing.getId(), activeStatuses)) {
+            log.info("Listing {} already flagged, skipping auto-flag from report", listing.getId());
+            return;
+        }
+        
+        FlaggedListing flagged = FlaggedListing.builder()
+                .listing(listing)
+                .flagType(flagType)
+                .flagReason("Auto-flagged from user report: " + reportDescription)
+                .severity(severity)
+                .confidenceScore(USER_REPORT_CONFIDENCE)
+                .status(FlagStatus.PENDING)
+                .flaggedAt(LocalDateTime.now())
+                .build();
+        
+        flaggedListingRepository.save(flagged);
+        log.info("Listing {} auto-flagged from user report", listing.getId());
+    }
+    
+    private FlagType mapReportTypeToFlagType(ReportType reportType) {
+        return switch (reportType) {
+            case COUNTERFEIT -> FlagType.COUNTERFEIT;
+            case FRAUD -> FlagType.POLICY_VIOLATION;
+            case SPAM -> FlagType.SPAM;
+            case INAPPROPRIATE_CONTENT -> FlagType.INAPPROPRIATE;
+            case POLICY_VIOLATION, MISLEADING_INFO, SAFETY_CONCERN -> FlagType.POLICY_VIOLATION;
+            case WRONG_CATEGORY -> FlagType.POLICY_VIOLATION;
+            default -> FlagType.POLICY_VIOLATION;
+        };
+    }
+    
+    private FlagSeverity mapReportTypeToSeverity(ReportType reportType) {
+        return switch (reportType) {
+            case FRAUD, COUNTERFEIT, SAFETY_CONCERN -> FlagSeverity.HIGH;
+            case POLICY_VIOLATION, INAPPROPRIATE_CONTENT -> FlagSeverity.MEDIUM;
+            default -> FlagSeverity.LOW;
+        };
     }
 
     // ============ Flagged Listings ============

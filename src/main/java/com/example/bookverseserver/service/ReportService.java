@@ -41,6 +41,7 @@ public class ReportService {
     UserRepository userRepository;
     ListingRepository listingRepository;
     OrderRepository orderRepository;
+    ModerationService moderationService;
     
     private static final Set<String> VALID_ENTITY_TYPES = Set.of("listing", "seller", "review");
     
@@ -68,12 +69,14 @@ public class ReportService {
         }
         
         // Handle entity-specific lookups
+        Listing reportedListing = null;
         switch (entityType) {
             case "listing" -> {
                 Listing listing = listingRepository.findById(request.getEntityId())
                         .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
                 reportBuilder.reportedListing(listing);
                 reportBuilder.reportedUser(listing.getSeller());
+                reportedListing = listing;
             }
             case "seller" -> {
                 User seller = userRepository.findById(request.getEntityId())
@@ -98,6 +101,14 @@ public class ReportService {
         
         UserReport report = reportBuilder.build();
         report = userReportRepository.save(report);
+        
+        // Auto-flag the listing for moderation review
+        if (reportedListing != null) {
+            moderationService.flagListingFromReport(
+                    reportedListing, 
+                    request.getReportType(), 
+                    request.getDescription());
+        }
         
         log.info("Report {} created by user {} for {} {}", 
                 report.getId(), reporter.getId(), entityType, request.getEntityId());

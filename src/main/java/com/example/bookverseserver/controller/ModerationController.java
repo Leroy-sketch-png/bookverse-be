@@ -1,5 +1,6 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.Moderation.FlagListingRequest;
 import com.example.bookverseserver.dto.request.Moderation.ModerationActionRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Moderation.*;
@@ -54,6 +55,20 @@ public class ModerationController {
     }
     
     // ============ Flagged Listings ============
+    
+    @PostMapping("/listings/flag")
+    @Operation(summary = "Flag a listing for moderation review")
+    public ApiResponse<FlaggedListingResponse> flagListing(
+            @AuthenticationPrincipal User moderator,
+            @Valid @RequestBody FlagListingRequest request) {
+        
+        log.info("Moderator {} flagging listing {}", moderator.getId(), request.getListingId());
+        FlaggedListingResponse response = moderationService.flagListing(request, moderator.getId());
+        
+        return ApiResponse.<FlaggedListingResponse>builder()
+                .result(response)
+                .build();
+    }
     
     @GetMapping("/listings")
     @Operation(summary = "Get flagged listings queue")

@@ -11,6 +11,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.Optional;
+
 @Repository
 public interface FlaggedListingRepository extends JpaRepository<FlaggedListing, Long> {
     
@@ -30,4 +33,8 @@ public interface FlaggedListingRepository extends JpaRepository<FlaggedListing, 
            "CASE f.severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, " +
            "f.flaggedAt ASC")
     Page<FlaggedListing> findByStatusOrderedByPriority(@Param("status") FlagStatus status, Pageable pageable);
+    
+    boolean existsByListingIdAndStatusIn(Long listingId, Collection<FlagStatus> statuses);
+    
+    Optional<FlaggedListing> findByListingIdAndStatusIn(Long listingId, Collection<FlagStatus> statuses);
 }
