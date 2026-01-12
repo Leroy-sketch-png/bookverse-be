@@ -34,6 +34,10 @@ public enum ErrorCode {
     ORDER_CANNOT_BE_CANCELLED(400, "Order cannot be cancelled", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(400, "Payment failed", HttpStatus.BAD_REQUEST),
 
+    // Bulk Upload Validation
+    BULK_UPLOAD_EMPTY(400, "Bulk upload must contain at least one book", HttpStatus.BAD_REQUEST),
+    BULK_UPLOAD_TOO_MANY_ITEMS(400, "Bulk upload cannot exceed 100 items", HttpStatus.BAD_REQUEST),
+
     // Voucher Validation
     VOUCHER_CODE_REQUIRED(400, "Voucher code is required", HttpStatus.BAD_REQUEST),
     VOUCHER_DISCOUNT_TYPE_REQUIRED(400, "Discount type is required", HttpStatus.BAD_REQUEST),

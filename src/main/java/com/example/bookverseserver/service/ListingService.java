@@ -714,4 +714,88 @@ public class ListingService {
         
         return bookMetaRepository.save(bookMeta);
     }
+
+    /**
+     * Bulk upload listings for PRO sellers.
+     * Processes each item individually, tracking successes and failures.
+     * 
+     * NOTE: This method runs in a single transaction. If any item throws an
+     * uncaught exception, all items will be rolled back. Caught exceptions
+     * (AppException, Exception) allow the transaction to continue.
+     * 
+     * FUTURE: For true partial-commit behavior, refactor to use REQUIRES_NEW
+     * propagation on a separate service method for each item creation.
+     */
+    @Transactional
+    public BulkUploadResponse bulkUploadListings(BulkListingUploadRequest request, Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        
+        List<ListingResponse> successfulListings = new ArrayList<>();
+        List<BulkUploadResponse.BulkUploadError> errors = new ArrayList<>();
+        
+        List<BulkListingItem> books = request.getBooks();
+        
+        for (int i = 0; i < books.size(); i++) {
+            BulkListingItem item = books.get(i);
+            int rowNumber = i + 1; // 1-indexed for user-friendly display
+            
+            try {
+                // Convert BulkListingItem to SimpleListingCreationRequest to reuse existing logic
+                SimpleListingCreationRequest simpleRequest = SimpleListingCreationRequest.builder()
+                        .title(item.getTitle())
+                        .author(item.getAuthor())
+                        .isbn(item.getIsbn())
+                        .publisher(item.getPublisher())
+                        .publishYear(item.getPublishYear())
+                        .category(item.getCategory())
+                        .condition(item.getCondition())
+                        .price(item.getPrice())
+                        .stock(item.getStock())
+                        .description(item.getDescription())
+                        .build();
+                
+                // Reuse existing listing creation logic (no images for bulk upload)
+                ListingResponse listingResponse = createSimpleListing(simpleRequest, null, authentication);
+                successfulListings.add(listingResponse);
+                
+                log.debug("Bulk upload: Successfully created listing {} for row {}", 
+                        listingResponse.getId(), rowNumber);
+                
+            } catch (AppException e) {
+                // Known application exceptions - extract meaningful message
+                errors.add(BulkUploadResponse.BulkUploadError.builder()
+                        .index(i)
+                        .rowNumber(rowNumber)
+                        .title(item.getTitle())
+                        .message(e.getErrorCode().getMessage())
+                        .build());
+                log.warn("Bulk upload: Failed row {} ({}): {}", 
+                        rowNumber, item.getTitle(), e.getErrorCode().getMessage());
+                        
+            } catch (Exception e) {
+                // Unexpected exceptions - log full stack trace
+                errors.add(BulkUploadResponse.BulkUploadError.builder()
+                        .index(i)
+                        .rowNumber(rowNumber)
+                        .title(item.getTitle())
+                        .message("Unexpected error: " + e.getMessage())
+                        .build());
+                log.error("Bulk upload: Unexpected error at row {} ({}): {}", 
+                        rowNumber, item.getTitle(), e.getMessage(), e);
+            }
+        }
+        
+        log.info("Bulk upload completed for seller ID {}: {} successful, {} failed out of {} total",
+                sellerId, 
+                successfulListings.size(), 
+                errors.size(), 
+                books.size());
+        
+        return BulkUploadResponse.builder()
+                .successCount(successfulListings.size())
+                .failureCount(errors.size())
+                .listings(successfulListings)
+                .errors(errors)
+                .build();
+    }
 }

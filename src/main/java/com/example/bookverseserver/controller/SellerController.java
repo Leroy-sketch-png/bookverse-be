@@ -1,16 +1,22 @@
 package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.Order.UpdateOrderStatusRequest;
+import com.example.bookverseserver.dto.request.Product.BulkListingUploadRequest;
+import com.example.bookverseserver.dto.request.SellerSettingsUpdateRequest;
 import com.example.bookverseserver.dto.response.Analytics.*;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Order.OrderListResponse;
 import com.example.bookverseserver.dto.response.Order.UpdateOrderStatusResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
+import com.example.bookverseserver.dto.response.Product.BulkUploadResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
+import com.example.bookverseserver.dto.response.SellerSettingsResponse;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.enums.OrderStatus;
+import com.example.bookverseserver.service.ListingService;
 import com.example.bookverseserver.service.OrderService;
 import com.example.bookverseserver.service.SellerService;
+import com.example.bookverseserver.service.SellerSettingsService;
 import com.example.bookverseserver.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +51,8 @@ public class SellerController {
 
     SellerService sellerService;
     OrderService orderService;
+    ListingService listingService;
+    SellerSettingsService sellerSettingsService;
     SecurityUtils securityUtils;
 
     // ============ Dashboard Stats ============
@@ -80,6 +88,20 @@ public class SellerController {
         return ApiResponse.<PagedResponse<ListingResponse>>builder()
                 .message("Seller listings retrieved successfully")
                 .result(sellerService.getSellerListings(sellerId, status, sortBy, sortOrder, page, limit))
+                .build();
+    }
+
+    @PostMapping("/listings/bulk-upload")
+    @PreAuthorize("hasRole('PRO_SELLER')")
+    @Operation(summary = "Bulk upload listings (PRO sellers only)", 
+               description = "Upload multiple listings at once from CSV/spreadsheet. Returns detailed results with success/failure breakdown per row.")
+    public ApiResponse<BulkUploadResponse> bulkUploadListings(
+            @Valid @RequestBody BulkListingUploadRequest request,
+            Authentication authentication) {
+        log.info("Bulk upload request received with {} books", request.getBooks().size());
+        return ApiResponse.<BulkUploadResponse>builder()
+                .message("Bulk upload completed")
+                .result(listingService.bulkUploadListings(request, authentication))
                 .build();
     }
 
@@ -235,6 +257,34 @@ public class SellerController {
         return ApiResponse.<UpdateOrderStatusResponse>builder()
                 .message("Order status updated successfully")
                 .result(orderService.updateOrderStatusBySeller(sellerId, orderId, request))
+                .build();
+    }
+
+    // ============ Seller Settings ============
+
+    @GetMapping("/settings")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Get seller settings", 
+               description = "Returns seller's shipping, notification, and privacy settings")
+    public ApiResponse<SellerSettingsResponse> getSettings(Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<SellerSettingsResponse>builder()
+                .message("Settings retrieved successfully")
+                .result(sellerSettingsService.getSettings(sellerId))
+                .build();
+    }
+
+    @PatchMapping("/settings")
+    @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
+    @Operation(summary = "Update seller settings", 
+               description = "Updates seller's shipping, notification, and privacy settings. Partial update - only provided fields are updated.")
+    public ApiResponse<SellerSettingsResponse> updateSettings(
+            @Valid @RequestBody SellerSettingsUpdateRequest request,
+            Authentication authentication) {
+        Long sellerId = securityUtils.getCurrentUserId(authentication);
+        return ApiResponse.<SellerSettingsResponse>builder()
+                .message("Settings updated successfully")
+                .result(sellerSettingsService.updateSettings(sellerId, request))
                 .build();
     }
 }
