@@ -18,6 +18,7 @@ import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.ReviewHelpfulRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
 import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.util.HtmlSanitizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -51,6 +52,8 @@ class ReviewServiceTest {
     private OrderItemRepository orderItemRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private HtmlSanitizer htmlSanitizer;
 
     @InjectMocks
     private ReviewService reviewService;
@@ -104,7 +107,11 @@ class ReviewServiceTest {
                 .isHidden(false)
                 .helpfulCount(0)
                 .verifiedPurchase(true)
+                .createdAt(java.time.LocalDateTime.now())
                 .build();
+
+        // Mock HtmlSanitizer to return the same input (lenient to allow unused in some tests)
+        lenient().when(htmlSanitizer.sanitizeBasic(any())).thenAnswer(i -> i.getArgument(0));
 
         createRequest = CreateReviewRequest.builder()
                 .rating(5)

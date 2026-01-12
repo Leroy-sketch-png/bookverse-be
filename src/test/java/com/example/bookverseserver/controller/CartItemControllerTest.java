@@ -75,7 +75,7 @@ class CartItemControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Cart item created successfully")))
         .andExpect(jsonPath("$.result.totalPrice", is(150)));
   }
@@ -106,7 +106,7 @@ class CartItemControllerTest {
         .with(csrf())
         .param("quantity", "5"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Cart item updated successfully")));
   }
 
@@ -121,7 +121,7 @@ class CartItemControllerTest {
     mockMvc.perform(delete("/api/cart/items/{listingId}", TEST_LISTING_ID)
         .with(csrf()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Cart item deleted successfully")));
   }
 }

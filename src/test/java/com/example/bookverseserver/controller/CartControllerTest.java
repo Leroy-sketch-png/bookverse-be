@@ -72,7 +72,7 @@ class CartControllerTest {
     // Act & Assert - CartResponse uses nested summary per Vision
     mockMvc.perform(get("/api/cart"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Cart retrieved successfully")))
         .andExpect(jsonPath("$.result.summary.subtotal", is(100)))
         .andExpect(jsonPath("$.result.itemCount", is(2)));
@@ -108,7 +108,7 @@ class CartControllerTest {
         .with(csrf())
         .param("voucherCode", "SUMMER20"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Voucher applied successfully")))
         .andExpect(jsonPath("$.result.summary.discount", is(20)));
   }
@@ -124,7 +124,7 @@ class CartControllerTest {
     mockMvc.perform(patch("/api/cart/voucher")
         .with(csrf()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Voucher removed successfully")));
   }
 }

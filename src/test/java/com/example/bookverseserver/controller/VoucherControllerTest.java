@@ -78,7 +78,7 @@ class VoucherControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(voucherRequest)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.code", is(201)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Voucher created successfully!")))
         .andExpect(jsonPath("$.result.code", is("SUMMER20")));
   }
@@ -103,7 +103,7 @@ class VoucherControllerTest {
     // Act & Assert
     mockMvc.perform(get("/api/vouchers/{code}", "SUMMER20"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.code", is(200)))
+        .andExpect(jsonPath("$.code", is(1000)))
         .andExpect(jsonPath("$.message", is("Voucher found!")))
         .andExpect(jsonPath("$.result.code", is("SUMMER20")))
         .andExpect(jsonPath("$.result.discountType", is("PERCENTAGE")));
