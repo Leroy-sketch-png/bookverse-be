@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +54,10 @@ public class CheckoutService {
     VoucherService voucherService;
     ShippingAddressMapper shippingAddressMapper;
     SmsService smsService;
+
+    // Cryptographically secure random for order numbers
+    @NonFinal
+    static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @NonFinal
     @Value("${checkout.tax-rate:0.08}")
@@ -490,8 +495,18 @@ public class CheckoutService {
         }
     }
 
+    /**
+     * Generate cryptographically secure order number.
+     * Format: BV-YYYY-XXXXXXXXXXXX (12 alphanumeric chars)
+     * Uses SecureRandom to prevent order number enumeration attacks.
+     */
     private String generateOrderNumber() {
-        return "BV-" + LocalDateTime.now().getYear() + "-" + String.format("%06d", new Random().nextInt(1000000));
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No O/0/I/1 to avoid confusion
+        StringBuilder sb = new StringBuilder(12);
+        for (int i = 0; i < 12; i++) {
+            sb.append(chars.charAt(SECURE_RANDOM.nextInt(chars.length())));
+        }
+        return "BV-" + LocalDateTime.now().getYear() + "-" + sb.toString();
     }
 
     // ============================================================================

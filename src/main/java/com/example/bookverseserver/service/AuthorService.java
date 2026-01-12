@@ -14,6 +14,7 @@ import com.example.bookverseserver.repository.AuthorRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Transactional
+@Slf4j
 public class AuthorService {
     AuthorRepository authorRepository;
 
@@ -62,7 +64,7 @@ public class AuthorService {
 
         works.forEach(openLibraryService::populateWorkDetails);
 
-        System.out.println("Total works from OpenLibrary: " + works.size());
+        log.debug("Total works from OpenLibrary: {}", works.size());
 
         return works.stream()
                 .filter(entry -> entry.getEdition_count() != null
@@ -71,7 +73,6 @@ public class AuthorService {
                         && entry.getCovers() != null
                         && !entry.getCovers().isEmpty())
                 .map(OpenLibraryMapper::toBookResponse) // works because entry is Entry
-                .peek(br -> System.out.println("Mapped BookResponse: " + br))
                 .toList();
 
     }

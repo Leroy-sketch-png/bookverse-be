@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +30,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/transactions")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 @Tag(name = "Transactions", description = "💳 Payment transaction management APIs - Stripe payment intents, verification, history")
 public class TransactionController {
 
@@ -146,7 +148,7 @@ public class TransactionController {
                     .build();
 
         } catch (Exception e) {
-            e.printStackTrace(); // Log lỗi server
+            log.error("Payment verification failed", e);
             return ApiResponse.<PaymentVerificationResponse>builder()
                     .code(400)
                     .message(e.getMessage())
