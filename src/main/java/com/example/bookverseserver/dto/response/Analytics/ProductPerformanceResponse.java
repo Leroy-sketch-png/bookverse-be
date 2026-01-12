@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductPerformanceResponse {
-    String productId;
+    String listingId;  // ID of the Listing entity (not productId - there's no Product entity)
     String title;
     String imageUrl;
     BigDecimal price;

@@ -473,7 +473,7 @@ public class SellerService {
                             : null;
                     
                     return ProductPerformanceResponse.builder()
-                            .productId(String.valueOf(listing.getId()))
+                            .listingId(String.valueOf(listing.getId()))
                             .title(listing.getTitleOverride() != null 
                                     ? listing.getTitleOverride() 
                                     : listing.getBookMeta().getTitle())
