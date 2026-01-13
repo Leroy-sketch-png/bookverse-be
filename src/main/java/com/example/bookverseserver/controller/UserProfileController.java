@@ -6,7 +6,7 @@ import com.example.bookverseserver.dto.request.User.UpgradeToSellerRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.User.ProfileResponse;
 import com.example.bookverseserver.service.UserProfileService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

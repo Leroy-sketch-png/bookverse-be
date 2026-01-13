@@ -11,7 +11,7 @@ import com.example.bookverseserver.enums.ApplicationStatus;
 import com.example.bookverseserver.enums.RoleName;
 import com.example.bookverseserver.service.AdminService;
 import com.example.bookverseserver.service.ProSellerService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;

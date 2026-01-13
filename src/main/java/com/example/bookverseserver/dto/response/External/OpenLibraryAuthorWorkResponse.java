@@ -1,6 +1,6 @@
 package com.example.bookverseserver.dto.response.External;
 
-import com.example.bookverseserver.utils.DescriptionDeserializer;
+import com.example.bookverseserver.util.DescriptionDeserializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

@@ -6,7 +6,7 @@ import com.example.bookverseserver.entity.User.UserProfile;
 import com.example.bookverseserver.mapper.UserProfileMapper;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
-import com.example.bookverseserver.utils.SecurityUtils; // Added import
+import com.example.bookverseserver.util.SecurityUtils; // Added import
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

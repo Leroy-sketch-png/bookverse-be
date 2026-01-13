@@ -14,7 +14,7 @@ import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.ListingService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

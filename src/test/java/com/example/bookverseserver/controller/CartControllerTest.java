@@ -5,7 +5,7 @@ import com.example.bookverseserver.dto.response.Cart.CartResponse;
 import com.example.bookverseserver.dto.response.Cart.CartSummary;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.CartService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

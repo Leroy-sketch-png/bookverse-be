@@ -135,6 +135,90 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      */
     long countBySellerId(Long sellerId);
 
+    // ============ OPTIMIZED QUERIES (N+1 Prevention) ============
+
+    /**
+     * Find all active, visible listings with ALL relations eagerly fetched.
+     * This prevents N+1 queries when mapping to DTOs.
+     * 
+     * Relations fetched:
+     * - bookMeta (with authors, images)
+     * - seller (with userProfile)
+     * - category
+     * - photos
+     * 
+     * NOTE: Cannot use Specification with this method due to JOIN FETCH + pagination limitations.
+     * Use for simple paginated listing queries without complex filters.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND (:status IS NULL OR l.status = :status)
+            ORDER BY l.createdAt DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND (:status IS NULL OR l.status = :status)
+            """)
+    Page<Listing> findAllWithDetails(@Param("status") ListingStatus status, Pageable pageable);
+
+    /**
+     * Find active listings sorted by soldCount (popular) with eager fetching.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            ORDER BY l.soldCount DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            """)
+    Page<Listing> findPopularWithDetails(Pageable pageable);
+
+    /**
+     * Find active listings sorted by createdAt (new arrivals) with eager fetching.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            ORDER BY l.createdAt DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            """)
+    Page<Listing> findNewArrivalsWithDetails(Pageable pageable);
+
     /**
      * Find seller listings by status and category with pagination.
      */

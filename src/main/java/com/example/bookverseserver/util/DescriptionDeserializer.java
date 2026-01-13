@@ -1,4 +1,4 @@
-package com.example.bookverseserver.utils;
+package com.example.bookverseserver.util;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -20,8 +20,9 @@ import com.example.bookverseserver.entity.Product.Author;
 import com.example.bookverseserver.entity.Product.Category;
 import com.example.bookverseserver.repository.*;
 import com.example.bookverseserver.repository.specification.ListingSpecification;
+import com.example.bookverseserver.util.ExternalCategoryMapper;
 import com.example.bookverseserver.util.HtmlSanitizer;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -69,6 +70,10 @@ public class ListingService {
     /**
      * Get paginated listings with optional filters and text search.
      * 
+     * OPTIMIZED: For simple queries (no filters except status), uses eager-fetching
+     * repository methods to prevent N+1 queries. Falls back to Specification
+     * for complex filtered queries.
+     * 
      * @param query     full-text search query (searches title, author, description)
      * @param sellerId  filter by seller
      * @param bookId    filter by book
@@ -93,7 +98,48 @@ public class ListingService {
             String sortOrder,
             int page,
             int size) {
-        // Build specification
+        
+        // Check if we can use optimized (eager-fetching) queries
+        boolean isSimpleQuery = (query == null || query.trim().isEmpty())
+                && sellerId == null
+                && bookId == null
+                && categoryId == null
+                && authorId == null;
+        
+        // For simple queries with common sort patterns, use optimized methods
+        if (isSimpleQuery) {
+            Page<Listing> listingPage;
+            Pageable pageable = PageRequest.of(page, size);
+            
+            String effectiveSortBy = sortBy != null ? sortBy : "createdAt";
+            
+            if ("soldCount".equals(effectiveSortBy) && (status == null || status == ListingStatus.ACTIVE)) {
+                // Popular books query (sorted by soldCount)
+                listingPage = listingRepository.findPopularWithDetails(pageable);
+            } else if ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(sortOrder) 
+                    && (status == null || status == ListingStatus.ACTIVE)) {
+                // New arrivals query (sorted by createdAt desc)
+                listingPage = listingRepository.findNewArrivalsWithDetails(pageable);
+            } else {
+                // Generic optimized query with status filter
+                listingPage = listingRepository.findAllWithDetails(status, pageable);
+            }
+            
+            List<ListingResponse> responses = listingPage.getContent().stream()
+                    .map(listingMapper::toListingResponse)
+                    .toList();
+
+            return PagedResponse.of(
+                    responses,
+                    page,
+                    size,
+                    listingPage.getTotalElements(),
+                    listingPage.getTotalPages());
+        }
+        
+        // Fall back to Specification for complex filtered queries
+        // NOTE: This path may still have N+1 issues for complex queries
+        // TODO: Consider adding @EntityGraph or batch fetching for filtered queries
         Specification<Listing> spec = Specification.where(ListingSpecification.isNotDeleted());
 
         // Text search across title, author, description
@@ -516,9 +562,26 @@ public class ListingService {
             listingStatus = ListingStatus.DRAFT;
         }
 
+        // Resolve listing category from request (canonical slug like 'fiction', 'non_fiction')
+        Category listingCategory = null;
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            String categorySlug = request.getCategory().toLowerCase().trim();
+            listingCategory = categoryRepository.findBySlug(categorySlug)
+                    .orElseGet(() -> {
+                        // Create canonical category if missing (shouldn't happen in production)
+                        String displayName = categorySlug.replace("_", " ");
+                        displayName = displayName.substring(0, 1).toUpperCase() + displayName.substring(1);
+                        return categoryRepository.save(Category.builder()
+                                .name(displayName)
+                                .slug(categorySlug)
+                                .build());
+                    });
+        }
+
         Listing listing = Listing.builder()
                 .bookMeta(bookMeta)
                 .seller(seller)
+                .category(listingCategory) // Set category from request
                 .price(request.getPrice() != null ? java.math.BigDecimal.valueOf(request.getPrice()) : null)
                 .originalPrice(request.getOriginalPrice() != null ? java.math.BigDecimal.valueOf(request.getOriginalPrice()) : null)
                 .condition(request.getCondition())
@@ -620,17 +683,22 @@ public class ListingService {
         }
         
         // Resolve categories from Open Library subjects
+        // CRITICAL: Normalize chaotic Open Library subjects to our canonical 10 categories
         var categories = new HashSet<Category>();
         if (data.getCategories() != null && !data.getCategories().isEmpty()) {
-            // Take first 3 subjects as categories
-            data.getCategories().stream().limit(3).forEach(subject -> {
-                Category cat = categoryRepository.findByName(subject)
+            // Map raw subjects to canonical categories using ExternalCategoryMapper
+            List<String> canonicalSlugs = ExternalCategoryMapper.mapToCanonical(data.getCategories());
+            
+            // If mapping found canonical categories, use them; otherwise skip
+            for (String slug : canonicalSlugs) {
+                // Canonical categories use slug as name (e.g., "fiction", "non_fiction")
+                Category cat = categoryRepository.findBySlug(slug)
                         .orElseGet(() -> categoryRepository.save(Category.builder()
-                                .name(subject)
-                                .slug(subject.toLowerCase().replaceAll("\\s+", "-"))
+                                .name(slug.replace("_", " ").substring(0, 1).toUpperCase() + slug.replace("_", " ").substring(1)) // "fiction" -> "Fiction"
+                                .slug(slug)
                                 .build()));
                 categories.add(cat);
-            });
+            }
         }
         
         // Parse published date

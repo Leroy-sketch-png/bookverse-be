@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.example.bookverseserver.dto.request.Authentication.ChangePasswordRequest;
 import com.example.bookverseserver.dto.request.Authentication.UserStatusRequest;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PostAuthorize;

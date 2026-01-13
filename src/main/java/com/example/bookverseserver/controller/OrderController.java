@@ -8,7 +8,7 @@ import com.example.bookverseserver.dto.response.Order.OrderListResponse;
 import com.example.bookverseserver.dto.response.Order.OrderTrackingDTO;
 import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.service.OrderService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;

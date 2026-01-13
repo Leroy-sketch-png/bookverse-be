@@ -6,7 +6,7 @@ import com.example.bookverseserver.dto.request.Review.UpdateReviewRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Review.*;
 import com.example.bookverseserver.service.ReviewService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

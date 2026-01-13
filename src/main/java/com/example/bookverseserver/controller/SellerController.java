@@ -17,7 +17,7 @@ import com.example.bookverseserver.service.ListingService;
 import com.example.bookverseserver.service.OrderService;
 import com.example.bookverseserver.service.SellerService;
 import com.example.bookverseserver.service.SellerSettingsService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

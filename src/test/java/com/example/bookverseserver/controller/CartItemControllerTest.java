@@ -5,7 +5,7 @@ import com.example.bookverseserver.dto.request.CartItem.CartItemRequest;
 import com.example.bookverseserver.dto.response.CartItem.CartItemResponse;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.CartItemService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

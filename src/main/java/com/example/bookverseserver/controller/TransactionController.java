@@ -7,7 +7,7 @@ import com.example.bookverseserver.dto.response.Transaction.PaymentAuditResponse
 import com.example.bookverseserver.dto.response.Transaction.PaymentIntentResponse;
 import com.example.bookverseserver.dto.response.Transaction.PaymentVerificationResponse;
 import com.example.bookverseserver.service.TransactionService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

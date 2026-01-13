@@ -15,7 +15,7 @@ import com.example.bookverseserver.mapper.UserProfileMapper;
 import com.example.bookverseserver.repository.RoleRepository;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.repository.UserRepository;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

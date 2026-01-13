@@ -1,4 +1,4 @@
-package com.example.bookverseserver.utils;
+package com.example.bookverseserver.util;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * 3. Return best matches (up to 3 categories)
  * 4. If no match, return null (let seller choose)
  */
-public class CategoryMapper {
+public class ExternalCategoryMapper {
 
     // Our canonical categories (must match frontend bookCategories)
     public static final List<String> CANONICAL_CATEGORIES = List.of(
@@ -118,7 +118,7 @@ public class CategoryMapper {
 
         // Normalize: join all subjects, lowercase, strip years and punctuation noise
         String normalizedInput = rawSubjects.stream()
-                .map(CategoryMapper::normalizeSubject)
+                .map(ExternalCategoryMapper::normalizeSubject)
                 .collect(Collectors.joining(" "));
 
         // Score each category based on keyword matches

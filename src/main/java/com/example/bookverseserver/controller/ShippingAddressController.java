@@ -4,7 +4,7 @@ import com.example.bookverseserver.dto.request.ShippingAddress.ShippingAddressRe
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.ShippingAddress.ShippingAddressResponse;
 import com.example.bookverseserver.service.ShippingAddressService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

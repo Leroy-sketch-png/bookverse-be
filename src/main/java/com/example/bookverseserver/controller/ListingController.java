@@ -13,7 +13,7 @@ import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
 import com.example.bookverseserver.dto.response.Product.StockUpdateResponse;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.service.ListingService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

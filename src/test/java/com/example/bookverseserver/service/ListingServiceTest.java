@@ -18,7 +18,7 @@ import com.example.bookverseserver.mapper.BookMetaMapper;
 import com.example.bookverseserver.mapper.ListingMapper;
 import com.example.bookverseserver.mapper.ListingPhotoMapper;
 import com.example.bookverseserver.repository.*;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

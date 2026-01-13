@@ -1,7 +1,7 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.External.RichBookData;
-import com.example.bookverseserver.utils.CategoryMapper;
+import com.example.bookverseserver.util.ExternalCategoryMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -164,7 +164,7 @@ public class BookEnrichmentService {
         if (rawCategories == null || rawCategories.isEmpty()) {
             return Collections.emptyList();
         }
-        return CategoryMapper.mapToCanonical(rawCategories);
+        return ExternalCategoryMapper.mapToCanonical(rawCategories);
     }
 
     /**

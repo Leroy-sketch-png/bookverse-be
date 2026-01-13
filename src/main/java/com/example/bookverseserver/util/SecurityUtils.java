@@ -1,4 +1,4 @@
-package com.example.bookverseserver.utils;
+package com.example.bookverseserver.util;
 
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.exception.AppException;

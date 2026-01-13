@@ -3,7 +3,7 @@ package com.example.bookverseserver.controller;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Wishlist.*;
 import com.example.bookverseserver.service.WishlistService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

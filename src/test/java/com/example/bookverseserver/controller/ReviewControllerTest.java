@@ -8,7 +8,7 @@ import com.example.bookverseserver.dto.response.Review.ReviewStatsResponse;
 import com.example.bookverseserver.dto.response.Review.ReviewsListResponse;
 import com.example.bookverseserver.service.AuthenticationService;
 import com.example.bookverseserver.service.ReviewService;
-import com.example.bookverseserver.utils.SecurityUtils;
+import com.example.bookverseserver.util.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
