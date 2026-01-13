@@ -185,7 +185,7 @@ public class CategoryController {
     @GetMapping
     @Operation(
             summary = "Get all categories",
-            description = "Retrieve hierarchical list of all book categories. " +
+            description = "Retrieve flat list of all book categories. " +
                          "**Includes**: " +
                          "- Main categories and subcategories " +
                          "- Book count per category " +
@@ -203,6 +203,110 @@ public class CategoryController {
                 .code(HttpStatus.OK.value())
                 .message("Categories retrieved successfully")
                 .result(categoryService.getAllCategories())
+                .build();
+    }
+
+    // ================= GET TREE =================
+
+    @GetMapping("/tree")
+    @Operation(
+            summary = "Get category tree",
+            description = "Retrieve hierarchical category tree with nested children. " +
+                         "**Structure**: Root categories contain nested subcategories. " +
+                         "**Use for**: Mega menus, sidebar navigation, category browsers"
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Category tree retrieved successfully"
+        )
+    })
+    public ApiResponse<List<CategoryResponse>> getCategoryTree() {
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Category tree retrieved successfully")
+                .result(categoryService.getCategoryTree())
+                .build();
+    }
+
+    // ================= GET FEATURED =================
+
+    @GetMapping("/featured")
+    @Operation(
+            summary = "Get featured categories",
+            description = "Retrieve featured categories for homepage display. " +
+                         "**Includes**: Emoji icons, colors, and book counts. " +
+                         "**Use for**: Homepage category showcase, promotional sections"
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Featured categories retrieved successfully"
+        )
+    })
+    public ApiResponse<List<CategoryResponse>> getFeaturedCategories() {
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Featured categories retrieved successfully")
+                .result(categoryService.getFeaturedCategories())
+                .build();
+    }
+
+    // ================= GET BY ID =================
+
+    @GetMapping("/{categoryId}")
+    @Operation(
+            summary = "Get category by ID",
+            description = "Retrieve a single category by its ID. " +
+                         "**Includes**: Full category details with parent reference."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Category retrieved successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Category not found"
+        )
+    })
+    public ApiResponse<CategoryResponse> getCategoryById(
+            @Parameter(description = "Category ID", example = "1", required = true)
+            @PathVariable Long categoryId
+    ) {
+        return ApiResponse.<CategoryResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Category retrieved successfully")
+                .result(categoryService.getCategoryById(categoryId))
+                .build();
+    }
+
+    // ================= GET SUBCATEGORIES =================
+
+    @GetMapping("/{parentId}/subcategories")
+    @Operation(
+            summary = "Get subcategories",
+            description = "Retrieve all subcategories of a parent category. " +
+                         "**Use for**: Drill-down navigation, category expansion"
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Subcategories retrieved successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "Parent category not found"
+        )
+    })
+    public ApiResponse<List<CategoryResponse>> getSubcategories(
+            @Parameter(description = "Parent category ID", example = "1", required = true)
+            @PathVariable Long parentId
+    ) {
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Subcategories retrieved successfully")
+                .result(categoryService.getSubcategories(parentId))
                 .build();
     }
 }

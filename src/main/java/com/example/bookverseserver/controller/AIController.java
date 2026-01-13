@@ -1,10 +1,13 @@
 package com.example.bookverseserver.controller;
 
+import com.example.bookverseserver.dto.request.AI.MoodDiscoveryRequest;
+import com.example.bookverseserver.dto.response.AI.MoodDiscoveryResponse;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.entity.User.UserProfile;
 import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.service.AIService;
+import com.example.bookverseserver.service.MoodDiscoveryService;
 import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -23,6 +27,7 @@ import static lombok.AccessLevel.PRIVATE;
  * 
  * Provides AI-powered features:
  * - Personalized recommendations
+ * - Mood-based discovery
  * - Natural language search
  * - Review summarization
  */
@@ -35,6 +40,7 @@ import static lombok.AccessLevel.PRIVATE;
 public class AIController {
     
     AIService aiService;
+    MoodDiscoveryService moodDiscoveryService;
     UserProfileRepository userProfileRepository;
     SecurityUtils securityUtils;
     
@@ -95,6 +101,85 @@ public class AIController {
         
         return ApiResponse.<AIService.ReviewSummary>builder()
                 .result(summary)
+                .build();
+    }
+    
+    /**
+     * Get status of all AI providers.
+     * Useful for health checks and debugging.
+     */
+    @GetMapping("/providers/status")
+    @Operation(summary = "Get AI providers status", 
+               description = "Returns status, availability, and statistics for all AI providers")
+    public ApiResponse<AIProvidersStatusResponse> getProvidersStatus() {
+        var status = aiService.getProvidersStatus();
+        boolean available = aiService.isAIAvailable();
+        
+        return ApiResponse.<AIProvidersStatusResponse>builder()
+                .result(new AIProvidersStatusResponse(
+                        available,
+                        status.size(),
+                        (int) status.values().stream().filter(s -> s.available()).count(),
+                        status
+                ))
+                .build();
+    }
+    
+    /**
+     * Response for providers status endpoint
+     */
+    public record AIProvidersStatusResponse(
+            boolean aiAvailable,
+            int totalProviders,
+            int availableProviders,
+            java.util.Map<String, com.example.bookverseserver.service.ai.ProviderRotator.ProviderStatusInfo> providers
+    ) {}
+    
+    // ============================================================================
+    // MOOD-BASED DISCOVERY
+    // ============================================================================
+    
+    /**
+     * Get available reading moods with their definitions
+     */
+    @GetMapping("/moods")
+    @Operation(summary = "Get available reading moods", 
+               description = "Returns all available moods with emoji, tagline, and description")
+    public ApiResponse<List<Map<String, Object>>> getAvailableMoods() {
+        return ApiResponse.<List<Map<String, Object>>>builder()
+                .result(moodDiscoveryService.getAvailableMoods())
+                .build();
+    }
+    
+    /**
+     * Discover books by mood
+     */
+    @PostMapping("/moods/discover")
+    @Operation(summary = "Discover books by mood", 
+               description = "Returns AI-curated book recommendations based on reading mood")
+    public ApiResponse<MoodDiscoveryResponse> discoverByMood(@RequestBody MoodDiscoveryRequest request) {
+        MoodDiscoveryResponse response = moodDiscoveryService.discoverByMood(request);
+        return ApiResponse.<MoodDiscoveryResponse>builder()
+                .result(response)
+                .build();
+    }
+    
+    /**
+     * Quick mood discovery (GET for simple use)
+     */
+    @GetMapping("/moods/{mood}/books")
+    @Operation(summary = "Quick mood-based discovery", 
+               description = "Simple endpoint to get books for a mood")
+    public ApiResponse<MoodDiscoveryResponse> quickMoodDiscovery(
+            @PathVariable String mood,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        MoodDiscoveryRequest request = MoodDiscoveryRequest.builder()
+                .mood(mood)
+                .limit(limit)
+                .build();
+        return ApiResponse.<MoodDiscoveryResponse>builder()
+                .result(moodDiscoveryService.discoverByMood(request))
                 .build();
     }
 }

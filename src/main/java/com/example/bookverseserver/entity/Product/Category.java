@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -29,18 +30,68 @@ public class Category {
     @Column(unique = true, nullable = false, length = 150)
     String slug; // URL-friendly version of name
 
-    @Column(columnDefinition = "TEXT") // Use columnDefinition for TEXT type
+    @Column(columnDefinition = "TEXT")
     String description;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // HIERARCHY & DISPLAY (Renaissance Edition)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Parent category for hierarchical structure.
+     * null = top-level category
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    Category parent;
+    
+    /**
+     * Child categories
+     */
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @Builder.Default
+    List<Category> children = new ArrayList<>();
+    
+    /**
+     * Emoji icon for visual richness (e.g., "📚", "🔍", "💕")
+     */
+    @Column(length = 10)
+    String emoji;
+    
+    /**
+     * Display order within parent (lower = first)
+     */
+    @Column(name = "sort_order")
+    @Builder.Default
+    Integer sortOrder = 0;
+    
+    /**
+     * Theme color for category cards (hex, e.g., "#6366F1")
+     */
+    @Column(length = 7)
+    String color;
+    
+    /**
+     * Whether this category is featured on homepage
+     */
+    @Builder.Default
+    Boolean featured = false;
+    
+    /**
+     * Approximate book count (denormalized for performance)
+     */
+    @Column(name = "book_count")
+    @Builder.Default
+    Integer bookCount = 0;
 
-    // This should be a ManyToMany mapped relationship, not OneToMany.
-    // A category can have many books, and a book can have many categories.
+    // ═══════════════════════════════════════════════════════════════════════
+    // RELATIONSHIPS
+    // ═══════════════════════════════════════════════════════════════════════
+
     @ManyToMany(mappedBy = "categories")
     Set<BookMeta> bookMetas;
 
     List<String> tags;
-
-//    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-//    Set<BookMeta> books;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

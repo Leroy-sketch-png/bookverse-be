@@ -75,6 +75,45 @@ public class CategoryService {
         return categories.stream().map(categoryMapper::toCategoryResponse).toList();
     }
 
+    /**
+     * Get category tree - root categories with nested children
+     */
+    public List<CategoryResponse> getCategoryTree() {
+        List<Category> rootCategories = categoryRepository.findRootCategoriesWithChildren();
+        return rootCategories.stream()
+                .map(categoryMapper::toCategoryResponseWithChildren)
+                .toList();
+    }
+
+    /**
+     * Get featured categories for homepage display
+     */
+    public List<CategoryResponse> getFeaturedCategories() {
+        List<Category> featured = categoryRepository.findFeaturedCategories();
+        return featured.stream()
+                .map(categoryMapper::toCategoryResponse)
+                .toList();
+    }
+
+    /**
+     * Get subcategories of a parent category
+     */
+    public List<CategoryResponse> getSubcategories(Long parentId) {
+        List<Category> subcategories = categoryRepository.findByParentIdOrderBySortOrderAscNameAsc(parentId);
+        return subcategories.stream()
+                .map(categoryMapper::toCategoryResponse)
+                .toList();
+    }
+
+    /**
+     * Get single category by ID
+     */
+    public CategoryResponse getCategoryById(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+        return categoryMapper.toCategoryResponse(category);
+    }
+
     // --- OPEN LIBRARY & BUSINESS LOGIC ---
 
     /**

@@ -8,15 +8,16 @@ import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.mapper.ListingMapper;
 import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
+import com.example.bookverseserver.service.ai.AIProviderException;
+import com.example.bookverseserver.service.ai.ProviderRotator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,13 +27,14 @@ import static lombok.AccessLevel.PRIVATE;
 /**
  * AI Service — The Intelligence Layer
  * 
- * Provides AI-powered features:
+ * Provides AI-powered features with multi-provider rotation:
  * 1. Personalized book recommendations based on user preferences
  * 2. Natural language search parsing
  * 3. Review summarization
  * 4. Book description enhancement
  * 
- * Uses OpenRouter for LLM access (supports free models).
+ * Uses 7 AI providers with intelligent rotation for maximum uptime:
+ * Groq → Mistral → OpenRouter → HuggingFace → Fireworks → Cohere → Gemini
  */
 @Service
 @RequiredArgsConstructor
@@ -41,13 +43,35 @@ import static lombok.AccessLevel.PRIVATE;
 public class AIService {
     
     AIConfig aiConfig;
+    ProviderRotator providerRotator;
     ListingRepository listingRepository;
     ReviewRepository reviewRepository;
     ListingMapper listingMapper;
     ObjectMapper objectMapper;
-    RestTemplate restTemplate = new RestTemplate();
     
-    private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+    @PostConstruct
+    public void initializeProviders() {
+        if (!aiConfig.isEnabled()) {
+            log.info("🤖 AI features disabled");
+            return;
+        }
+        
+        providerRotator.initialize(
+                aiConfig.getGroqApiKey(),
+                aiConfig.getMistralApiKey(),
+                aiConfig.getOpenrouterApiKey(),
+                aiConfig.getHuggingfaceApiKey(),
+                aiConfig.getFireworksApiKey(),
+                aiConfig.getCohereApiKey(),
+                aiConfig.getGeminiApiKey()
+        );
+        
+        if (providerRotator.isReady()) {
+            log.info("🚀 AI Service ready with {} providers", providerRotator.getTotalProviderCount());
+        } else {
+            log.warn("⚠️ AI enabled but no providers configured");
+        }
+    }
     
     /**
      * Get personalized book recommendations based on user preferences.
@@ -213,46 +237,42 @@ public class AIService {
                 .collect(Collectors.toList());
     }
     
+    /**
+     * Call LLM using multi-provider rotation.
+     * Falls back gracefully through all available providers.
+     */
     private String callLLM(String prompt) {
-        if (aiConfig.getOpenrouterApiKey() == null || aiConfig.getOpenrouterApiKey().isBlank()) {
-            throw new IllegalStateException("No AI API key configured");
+        if (!providerRotator.isReady()) {
+            throw new IllegalStateException("No AI providers configured");
         }
         
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + aiConfig.getOpenrouterApiKey());
-        headers.set("HTTP-Referer", "https://bookverse.app");
-        headers.set("X-Title", "Bookverse");
-        
-        Map<String, Object> message = Map.of(
-                "role", "user",
-                "content", prompt
-        );
-        
-        Map<String, Object> body = Map.of(
-                "model", aiConfig.getDefaultModel(),
-                "messages", List.of(message),
-                "max_tokens", aiConfig.getMaxTokens(),
-                "temperature", aiConfig.getTemperature()
-        );
-        
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-        
-        ResponseEntity<JsonNode> response = restTemplate.exchange(
-                OPENROUTER_URL,
-                HttpMethod.POST,
-                request,
-                JsonNode.class
-        );
-        
-        if (response.getBody() != null && response.getBody().has("choices")) {
-            return response.getBody()
-                    .path("choices").get(0)
-                    .path("message")
-                    .path("content").asText();
+        try {
+            return providerRotator.generate(prompt, aiConfig.getTimeoutSeconds(), aiConfig.getMaxRetries());
+        } catch (AIProviderException e) {
+            log.error("All AI providers failed: {}", e.getMessage());
+            throw new RuntimeException("AI service unavailable", e);
         }
-        
-        throw new RuntimeException("Invalid AI response");
+    }
+    
+    /**
+     * Generate raw text from a prompt (public API for other services)
+     */
+    public String generateRecommendation(String prompt) {
+        return callLLM(prompt);
+    }
+    
+    /**
+     * Get status of all AI providers (for health checks and debugging)
+     */
+    public Map<String, ProviderRotator.ProviderStatusInfo> getProvidersStatus() {
+        return providerRotator.getProvidersStatus();
+    }
+    
+    /**
+     * Check if AI is available
+     */
+    public boolean isAIAvailable() {
+        return aiConfig.isEnabled() && providerRotator.isReady() && providerRotator.getAvailableProviderCount() > 0;
     }
     
     private String buildSearchParsingPrompt(String query) {
