@@ -24,15 +24,17 @@ public class OrderController {
   @GetMapping
   public ApiResponse<OrderListResponse> getUserOrders(
       @RequestParam(required = false) OrderStatus status,
-      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int limit,
       @RequestParam(defaultValue = "createdAt") String sortBy,
       @RequestParam(defaultValue = "desc") String sortOrder,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
+    // Convert 1-indexed (API) to 0-indexed (Spring)
+    int pageIndex = Math.max(0, page - 1);
     return ApiResponse.<OrderListResponse>builder()
         .message("Orders retrieved successfully")
-        .result(orderService.getUserOrders(userId, status, page, limit, sortBy, sortOrder))
+        .result(orderService.getUserOrders(userId, status, pageIndex, limit, sortBy, sortOrder))
         .build();
   }
 

@@ -58,12 +58,14 @@ public class BookController {
             @Parameter(description = "Filter by category ID", example = "1")
             @RequestParam(required = false) String category_id,
             
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page number (1-indexed)", example = "1")
+            @RequestParam(defaultValue = "1") int page,
             
             @Parameter(description = "Items per page", example = "20")
             @RequestParam(defaultValue = "20") int limit) {
-        return bookService.getBooks(q, author_id, category_id, page, limit);
+        // Convert 1-indexed (API) to 0-indexed (Spring)
+        int pageIndex = Math.max(0, page - 1);
+        return bookService.getBooks(q, author_id, category_id, pageIndex, limit);
     }
 
     @GetMapping("/{bookId}")

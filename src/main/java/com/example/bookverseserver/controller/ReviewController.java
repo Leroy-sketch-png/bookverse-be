@@ -72,16 +72,18 @@ public class ReviewController {
                description = "Returns paginated reviews for a specific listing (product)")
     public ApiResponse<ReviewsListResponse> getListingReviews(
             @Parameter(description = "Listing ID") @PathVariable Long listingId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "newest") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
             @RequestParam(required = false) Integer rating,
             Authentication authentication) {
         Long currentUserId = authentication != null ? securityUtils.getCurrentUserId(authentication) : null;
+        // Convert 1-indexed (API) to 0-indexed (Spring)
+        int pageIndex = Math.max(0, page - 1);
         return ApiResponse.<ReviewsListResponse>builder()
                 .message("Reviews retrieved successfully")
-                .result(reviewService.getReviewsByListingId(listingId, page, size, sortBy, sortOrder, rating, currentUserId))
+                .result(reviewService.getReviewsByListingId(listingId, pageIndex, size, sortBy, sortOrder, rating, currentUserId))
                 .build();
     }
 
@@ -94,16 +96,18 @@ public class ReviewController {
                description = "Returns all reviews for a seller's listings (seller reputation)")
     public ApiResponse<ReviewsListResponse> getSellerReviews(
             @Parameter(description = "Seller ID") @PathVariable Long sellerId,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "newest") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
             @RequestParam(required = false) Integer rating,
             Authentication authentication) {
         Long currentUserId = authentication != null ? securityUtils.getCurrentUserId(authentication) : null;
+        // Convert 1-indexed (API) to 0-indexed (Spring)
+        int pageIndex = Math.max(0, page - 1);
         return ApiResponse.<ReviewsListResponse>builder()
                 .message("Seller reviews retrieved successfully")
-                .result(reviewService.getReviewsBySellerId(sellerId, page, size, sortBy, sortOrder, rating, currentUserId))
+                .result(reviewService.getReviewsBySellerId(sellerId, pageIndex, size, sortBy, sortOrder, rating, currentUserId))
                 .build();
     }
 
@@ -200,13 +204,15 @@ public class ReviewController {
     @Operation(summary = "Get my reviews", 
                description = "Returns all reviews created by the current user")
     public ApiResponse<ReviewsListResponse> getMyReviews(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = securityUtils.getCurrentUserId(authentication);
+        // Convert 1-indexed (API) to 0-indexed (Spring)
+        int pageIndex = Math.max(0, page - 1);
         return ApiResponse.<ReviewsListResponse>builder()
                 .message("User reviews retrieved")
-                .result(reviewService.getUserReviews(userId, page, size))
+                .result(reviewService.getUserReviews(userId, pageIndex, size))
                 .build();
     }
 

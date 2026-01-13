@@ -65,10 +65,12 @@ public class ListingController {
                         @RequestParam(required = false) ListingStatus status,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
-                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
+                // Convert 1-indexed (API) to 0-indexed (Spring)
+                int pageIndex = Math.max(0, page - 1);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                q, sellerId, bookId, categoryId, authorId, status, sortBy, sortOrder, page, size);
+                                q, sellerId, bookId, categoryId, authorId, status, sortBy, sortOrder, pageIndex, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -85,10 +87,12 @@ public class ListingController {
                         @PathVariable String categorySlug,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
-                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
+                // Convert 1-indexed (API) to 0-indexed (Spring)
+                int pageIndex = Math.max(0, page - 1);
                 PagedResponse<ListingResponse> result = listingService.getListingsByCategory(
-                                categorySlug, sortBy, sortOrder, page, size);
+                                categorySlug, sortBy, sortOrder, pageIndex, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -105,10 +109,12 @@ public class ListingController {
                         @PathVariable Long sellerId,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
-                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
+                // Convert 1-indexed (API) to 0-indexed (Spring)
+                int pageIndex = Math.max(0, page - 1);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                null, sellerId, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, page, size);
+                                null, sellerId, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

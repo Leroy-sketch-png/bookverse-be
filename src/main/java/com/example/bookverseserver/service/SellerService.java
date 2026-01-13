@@ -232,28 +232,28 @@ public class SellerService {
             int page,
             int limit) {
         
-        // Get orders that contain seller's listings
-        List<Listing> sellerListings = listingRepository.findBySellerId(sellerId);
-        List<Long> listingIds = sellerListings.stream()
-                .map(Listing::getId)
-                .collect(Collectors.toList());
-
-        // Find distinct orders containing these listings
-        List<OrderItem> orderItems = orderItemRepository.findByListingIdIn(listingIds);
+        // Use JOIN FETCH query for items (primary relation)
+        List<Order> allOrders = orderRepository.findOrdersBySellerId(sellerId);
         
-        List<Order> allOrders = orderItems.stream()
-                .map(OrderItem::getOrder)
-                .distinct()
+        // Initialize lazy collections to avoid LazyInitializationException in mapper
+        // This is done within the transaction
+        for (Order order : allOrders) {
+            if (order.getPayments() != null) order.getPayments().size();
+            if (order.getTimeline() != null) order.getTimeline().size();
+        }
+        
+        // Apply filters and sorting
+        List<Order> filteredOrders = allOrders.stream()
                 .filter(o -> status == null || o.getStatus() == status)
                 .sorted((a, b) -> sortOrder.equalsIgnoreCase("asc") 
                         ? a.getCreatedAt().compareTo(b.getCreatedAt())
                         : b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .collect(Collectors.toList());
         
-        long totalItems = allOrders.size();
+        long totalItems = filteredOrders.size();
         int totalPages = (int) Math.ceil((double) totalItems / limit);
         
-        List<Order> pagedOrders = allOrders.stream()
+        List<Order> pagedOrders = filteredOrders.stream()
                 .skip((long) (page - 1) * limit)
                 .limit(limit)
                 .collect(Collectors.toList());

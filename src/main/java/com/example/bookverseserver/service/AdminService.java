@@ -115,10 +115,9 @@ public class AdminService {
     public PlatformStatsResponse getPlatformStats(int periodDays) {
         // User stats - REAL counts
         long totalUsers = userRepository.count();
-        // Count by account type from UserProfile
+        // Count by account type from UserProfile (stored as String in DB)
         long proSellers = userProfileRepository.countByIsProSellerTrue();
-        long sellers = userProfileRepository.countByAccountType(
-                com.example.bookverseserver.enums.AccountType.SELLER) + proSellers;
+        long sellers = userProfileRepository.countByAccountType("SELLER") + proSellers;
         long buyers = totalUsers - sellers;
 
         // Listing stats

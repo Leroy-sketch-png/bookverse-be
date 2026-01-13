@@ -175,8 +175,8 @@ public class TransactionController {
     })
     @GetMapping("/history")
     public ApiResponse<Page<PaymentAuditResponse>> getPaymentHistory(
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page number (1-indexed)", example = "1")
+            @RequestParam(defaultValue = "1") int page,
             
             @Parameter(description = "Items per page", example = "10")
             @RequestParam(defaultValue = "10") int limit,
@@ -186,8 +186,10 @@ public class TransactionController {
         try {
             // Lấy User thật từ Token
             Long userId = securityUtils.getCurrentUserId(authentication);
+            // Convert 1-indexed (API) to 0-indexed (Spring)
+            int pageIndex = Math.max(0, page - 1);
 
-            Page<PaymentAuditResponse> history = transactionService.getUserPaymentAudit(userId, page, limit);
+            Page<PaymentAuditResponse> history = transactionService.getUserPaymentAudit(userId, pageIndex, limit);
 
             return ApiResponse.<Page<PaymentAuditResponse>>builder()
                     .code(1000)
