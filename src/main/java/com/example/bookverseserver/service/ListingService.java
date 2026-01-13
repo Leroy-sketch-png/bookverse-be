@@ -352,6 +352,12 @@ public class ListingService {
         listing.setSoldCount(0);
         listing.setSeller(userRepository.getReferenceById(securityUtils.getCurrentUserId(authentication)));
         
+        // CRITICAL: Derive category from BookMeta, NOT user input
+        // A Science book is a Science book — the seller can't override this.
+        if (bookMeta.getCategories() != null && !bookMeta.getCategories().isEmpty()) {
+            listing.setCategory(bookMeta.getCategories().iterator().next());
+        }
+        
         // Sanitize user-generated content to prevent XSS
         if (listing.getDescription() != null) {
             listing.setDescription(htmlSanitizer.sanitizeRelaxed(listing.getDescription()));
@@ -562,26 +568,40 @@ public class ListingService {
             listingStatus = ListingStatus.DRAFT;
         }
 
-        // Resolve listing category from request (canonical slug like 'fiction', 'non_fiction')
+        // ─────────────────────────────────────────────────────────────────────────────
+        // CRITICAL: Listing.category is DERIVED from BookMeta.categories, NOT seller input!
+        // 
+        // The seller does NOT get to decide what category a book belongs to.
+        // A Science book is a Science book — the seller can't list it as Romance.
+        // 
+        // This preserves data integrity and prevents category manipulation.
+        // ─────────────────────────────────────────────────────────────────────────────
         Category listingCategory = null;
-        if (request.getCategory() != null && !request.getCategory().isBlank()) {
-            String categorySlug = request.getCategory().toLowerCase().trim();
-            listingCategory = categoryRepository.findBySlug(categorySlug)
-                    .orElseGet(() -> {
-                        // Create canonical category if missing (shouldn't happen in production)
-                        String displayName = categorySlug.replace("_", " ");
-                        displayName = displayName.substring(0, 1).toUpperCase() + displayName.substring(1);
-                        return categoryRepository.save(Category.builder()
-                                .name(displayName)
-                                .slug(categorySlug)
-                                .build());
-                    });
+        if (bookMeta.getCategories() != null && !bookMeta.getCategories().isEmpty()) {
+            // Use the first (primary) category from the canonical book metadata
+            listingCategory = bookMeta.getCategories().iterator().next();
+            log.debug("Listing category derived from BookMeta: {}", listingCategory.getSlug());
+        } else {
+            // BookMeta has no categories — this might happen with manual entry or incomplete API data
+            // In this case, accept the seller's suggested category as fallback for the BOOK, not just listing
+            if (request.getCategory() != null && !request.getCategory().isBlank()) {
+                String categorySlug = request.getCategory().toLowerCase().trim();
+                listingCategory = categoryRepository.findBySlug(categorySlug).orElse(null);
+                
+                // Also add this category to the BookMeta for consistency
+                if (listingCategory != null) {
+                    bookMeta.getCategories().add(listingCategory);
+                    bookMetaRepository.save(bookMeta);
+                    log.info("Added seller-suggested category '{}' to BookMeta {} (had no categories)", 
+                            categorySlug, bookMeta.getId());
+                }
+            }
         }
 
         Listing listing = Listing.builder()
                 .bookMeta(bookMeta)
                 .seller(seller)
-                .category(listingCategory) // Set category from request
+                .category(listingCategory) // Derived from BookMeta, NOT seller preference
                 .price(request.getPrice() != null ? java.math.BigDecimal.valueOf(request.getPrice()) : null)
                 .originalPrice(request.getOriginalPrice() != null ? java.math.BigDecimal.valueOf(request.getOriginalPrice()) : null)
                 .condition(request.getCondition())
