@@ -151,4 +151,21 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      */
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.isVisible = true AND r.isHidden = false")
     Double getAverageRating();
+    
+    // =========================================================================
+    // AI Review Summarization
+    // =========================================================================
+    
+    /**
+     * Find reviews for a book (via listing's bookMeta) for AI summarization.
+     */
+    @Query("""
+        SELECT r FROM Review r
+        JOIN r.listing l
+        WHERE l.bookMeta.id = :bookId
+        AND r.isVisible = true
+        AND r.isHidden = false
+        ORDER BY r.createdAt DESC
+        """)
+    List<Review> findByBookMetaIdOrderByCreatedAtDesc(@Param("bookId") Long bookId);
 }

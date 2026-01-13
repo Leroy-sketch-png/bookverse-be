@@ -1,0 +1,343 @@
+package com.example.bookverseserver.service;
+
+import com.example.bookverseserver.configuration.AIConfig;
+import com.example.bookverseserver.dto.response.Product.ListingResponse;
+import com.example.bookverseserver.entity.Product.Listing;
+import com.example.bookverseserver.entity.Product.Review;
+import com.example.bookverseserver.enums.ListingStatus;
+import com.example.bookverseserver.mapper.ListingMapper;
+import com.example.bookverseserver.repository.ListingRepository;
+import com.example.bookverseserver.repository.ReviewRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static lombok.AccessLevel.PRIVATE;
+
+/**
+ * AI Service — The Intelligence Layer
+ * 
+ * Provides AI-powered features:
+ * 1. Personalized book recommendations based on user preferences
+ * 2. Natural language search parsing
+ * 3. Review summarization
+ * 4. Book description enhancement
+ * 
+ * Uses OpenRouter for LLM access (supports free models).
+ */
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = PRIVATE, makeFinal = true)
+@Slf4j
+public class AIService {
+    
+    AIConfig aiConfig;
+    ListingRepository listingRepository;
+    ReviewRepository reviewRepository;
+    ListingMapper listingMapper;
+    ObjectMapper objectMapper;
+    RestTemplate restTemplate = new RestTemplate();
+    
+    private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+    
+    /**
+     * Get personalized book recommendations based on user preferences.
+     * 
+     * @param preferencesJson User's preferences as JSON string
+     * @param excludeListingIds Listings to exclude (already seen/purchased)
+     * @param limit Max number of recommendations
+     * @return List of recommended listings
+     */
+    public List<ListingResponse> getPersonalizedRecommendations(
+            String preferencesJson,
+            List<Long> excludeListingIds,
+            int limit
+    ) {
+        if (!aiConfig.isEnabled() || preferencesJson == null || preferencesJson.isBlank()) {
+            // Fallback: return popular listings
+            return getFallbackRecommendations(excludeListingIds, limit);
+        }
+        
+        try {
+            // Parse user preferences
+            JsonNode prefs = objectMapper.readTree(preferencesJson);
+            
+            // Extract preferred categories
+            List<String> preferredCategories = new ArrayList<>();
+            if (prefs.has("categories") && prefs.get("categories").isArray()) {
+                for (JsonNode cat : prefs.get("categories")) {
+                    if (cat.has("slug") && "love".equals(cat.path("interestLevel").asText())) {
+                        preferredCategories.add(cat.get("slug").asText());
+                    }
+                }
+            }
+            
+            // Extract budget preference
+            String budgetPref = prefs.path("readingHabits").path("budgetRange").asText("any");
+            Double maxPrice = switch (budgetPref) {
+                case "budget" -> 10.0;
+                case "mid-range" -> 25.0;
+                default -> null;
+            };
+            
+            // Extract condition preference
+            String conditionPref = prefs.path("readingHabits").path("conditionPreference").asText("any-condition");
+            List<String> acceptableConditions = switch (conditionPref) {
+                case "new-only" -> List.of("NEW");
+                case "like-new" -> List.of("NEW", "LIKE_NEW");
+                default -> List.of("NEW", "LIKE_NEW", "GOOD", "ACCEPTABLE");
+            };
+            
+            // Query listings based on preferences
+            List<Listing> candidates = listingRepository.findRecommendationCandidates(
+                    preferredCategories.isEmpty() ? null : preferredCategories,
+                    maxPrice,
+                    acceptableConditions,
+                    excludeListingIds == null ? List.of(-1L) : excludeListingIds,
+                    ListingStatus.ACTIVE,
+                    PageRequest.of(0, limit * 3) // Get more than needed for AI ranking
+            );
+            
+            if (candidates.isEmpty()) {
+                return getFallbackRecommendations(excludeListingIds, limit);
+            }
+            
+            // If AI is available, use it to rank/personalize further
+            // For now, return top matches directly
+            return candidates.stream()
+                    .limit(limit)
+                    .map(listingMapper::toListingResponse)
+                    .collect(Collectors.toList());
+                    
+        } catch (Exception e) {
+            log.error("Error generating recommendations: {}", e.getMessage());
+            return getFallbackRecommendations(excludeListingIds, limit);
+        }
+    }
+    
+    /**
+     * Parse natural language search query into structured filters.
+     * 
+     * Example: "cheap mystery books under $15" → 
+     *   { categories: ["mystery"], maxPrice: 15, condition: null }
+     */
+    public SearchFilters parseNaturalLanguageQuery(String query) {
+        if (!aiConfig.isEnabled() || query == null || query.length() < 5) {
+            return new SearchFilters(query, null, null, null, null);
+        }
+        
+        try {
+            String prompt = buildSearchParsingPrompt(query);
+            String response = callLLM(prompt);
+            
+            // Parse JSON response
+            JsonNode filters = objectMapper.readTree(response);
+            
+            return new SearchFilters(
+                    filters.path("searchTerms").asText(query),
+                    filters.path("categories").isArray() 
+                            ? streamToList(filters.path("categories").elements()) : null,
+                    filters.path("maxPrice").isNumber() 
+                            ? filters.path("maxPrice").asDouble() : null,
+                    filters.path("minRating").isNumber() 
+                            ? filters.path("minRating").asDouble() : null,
+                    filters.path("condition").isTextual() 
+                            ? filters.path("condition").asText() : null
+            );
+            
+        } catch (Exception e) {
+            log.warn("Failed to parse natural language query: {}", e.getMessage());
+            return new SearchFilters(query, null, null, null, null);
+        }
+    }
+    
+    /**
+     * Summarize reviews for a book.
+     * 
+     * @param bookId Book ID to summarize reviews for
+     * @return AI-generated summary or null if not enough reviews
+     */
+    public ReviewSummary summarizeReviews(Long bookId) {
+        List<Review> reviews = reviewRepository.findByBookMetaIdOrderByCreatedAtDesc(bookId);
+        
+        if (reviews.size() < 3) {
+            return null; // Not enough reviews to summarize
+        }
+        
+        if (!aiConfig.isEnabled()) {
+            // Fallback: simple stats-based summary
+            return buildStatsSummary(reviews);
+        }
+        
+        try {
+            String prompt = buildReviewSummaryPrompt(reviews);
+            String response = callLLM(prompt);
+            
+            JsonNode summary = objectMapper.readTree(response);
+            
+            return new ReviewSummary(
+                    summary.path("overallSentiment").asText("mixed"),
+                    summary.path("summary").asText(),
+                    streamToList(summary.path("strengths").elements()),
+                    streamToList(summary.path("weaknesses").elements()),
+                    summary.path("recommendedFor").asText()
+            );
+            
+        } catch (Exception e) {
+            log.warn("Failed to summarize reviews: {}", e.getMessage());
+            return buildStatsSummary(reviews);
+        }
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Private Helpers
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    private List<ListingResponse> getFallbackRecommendations(List<Long> excludeIds, int limit) {
+        // Return popular active listings
+        return listingRepository.findPopularListings(
+                        ListingStatus.ACTIVE,
+                        excludeIds == null ? List.of(-1L) : excludeIds,
+                        PageRequest.of(0, limit)
+                ).stream()
+                .map(listingMapper::toListingResponse)
+                .collect(Collectors.toList());
+    }
+    
+    private String callLLM(String prompt) {
+        if (aiConfig.getOpenrouterApiKey() == null || aiConfig.getOpenrouterApiKey().isBlank()) {
+            throw new IllegalStateException("No AI API key configured");
+        }
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + aiConfig.getOpenrouterApiKey());
+        headers.set("HTTP-Referer", "https://bookverse.app");
+        headers.set("X-Title", "Bookverse");
+        
+        Map<String, Object> message = Map.of(
+                "role", "user",
+                "content", prompt
+        );
+        
+        Map<String, Object> body = Map.of(
+                "model", aiConfig.getDefaultModel(),
+                "messages", List.of(message),
+                "max_tokens", aiConfig.getMaxTokens(),
+                "temperature", aiConfig.getTemperature()
+        );
+        
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        
+        ResponseEntity<JsonNode> response = restTemplate.exchange(
+                OPENROUTER_URL,
+                HttpMethod.POST,
+                request,
+                JsonNode.class
+        );
+        
+        if (response.getBody() != null && response.getBody().has("choices")) {
+            return response.getBody()
+                    .path("choices").get(0)
+                    .path("message")
+                    .path("content").asText();
+        }
+        
+        throw new RuntimeException("Invalid AI response");
+    }
+    
+    private String buildSearchParsingPrompt(String query) {
+        return """
+            Parse this book search query into structured filters. Return JSON only.
+            
+            Query: "%s"
+            
+            Extract:
+            - searchTerms: the main search text (title/author keywords)
+            - categories: array of category slugs if mentioned (fiction, mystery, sci-fi, etc)
+            - maxPrice: number if price limit mentioned
+            - minRating: number if rating mentioned
+            - condition: NEW, LIKE_NEW, GOOD, ACCEPTABLE if mentioned
+            
+            Return ONLY valid JSON, no explanation:
+            {"searchTerms": "...", "categories": [...], "maxPrice": null, "minRating": null, "condition": null}
+            """.formatted(query);
+    }
+    
+    private String buildReviewSummaryPrompt(List<Review> reviews) {
+        StringBuilder reviewText = new StringBuilder();
+        for (int i = 0; i < Math.min(10, reviews.size()); i++) {
+            Review r = reviews.get(i);
+            reviewText.append("Rating: ").append(r.getRating()).append("/5\n");
+            reviewText.append("Review: ").append(r.getComment()).append("\n\n");
+        }
+        
+        return """
+            Summarize these book reviews. Return JSON only.
+            
+            Reviews:
+            %s
+            
+            Return ONLY valid JSON:
+            {
+                "overallSentiment": "positive|mixed|negative",
+                "summary": "2-3 sentence summary of what readers say",
+                "strengths": ["strength1", "strength2"],
+                "weaknesses": ["weakness1"],
+                "recommendedFor": "who would enjoy this book"
+            }
+            """.formatted(reviewText.toString());
+    }
+    
+    private ReviewSummary buildStatsSummary(List<Review> reviews) {
+        double avgRating = reviews.stream()
+                .mapToInt(Review::getRating)
+                .average()
+                .orElse(0);
+        
+        String sentiment = avgRating >= 4 ? "positive" : avgRating >= 3 ? "mixed" : "negative";
+        String summary = String.format(
+                "Based on %d reviews with an average rating of %.1f/5.",
+                reviews.size(), avgRating
+        );
+        
+        return new ReviewSummary(sentiment, summary, List.of(), List.of(), null);
+    }
+    
+    private List<String> streamToList(Iterator<JsonNode> iterator) {
+        List<String> result = new ArrayList<>();
+        while (iterator.hasNext()) {
+            result.add(iterator.next().asText());
+        }
+        return result;
+    }
+    
+    // ─────────────────────────────────────────────────────────────────────────────
+    // DTOs
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    public record SearchFilters(
+            String searchTerms,
+            List<String> categories,
+            Double maxPrice,
+            Double minRating,
+            String condition
+    ) {}
+    
+    public record ReviewSummary(
+            String overallSentiment,
+            String summary,
+            List<String> strengths,
+            List<String> weaknesses,
+            String recommendedFor
+    ) {}
+}

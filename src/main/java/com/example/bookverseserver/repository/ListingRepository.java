@@ -242,4 +242,54 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Count new listings created after a date (for public stats).
      */
     long countByCreatedAtAfterAndStatus(java.time.LocalDateTime date, ListingStatus status);
+    
+    // ============ AI RECOMMENDATION QUERIES ============
+    
+    /**
+     * Find recommendation candidates based on user preferences.
+     * Filters by category, price, and condition.
+     */
+    @Query("""
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.categories c
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH l.photos p
+            WHERE l.status = :status
+            AND l.visibility = true
+            AND l.deletedAt IS NULL
+            AND l.id NOT IN :excludeIds
+            AND (:categories IS NULL OR c.slug IN :categories)
+            AND (:maxPrice IS NULL OR l.price <= :maxPrice)
+            AND l.condition IN :conditions
+            ORDER BY l.soldCount DESC, l.views DESC
+            """)
+    List<Listing> findRecommendationCandidates(
+            @Param("categories") List<String> categories,
+            @Param("maxPrice") Double maxPrice,
+            @Param("conditions") List<String> conditions,
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("status") ListingStatus status,
+            Pageable pageable
+    );
+    
+    /**
+     * Find popular listings for fallback recommendations.
+     */
+    @Query("""
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH l.photos p
+            WHERE l.status = :status
+            AND l.visibility = true
+            AND l.deletedAt IS NULL
+            AND l.id NOT IN :excludeIds
+            ORDER BY l.soldCount DESC, l.views DESC
+            """)
+    List<Listing> findPopularListings(
+            @Param("status") ListingStatus status,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
 }

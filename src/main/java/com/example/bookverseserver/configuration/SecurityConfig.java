@@ -45,6 +45,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/api/auth/**",
             "/api/public/**",        // Public stats for homepage
+            "/api/ai/**",            // AI features (recommendations work with/without auth)
             "/api/author",           // GET all authors for browsing
             "/api/author/{id}",      // GET single author
             "/api/author/name/{name}",
