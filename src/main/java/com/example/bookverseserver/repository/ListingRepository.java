@@ -237,4 +237,9 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             @Param("status") ListingStatus status, 
             @Param("categorySlug") String categorySlug, 
             Pageable pageable);
+
+    /**
+     * Count new listings created after a date (for public stats).
+     */
+    long countByCreatedAtAfterAndStatus(java.time.LocalDateTime date, ListingStatus status);
 }

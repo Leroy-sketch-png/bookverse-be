@@ -145,4 +145,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      * Find hidden/flagged reviews for moderation.
      */
     Page<Review> findByIsHiddenTrue(Pageable pageable);
+
+    /**
+     * Get global average rating across all visible reviews (for public stats).
+     */
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.isVisible = true AND r.isHidden = false")
+    Double getAverageRating();
 }

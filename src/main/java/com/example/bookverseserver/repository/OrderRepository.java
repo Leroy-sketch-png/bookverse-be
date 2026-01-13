@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   Optional<Order> findByIdAndUser(Long id, User user);
 
   Optional<Order> findById(Long id);
+  
+  /**
+   * Count orders by status (for public stats).
+   */
+  long countByStatusIn(List<OrderStatus> statuses);
+  
+  /**
+   * Count orders created after a date (for public stats - today's activity).
+   */
+  long countByCreatedAtAfter(LocalDateTime date);
   
   /**
    * Find orders containing seller's listings with essential relations eagerly fetched.

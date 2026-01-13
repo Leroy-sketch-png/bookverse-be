@@ -44,6 +44,7 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/auth/**",
+            "/api/public/**",        // Public stats for homepage
             "/api/author",           // GET all authors for browsing
             "/api/author/{id}",      // GET single author
             "/api/author/name/{name}",
