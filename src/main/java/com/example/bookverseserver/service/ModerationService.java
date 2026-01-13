@@ -225,7 +225,7 @@ public class ModerationService {
         if (status != null) {
             flaggedPage = flaggedListingRepository.findByStatusOrderedByPriority(status, pageRequest);
         } else {
-            flaggedPage = flaggedListingRepository.findAll(pageRequest);
+            flaggedPage = flaggedListingRepository.findAllWithDetails(pageRequest);
         }
         
         List<FlaggedListingResponse> responses = flaggedPage.getContent().stream()
@@ -287,7 +287,7 @@ public class ModerationService {
         if (status != null) {
             reportsPage = userReportRepository.findByStatusOrderedByPriority(status, pageRequest);
         } else {
-            reportsPage = userReportRepository.findAll(pageRequest);
+            reportsPage = userReportRepository.findAllWithDetails(pageRequest);
         }
         
         List<UserReportResponse> responses = reportsPage.getContent().stream()

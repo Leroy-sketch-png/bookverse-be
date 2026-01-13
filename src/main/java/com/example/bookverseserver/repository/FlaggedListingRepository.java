@@ -29,10 +29,22 @@ public interface FlaggedListingRepository extends JpaRepository<FlaggedListing, 
     
     long countBySeverity(FlagSeverity severity);
     
-    @Query("SELECT f FROM FlaggedListing f WHERE f.status = :status ORDER BY " +
+    @Query("SELECT f FROM FlaggedListing f " +
+           "LEFT JOIN FETCH f.listing l " +
+           "LEFT JOIN FETCH l.seller " +
+           "LEFT JOIN FETCH l.bookMeta " +
+           "LEFT JOIN FETCH l.photos " +
+           "WHERE f.status = :status ORDER BY " +
            "CASE f.severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, " +
            "f.flaggedAt ASC")
     Page<FlaggedListing> findByStatusOrderedByPriority(@Param("status") FlagStatus status, Pageable pageable);
+    
+    @Query("SELECT f FROM FlaggedListing f " +
+           "LEFT JOIN FETCH f.listing l " +
+           "LEFT JOIN FETCH l.seller " +
+           "LEFT JOIN FETCH l.bookMeta " +
+           "LEFT JOIN FETCH l.photos")
+    Page<FlaggedListing> findAllWithDetails(Pageable pageable);
     
     boolean existsByListingIdAndStatusIn(Long listingId, Collection<FlagStatus> statuses);
     

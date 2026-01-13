@@ -36,8 +36,18 @@ public interface UserReportRepository extends JpaRepository<UserReport, Long> {
     
     long countByReporterId(Long reporterId);
     
-    @Query("SELECT r FROM UserReport r WHERE r.status = :status ORDER BY " +
+    @Query("SELECT r FROM UserReport r " +
+           "LEFT JOIN FETCH r.reporter " +
+           "LEFT JOIN FETCH r.reportedUser " +
+           "LEFT JOIN FETCH r.relatedOrder " +
+           "WHERE r.status = :status ORDER BY " +
            "CASE r.priority WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END, " +
            "r.createdAt ASC")
     Page<UserReport> findByStatusOrderedByPriority(@Param("status") ReportStatus status, Pageable pageable);
+    
+    @Query("SELECT r FROM UserReport r " +
+           "LEFT JOIN FETCH r.reporter " +
+           "LEFT JOIN FETCH r.reportedUser " +
+           "LEFT JOIN FETCH r.relatedOrder")
+    Page<UserReport> findAllWithDetails(Pageable pageable);
 }
