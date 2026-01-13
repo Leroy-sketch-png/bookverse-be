@@ -751,6 +751,7 @@ public class ListingService {
                 .subjectPlaces(data.getSubjectPlaces() != null ? String.join(", ", data.getSubjectPlaces()) : null)
                 .subjectPeople(data.getSubjectPeople() != null ? String.join(", ", data.getSubjectPeople()) : null)
                 .subjectTimes(data.getSubjectTimes() != null ? String.join(", ", data.getSubjectTimes()) : null)
+                .externalLinks(serializeExternalLinks(data.getExternalLinks()))
                 .build();
         
         // Save first to get ID
@@ -885,5 +886,25 @@ public class ListingService {
                 .listings(successfulListings)
                 .errors(errors)
                 .build();
+    }
+
+    /**
+     * Serialize external links to JSON format for storage.
+     * Format: [{"title": "Wikipedia", "url": "https://..."}, ...]
+     */
+    private String serializeExternalLinks(List<RichBookData.ExternalLink> links) {
+        if (links == null || links.isEmpty()) {
+            return null;
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(
+                    links.stream()
+                            .map(link -> java.util.Map.of("title", link.getTitle(), "url", link.getUrl()))
+                            .toList()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to serialize external links: {}", e.getMessage());
+            return null;
+        }
     }
 }

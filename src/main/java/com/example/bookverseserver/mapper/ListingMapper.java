@@ -2,6 +2,7 @@ package com.example.bookverseserver.mapper;
 
 import com.example.bookverseserver.dto.request.Product.ListingRequest;
 import com.example.bookverseserver.dto.request.Product.ListingUpdateRequest;
+import com.example.bookverseserver.dto.response.Book.BookDetailResponse;
 import com.example.bookverseserver.dto.response.Product.*;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.Product.BookMeta;
@@ -11,6 +12,7 @@ import com.example.bookverseserver.entity.User.UserProfile;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -136,7 +138,7 @@ public abstract class ListingMapper {
     }
 
     /**
-     * Map BookMeta to summary DTO.
+     * Map BookMeta to summary DTO with rich discovery data.
      */
     public BookSummaryDto toBookSummary(BookMeta bookMeta) {
         if (bookMeta == null) {
@@ -149,7 +151,7 @@ public abstract class ListingMapper {
         }
 
         return BookSummaryDto.builder()
-                .id(bookMeta.getId()) // Sử dụng Long trực tiếp
+                .id(bookMeta.getId())
                 .title(bookMeta.getTitle())
                 .author(authorName)
                 .authors(bookMeta.getAuthors() != null 
@@ -161,6 +163,18 @@ public abstract class ListingMapper {
                 .coverImage(bookMeta.getCoverImageUrl())
                 .averageRating(bookMeta.getAverageRating())
                 .totalReviews(bookMeta.getTotalReviews())
+                // Rich discovery data (VALUE!)
+                .description(bookMeta.getDescription())
+                .firstLine(bookMeta.getFirstLine())
+                .subjectPlaces(parseCommaSeparated(bookMeta.getSubjectPlaces()))
+                .subjectPeople(parseCommaSeparated(bookMeta.getSubjectPeople()))
+                .subjectTimes(parseCommaSeparated(bookMeta.getSubjectTimes()))
+                .externalLinks(parseExternalLinks(bookMeta.getExternalLinks()))
+                .tags(bookMeta.getCategories() != null 
+                    ? bookMeta.getCategories().stream()
+                        .map(cat -> cat.getName())
+                        .collect(Collectors.toList())
+                    : List.of())
                 .build();
     }
 
@@ -246,5 +260,43 @@ public abstract class ListingMapper {
         return listings.stream()
                 .map(this::toRelatedDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Parse comma-separated string to list.
+     */
+    private List<String> parseCommaSeparated(String str) {
+        if (str == null || str.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(str.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Parse JSON external links to response objects.
+     * Format: [{"title": "...", "url": "..."}]
+     */
+    private List<BookDetailResponse.ExternalLinkResponse> parseExternalLinks(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            List<java.util.Map<String, String>> parsed = mapper.readValue(json, 
+                    mapper.getTypeFactory().constructCollectionType(List.class, java.util.Map.class));
+            return parsed.stream()
+                    .map(m -> {
+                        BookDetailResponse.ExternalLinkResponse link = new BookDetailResponse.ExternalLinkResponse();
+                        link.setTitle(m.get("title"));
+                        link.setUrl(m.get("url"));
+                        return link;
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 }
