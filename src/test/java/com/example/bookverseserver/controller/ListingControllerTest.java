@@ -144,7 +144,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings with default pagination")
         void getListings_DefaultParams_ReturnsListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -161,7 +161,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings filtered by seller ID")
         void getListings_WithSellerFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), eq(50L), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), eq(50L), isNull(), isNull(), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -177,7 +177,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings filtered by status")
         void getListings_WithStatusFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(), isNull(), isNull(), eq(ListingStatus.ACTIVE),
+                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(ListingStatus.ACTIVE),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -193,7 +193,7 @@ class ListingControllerTest {
         @DisplayName("Should return listings sorted by price")
         void getListings_SortedByPrice_ReturnsSortedListings() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                     eq("price"), eq("asc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -210,7 +210,7 @@ class ListingControllerTest {
         @DisplayName("Should return paginated results")
         void getListings_WithPagination_ReturnsPaginatedResults() throws Exception {
             when(listingService.getListingsFiltered(
-                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(1), eq(10)))
                     .thenReturn(samplePagedResponse);

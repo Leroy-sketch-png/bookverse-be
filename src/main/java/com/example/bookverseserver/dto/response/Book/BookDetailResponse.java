@@ -79,16 +79,27 @@ public class BookDetailResponse {
     private String goodreadsId;
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // PRICING & SELLER (for listing context)
+    // MARKETPLACE: AVAILABLE LISTINGS
+    // A book can have MANY listings from MANY sellers at different prices
     // ═══════════════════════════════════════════════════════════════════════════
-    private BigDecimal price;
-    private BigDecimal finalPrice;
-    private Map<String, Object> discount;
-    private String currency;
-    private SellerProfileResponse seller;
+    
+    /**
+     * Price range across all active listings
+     */
+    private PriceRange priceRange;
+    
+    /**
+     * All active listings for this book from different sellers
+     */
+    private List<ListingPreview> listings;
+    
+    /**
+     * Total count of active listings
+     */
+    private Integer totalListings;
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // RATINGS
+    // RATINGS (for the BOOK, not individual listings)
     // ═══════════════════════════════════════════════════════════════════════════
     private Double averageRating;
     private Integer totalReviews;
@@ -97,5 +108,39 @@ public class BookDetailResponse {
     public static class ExternalLinkResponse {
         private String title;
         private String url;
+    }
+    
+    @Data
+    public static class PriceRange {
+        private BigDecimal min;
+        private BigDecimal max;
+        private String currency;
+        
+        public PriceRange(BigDecimal min, BigDecimal max, String currency) {
+            this.min = min;
+            this.max = max;
+            this.currency = currency;
+        }
+    }
+    
+    @Data
+    public static class ListingPreview {
+        private Long id;
+        private SellerCompact seller;
+        private BigDecimal price;
+        private BigDecimal originalPrice;
+        private BigDecimal finalPrice;
+        private String condition;
+        private Integer quantity;
+        private String createdAt;
+    }
+    
+    @Data
+    public static class SellerCompact {
+        private Long id;
+        private String name;
+        private String avatar;
+        private Boolean isPro;
+        private Double rating;
     }
 }

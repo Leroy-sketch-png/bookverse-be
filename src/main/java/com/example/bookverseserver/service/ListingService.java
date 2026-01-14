@@ -9,6 +9,7 @@ import com.example.bookverseserver.entity.Product.Likes;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.Product.ListingPhoto;
 import com.example.bookverseserver.entity.User.User;
+import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.enums.StockOperation;
 import com.example.bookverseserver.exception.AppException;
@@ -93,6 +94,7 @@ public class ListingService {
             Long bookId,
             Long categoryId,
             Long authorId,
+            BookCondition condition,
             ListingStatus status,
             String sortBy,
             String sortOrder,
@@ -100,28 +102,37 @@ public class ListingService {
             int size) {
         
         // Check if we can use optimized (eager-fetching) queries
-        boolean isSimpleQuery = (query == null || query.trim().isEmpty())
+        // Only use simple path when using default or specifically optimized sort patterns
+        String effectiveSortBy = sortBy != null ? sortBy : "createdAt";
+        String effectiveSortOrder = sortOrder != null ? sortOrder : "desc";
+        
+        boolean canUseOptimizedQuery = (query == null || query.trim().isEmpty())
                 && sellerId == null
                 && bookId == null
                 && categoryId == null
-                && authorId == null;
+                && authorId == null
+                && condition == null;
+        
+        // Only use the optimized query path for these specific sort patterns
+        // (other sorts like price need to go through Specification for proper sorting)
+        boolean isOptimizedSort = 
+                ("soldCount".equals(effectiveSortBy))
+                || ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder));
         
         // For simple queries with common sort patterns, use optimized methods
-        if (isSimpleQuery) {
+        if (canUseOptimizedQuery && isOptimizedSort) {
             Page<Listing> listingPage;
             Pageable pageable = PageRequest.of(page, size);
-            
-            String effectiveSortBy = sortBy != null ? sortBy : "createdAt";
             
             if ("soldCount".equals(effectiveSortBy) && (status == null || status == ListingStatus.ACTIVE)) {
                 // Popular books query (sorted by soldCount)
                 listingPage = listingRepository.findPopularWithDetails(pageable);
-            } else if ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(sortOrder) 
+            } else if ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder) 
                     && (status == null || status == ListingStatus.ACTIVE)) {
                 // New arrivals query (sorted by createdAt desc)
                 listingPage = listingRepository.findNewArrivalsWithDetails(pageable);
             } else {
-                // Generic optimized query with status filter
+                // Fallback (shouldn't reach here due to isOptimizedSort check)
                 listingPage = listingRepository.findAllWithDetails(status, pageable);
             }
             
@@ -158,6 +169,9 @@ public class ListingService {
         }
         if (authorId != null) {
             spec = spec.and(ListingSpecification.hasAuthor(authorId));
+        }
+        if (condition != null) {
+            spec = spec.and(ListingSpecification.hasCondition(condition));
         }
         if (status != null) {
             spec = spec.and(ListingSpecification.hasStatus(status));

@@ -14,6 +14,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -89,24 +90,32 @@ public abstract class CuratedCollectionMapper {
                 .map(category -> new CategoryResponse(category.getId(), category.getName()))
                 .collect(Collectors.toList()) : List.of());
 
-        bookResponse.setCover_url(bookMeta.getCoverImageUrl());
+        bookResponse.setCoverUrl(bookMeta.getCoverImageUrl());
 
+        // MARKETPLACE AGGREGATION — price range and seller count
         List<Listing> listings = listingRepository.findByBookMetaAndStatusAndVisibility(
                 bookMeta, ListingStatus.ACTIVE, true);
+        bookResponse.setTotalListings(listings.size());
 
         if (!listings.isEmpty()) {
-            Listing cheapestListing = listings.stream()
-                    .min(Comparator.comparing(Listing::getPrice))
-                    .orElse(null);
-
-            if (cheapestListing != null) {
-                Map<String, Object> cheapestListingPreview = new HashMap<>();
-                cheapestListingPreview.put("listing_id", cheapestListing.getId().toString());
-                cheapestListingPreview.put("price", cheapestListing.getPrice().toString());
-                cheapestListingPreview.put("currency", cheapestListing.getCurrency());
-                bookResponse.setCheapest_listing_preview(cheapestListingPreview);
-            }
+            BigDecimal minPrice = listings.stream()
+                    .map(Listing::getPrice)
+                    .min(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal maxPrice = listings.stream()
+                    .map(Listing::getPrice)
+                    .max(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            String currency = listings.get(0).getCurrency();
+            
+            bookResponse.setMinPrice(minPrice);
+            bookResponse.setMaxPrice(maxPrice);
+            bookResponse.setCurrency(currency);
         }
+        
+        // Book-level ratings
+        bookResponse.setAverageRating(bookMeta.getAverageRating());
+        bookResponse.setTotalReviews(bookMeta.getTotalReviews());
 
         return bookResponse;
     }

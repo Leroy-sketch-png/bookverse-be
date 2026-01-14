@@ -11,6 +11,7 @@ import com.example.bookverseserver.dto.response.Product.ListingDetailResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.dto.response.Product.ListingUpdateResponse;
 import com.example.bookverseserver.dto.response.Product.StockUpdateResponse;
+import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.service.ListingService;
 import com.example.bookverseserver.util.SecurityUtils;
@@ -49,6 +50,7 @@ public class ListingController {
          * - bookId: filter by book
          * - categoryId: filter by category
          * - authorId: filter by author
+         * - condition: filter by book condition (NEW, LIKE_NEW, GOOD, ACCEPTABLE)
          * - status: filter by status (ACTIVE, SOLD_OUT, DRAFT, etc.)
          * - sortBy: createdAt, price, viewCount, soldCount
          * - sortOrder: asc, desc
@@ -62,6 +64,7 @@ public class ListingController {
                         @RequestParam(required = false) Long bookId,
                         @RequestParam(required = false) Long categoryId,
                         @RequestParam(required = false) Long authorId,
+                        @RequestParam(required = false) BookCondition condition,
                         @RequestParam(required = false) ListingStatus status,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
@@ -70,7 +73,7 @@ public class ListingController {
                 // Convert 1-indexed (API) to 0-indexed (Spring)
                 int pageIndex = Math.max(0, page - 1);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                q, sellerId, bookId, categoryId, authorId, status, sortBy, sortOrder, pageIndex, size);
+                                q, sellerId, bookId, categoryId, authorId, condition, status, sortBy, sortOrder, pageIndex, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -114,7 +117,7 @@ public class ListingController {
                 // Convert 1-indexed (API) to 0-indexed (Spring)
                 int pageIndex = Math.max(0, page - 1);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                null, sellerId, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, size);
+                                null, sellerId, null, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, size);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

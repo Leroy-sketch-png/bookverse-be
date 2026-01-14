@@ -27,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -251,21 +252,34 @@ public class BookService {
         bookResponse.setCategories(bookMeta.getCategories().stream()
                 .map(category -> new CategoryResponse(category.getId(), category.getName()))
                 .collect(Collectors.toList()));
-        bookResponse.setCover_url(bookMeta.getCoverImageUrl());
-
+        bookResponse.setCoverUrl(bookMeta.getCoverImageUrl());
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // MARKETPLACE AGGREGATION — price range and seller count
+        // ═══════════════════════════════════════════════════════════════════════════
         List<Listing> listings = listingRepository.findByBookMetaAndStatusAndVisibility(bookMeta, ListingStatus.ACTIVE, true);
+        bookResponse.setTotalListings(listings.size());
+        
         if (!listings.isEmpty()) {
-            Listing cheapestListing = listings.stream()
-                    .min(Comparator.comparing(Listing::getPrice))
-                    .orElse(null);
-            if (cheapestListing != null) {
-                Map<String, Object> cheapestListingPreview = new HashMap<>();
-                cheapestListingPreview.put("listing_id", cheapestListing.getId().toString());
-                cheapestListingPreview.put("price", cheapestListing.getPrice().toString());
-                cheapestListingPreview.put("currency", cheapestListing.getCurrency());
-                bookResponse.setCheapest_listing_preview(cheapestListingPreview);
-            }
+            BigDecimal minPrice = listings.stream()
+                    .map(Listing::getPrice)
+                    .min(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal maxPrice = listings.stream()
+                    .map(Listing::getPrice)
+                    .max(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            String currency = listings.get(0).getCurrency();
+            
+            bookResponse.setMinPrice(minPrice);
+            bookResponse.setMaxPrice(maxPrice);
+            bookResponse.setCurrency(currency);
         }
+        
+        // Book-level ratings
+        bookResponse.setAverageRating(bookMeta.getAverageRating());
+        bookResponse.setTotalReviews(bookMeta.getTotalReviews());
+        
         return bookResponse;
     }
 
@@ -333,10 +347,72 @@ public class BookService {
         response.setGoodreadsId(bookMeta.getGoodreadsId());
         
         // ═══════════════════════════════════════════════════════════════════════════
-        // RATINGS
+        // RATINGS (for the BOOK, not individual listings)
         // ═══════════════════════════════════════════════════════════════════════════
         response.setAverageRating(bookMeta.getAverageRating() != null ? bookMeta.getAverageRating().doubleValue() : 0.0);
         response.setTotalReviews(bookMeta.getTotalReviews() != null ? bookMeta.getTotalReviews() : 0);
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // MARKETPLACE: ALL AVAILABLE LISTINGS FROM ALL SELLERS
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<Listing> activeListings = listingRepository.findByBookMetaAndStatusAndVisibility(
+                bookMeta, ListingStatus.ACTIVE, true);
+        
+        if (!activeListings.isEmpty()) {
+            // Price range
+            BigDecimal minPrice = activeListings.stream()
+                    .map(l -> l.getFinalPrice() != null ? l.getFinalPrice() : l.getPrice())
+                    .min(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal maxPrice = activeListings.stream()
+                    .map(l -> l.getFinalPrice() != null ? l.getFinalPrice() : l.getPrice())
+                    .max(Comparator.naturalOrder())
+                    .orElse(BigDecimal.ZERO);
+            String currency = activeListings.get(0).getCurrency() != null ? 
+                    activeListings.get(0).getCurrency() : "VND";
+            response.setPriceRange(new BookDetailResponse.PriceRange(minPrice, maxPrice, currency));
+            
+            // All listings preview (sorted by price ascending)
+            List<BookDetailResponse.ListingPreview> listingPreviews = activeListings.stream()
+                    .sorted(Comparator.comparing(l -> l.getFinalPrice() != null ? l.getFinalPrice() : l.getPrice()))
+                    .map(listing -> {
+                        BookDetailResponse.ListingPreview preview = new BookDetailResponse.ListingPreview();
+                        preview.setId(listing.getId());
+                        preview.setPrice(listing.getPrice());
+                        preview.setOriginalPrice(listing.getOriginalPrice());
+                        preview.setFinalPrice(listing.getFinalPrice() != null ? listing.getFinalPrice() : listing.getPrice());
+                        preview.setCondition(listing.getCondition().name());
+                        preview.setQuantity(listing.getQuantity());
+                        preview.setCreatedAt(listing.getCreatedAt().toString());
+                        
+                        // Seller info
+                        if (listing.getSeller() != null) {
+                            BookDetailResponse.SellerCompact seller = new BookDetailResponse.SellerCompact();
+                            seller.setId(listing.getSeller().getId());
+                            seller.setName(listing.getSeller().getUserProfile() != null ? 
+                                    listing.getSeller().getUserProfile().getDisplayName() : 
+                                    listing.getSeller().getUsername());
+                            seller.setAvatar(listing.getSeller().getUserProfile() != null ? 
+                                    listing.getSeller().getUserProfile().getAvatarUrl() : null);
+                            seller.setIsPro(listing.getSeller().getUserProfile() != null && 
+                                    listing.getSeller().getUserProfile().getIsProSeller() != null &&
+                                    listing.getSeller().getUserProfile().getIsProSeller());
+                            seller.setRating(listing.getSeller().getUserProfile() != null && 
+                                    listing.getSeller().getUserProfile().getRatingAvg() != null ?
+                                    listing.getSeller().getUserProfile().getRatingAvg() : 0.0);
+                            preview.setSeller(seller);
+                        }
+                        
+                        return preview;
+                    })
+                    .collect(Collectors.toList());
+            
+            response.setListings(listingPreviews);
+            response.setTotalListings(activeListings.size());
+        } else {
+            response.setListings(Collections.emptyList());
+            response.setTotalListings(0);
+        }
         
         return response;
     }

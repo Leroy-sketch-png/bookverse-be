@@ -99,6 +99,13 @@ public class ListingSpecification {
     }
 
     /**
+     * Filter listings by book condition (NEW, LIKE_NEW, GOOD, ACCEPTABLE).
+     */
+    public static Specification<Listing> hasCondition(com.example.bookverseserver.enums.BookCondition condition) {
+        return (root, query, cb) -> cb.equal(root.get("condition"), condition);
+    }
+
+    /**
      * Filter listings by status.
      */
     public static Specification<Listing> hasStatus(ListingStatus status) {

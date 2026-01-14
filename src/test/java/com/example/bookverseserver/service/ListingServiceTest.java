@@ -131,7 +131,7 @@ class ListingServiceTest {
 
             // When
             PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                    null, null, sellerId, null, null, null, "createdAt", "desc", 0, 20);
+                    null, null, sellerId, null, null, null, null, "createdAt", "desc", 0, 20);
 
             // Then
             assertNotNull(result);
@@ -156,7 +156,7 @@ class ListingServiceTest {
 
             // When
             PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                    null, null, null, null, null, ListingStatus.ACTIVE, "createdAt", "desc", 0, 20);
+                    null, null, null, null, null, null, ListingStatus.ACTIVE, "createdAt", "desc", 0, 20);
 
             // Then
             assertNotNull(result);
@@ -185,7 +185,7 @@ class ListingServiceTest {
 
             // When
             PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                    null, null, null, bookId, null, null, "createdAt", "desc", 0, 20);
+                    null, null, null, bookId, null, null, null, "createdAt", "desc", 0, 20);
 
             // Then
             assertNotNull(result);
@@ -206,7 +206,7 @@ class ListingServiceTest {
 
             // When
             PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                    null, null, null, null, null, null, "price", "asc", 0, 20);
+                    null, null, null, null, null, null, null, "price", "asc", 0, 20);
 
             // Then
             assertNotNull(result);
