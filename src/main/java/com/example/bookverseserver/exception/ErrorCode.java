@@ -177,6 +177,13 @@ public enum ErrorCode {
     SUBSCRIPTION_NOT_FOUND(404, "Subscription not found", HttpStatus.NOT_FOUND),
     ALREADY_SUBSCRIBED(409, "You already have an active subscription", HttpStatus.CONFLICT),
 
+    // --- Messaging ---
+    CONVERSATION_NOT_FOUND(404, "Conversation not found", HttpStatus.NOT_FOUND),
+    MESSAGE_REQUIRED(400, "Message content is required", HttpStatus.BAD_REQUEST),
+    MESSAGE_TOO_LONG(400, "Message exceeds maximum length of 2000 characters", HttpStatus.BAD_REQUEST),
+    CANNOT_MESSAGE_SELF(400, "You cannot send messages to yourself", HttpStatus.BAD_REQUEST),
+    CONVERSATION_ACCESS_DENIED(403, "You don't have access to this conversation", HttpStatus.FORBIDDEN),
+
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),
     ITEMS_OUT_OF_STOCK(422, "Some items are out of stock", HttpStatus.UNPROCESSABLE_ENTITY),

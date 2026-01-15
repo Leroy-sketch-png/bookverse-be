@@ -99,6 +99,52 @@ public class NimbusJwtService {
         }
     }
 
+    /**
+     * Validate a token and return true if valid, false otherwise.
+     * Does not throw exceptions - safe for use in WebSocket authentication.
+     */
+    public boolean validateToken(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        try {
+            verifyToken(token, false);
+            return true;
+        } catch (Exception e) {
+            log.debug("Token validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Extract user ID from JWT token.
+     * Token subject contains the user ID as a string.
+     */
+    public Long extractUserId(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            String subject = signedJWT.getJWTClaimsSet().getSubject();
+            return Long.valueOf(subject);
+        } catch (Exception e) {
+            log.error("Failed to extract user ID from token", e);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+    }
+
+    /**
+     * Extract username from JWT token.
+     * Username is stored as a custom claim.
+     */
+    public String extractUsername(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            return signedJWT.getJWTClaimsSet().getStringClaim("username");
+        } catch (Exception e) {
+            log.error("Failed to extract username from token", e);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+    }
+
     private String buildScope(User user) {
         if (user.getRoles() == null || user.getRoles().isEmpty()) return "";
         return user.getRoles().stream()

@@ -63,6 +63,11 @@ public class SecurityConfig {
             "/api/stripe/webhook"    // Stripe webhook (signature verified in controller)
     };
     
+    // WebSocket endpoints - handshake is public, auth is handled at STOMP layer
+    private final String[] PUBLIC_WEBSOCKET_ENDPOINTS = {
+            "/ws/**"    // WebSocket STOMP endpoint for real-time messaging
+    };
+    
     // Books endpoints - GET is public, POST requires auth
     private final String[] PUBLIC_BOOKS_GET = {
             "/api/books",       // GET all books
@@ -115,6 +120,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_SELLERS_GET).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_SHIPPING_GET).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(PUBLIC_WEBSOCKET_ENDPOINTS).permitAll() // WebSocket handshake
 
                         // 👇 QUAN TRỌNG: Cho phép method OPTIONS đi qua mà không cần Token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
