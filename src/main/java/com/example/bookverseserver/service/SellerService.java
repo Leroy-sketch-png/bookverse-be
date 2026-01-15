@@ -56,9 +56,33 @@ public class SellerService {
 
     // ============ Dashboard Stats ============
 
+    /**
+     * Calculate percentage trend comparing recent period to previous period.
+     * Positive = growth, Negative = decline.
+     */
+    private double calculateTrend(long recentValue, long previousValue) {
+        if (previousValue == 0) {
+            return recentValue > 0 ? 100.0 : 0.0;
+        }
+        return ((double) (recentValue - previousValue) / previousValue) * 100.0;
+    }
+    
+    private double calculateTrend(BigDecimal recentValue, BigDecimal previousValue) {
+        if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
+            return recentValue.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0;
+        }
+        return recentValue.subtract(previousValue)
+                .divide(previousValue, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .doubleValue();
+    }
+
     @Transactional(readOnly = true)
     public SellerStatsResponse getSellerStats(Long sellerId, int days) {
-        LocalDateTime startDate = LocalDateTime.now().minusDays(days);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime periodStart = now.minusDays(days);
+        LocalDateTime periodMidpoint = now.minusDays(days / 2);
+        LocalDateTime previousPeriodStart = periodStart.minusDays(days / 2);
         
         // Get seller's listings
         List<Listing> listings = listingRepository.findBySellerId(sellerId);
@@ -79,17 +103,39 @@ public class SellerService {
                 .filter(l -> l.getStatus() == ListingStatus.SOLD_OUT)
                 .count();
 
-        // Revenue calculation
-        BigDecimal totalRevenue = orderItems.stream()
+        // Revenue calculation - split by period for trend
+        BigDecimal recentRevenue = orderItems.stream()
                 .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
-                .map(oi -> oi.getSubtotal())
+                .filter(oi -> oi.getOrder().getCreatedAt().isAfter(periodMidpoint))
+                .map(OrderItem::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Total sales count
-        int totalSales = orderItems.stream()
+        
+        BigDecimal previousRevenue = orderItems.stream()
                 .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
+                .filter(oi -> oi.getOrder().getCreatedAt().isAfter(previousPeriodStart) 
+                           && oi.getOrder().getCreatedAt().isBefore(periodMidpoint))
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal totalRevenue = recentRevenue.add(previousRevenue);
+        double revenueTrend = calculateTrend(recentRevenue, previousRevenue);
+
+        // Total sales count - split by period for trend
+        int recentSales = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
+                .filter(oi -> oi.getOrder().getCreatedAt().isAfter(periodMidpoint))
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
+        
+        int previousSales = orderItems.stream()
+                .filter(oi -> oi.getOrder().getStatus() == OrderStatus.DELIVERED)
+                .filter(oi -> oi.getOrder().getCreatedAt().isAfter(previousPeriodStart) 
+                           && oi.getOrder().getCreatedAt().isBefore(periodMidpoint))
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+        
+        int totalSales = recentSales + previousSales;
+        double salesTrend = calculateTrend(recentSales, previousSales);
 
         // Pending orders (not delivered yet)
         long pendingOrders = orderItems.stream()
@@ -123,7 +169,7 @@ public class SellerService {
                 .distinct()
                 .count();
 
-        // Total views across all listings
+        // Total views across all listings (no historical data, so trend = 0)
         int totalViews = listings.stream()
                 .mapToInt(l -> l.getViews() != null ? l.getViews() : 0)
                 .sum();
@@ -140,15 +186,15 @@ public class SellerService {
         // Wishlist adds - count how many times seller's listings are in wishlists
         long wishlistAdds = listingIds.isEmpty() ? 0 : wishlistRepository.countByListingIdIn(listingIds);
 
-        // Build response
+        // Build response with calculated trends
         return SellerStatsResponse.builder()
                 .revenue(RevenueData.builder()
                         .total(totalRevenue)
-                        .trend(0.0) // TODO: Calculate trend
+                        .trend(revenueTrend)
                         .build())
                 .sales(SalesData.builder()
                         .total(totalSales)
-                        .trend(0.0)
+                        .trend(salesTrend)
                         .build())
                 .orders(OrdersBreakdown.builder()
                         .pending((int) pendingOrders)
@@ -165,7 +211,7 @@ public class SellerService {
                         .build())
                 .views(ViewsData.builder()
                         .total(totalViews)
-                        .trend(0.0)
+                        .trend(0.0) // No historical view data available
                         .build())
                 .rating(RatingData.builder()
                         .average(avgRating != null ? avgRating : 0.0)
@@ -177,7 +223,7 @@ public class SellerService {
                 .conversionRate(conversionRate)
                 .wishlistAdds(SellerStatsResponse.WishlistData.builder()
                         .total((int) wishlistAdds)
-                        .trend(0.0)
+                        .trend(0.0) // No historical wishlist data available
                         .build())
                 .build();
     }

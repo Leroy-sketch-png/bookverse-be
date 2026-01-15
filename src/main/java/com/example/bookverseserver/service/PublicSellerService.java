@@ -50,6 +50,7 @@ public class PublicSellerService {
     ListingRepository listingRepository;
     ReviewRepository reviewRepository;
     OrderItemRepository orderItemRepository;
+    SellerStatsService sellerStatsService;
 
     /**
      * Get a seller's public profile by username/slug.
@@ -76,16 +77,34 @@ public class PublicSellerService {
         long repeatBuyers = orderItemRepository.countRepeatBuyersBySellerId(seller.getId());
         double repeatBuyerRate = totalBuyers > 0 ? (repeatBuyers * 100.0 / totalBuyers) : 0.0;
 
+        // Get calculated stats from actual order data
+        SellerStatsService.SellerStats calculatedStats = sellerStatsService.getSellerStats(seller.getId());
+        boolean statsVerified = calculatedStats.isVerified();
+        
+        // Auto-derive seller specialty tags from their top 3 listing categories
+        List<String> topCategories = listingRepository.findTopCategoryNamesBySellerId(seller.getId());
+        List<String> sellerTags = topCategories.stream().limit(3).toList();
+        
+        // Use calculated values if available, otherwise fall back to self-declared
+        Double fulfillmentRate = calculatedStats.fulfillmentRate() != null 
+                ? calculatedStats.fulfillmentRate().doubleValue()
+                : (profile != null && profile.getFulfillmentRate() != null 
+                        ? profile.getFulfillmentRate().doubleValue() : 100.0);
+        
+        String responseTime = calculatedStats.responseTime() != null 
+                ? calculatedStats.responseTime()
+                : (profile != null && profile.getResponseTime() != null 
+                        ? profile.getResponseTime() : "< 1 hour");
+
         SellerProfileResponse.SellerStats stats = SellerProfileResponse.SellerStats.builder()
                 .totalSales(totalSales.intValue())
                 .averageRating(averageRating != null ? averageRating : 0.0)
                 .totalReviews(totalReviews)
-                .fulfillmentRate(profile != null && profile.getFulfillmentRate() != null 
-                        ? profile.getFulfillmentRate().doubleValue() : 100.0)
-                .responseTime(profile != null && profile.getResponseTime() != null 
-                        ? profile.getResponseTime() : "< 1 hour")
+                .fulfillmentRate(fulfillmentRate)
+                .responseTime(responseTime)
                 .repeatBuyerRate(repeatBuyerRate)
                 .membershipDuration(membershipDuration)
+                .statsVerified(statsVerified)
                 .build();
 
         return SellerProfileResponse.builder()
@@ -104,7 +123,7 @@ public class PublicSellerService {
                         ? profile.getIsProSeller() : false)
                 .badge(determineBadge(totalSales.intValue(), averageRating))
                 .stats(stats)
-                .tags(List.of()) // TODO: Add seller specialty tags
+                .tags(sellerTags)
                 .build();
     }
 

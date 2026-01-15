@@ -38,5 +38,12 @@ public class SellerProfileResponse {
         String responseTime;
         Double repeatBuyerRate;
         String membershipDuration;
+        
+        /**
+         * Indicates if fulfillmentRate and responseTime are calculated from 
+         * actual order data (true) or self-declared by seller (false).
+         */
+        @Builder.Default
+        Boolean statsVerified = false;
     }
 }

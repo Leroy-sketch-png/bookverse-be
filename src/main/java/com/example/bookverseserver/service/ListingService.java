@@ -724,13 +724,14 @@ public class ListingService {
      * Create BookMeta from Open Library canonical data.
      */
     private BookMeta createBookMetaFromOpenLibrary(RichBookData data, String isbn) {
-        // Resolve authors (create if not exist)
+        // Resolve authors (create if not exist) - case-insensitive with normalization
         var authors = new HashSet<Author>();
         if (data.getAuthors() != null) {
             for (String authorName : data.getAuthors()) {
-                Author author = authorRepository.findByName(authorName)
+                String normalizedName = com.example.bookverseserver.util.AuthorNameNormalizer.normalize(authorName);
+                Author author = authorRepository.findByNameIgnoreCase(normalizedName)
                         .orElseGet(() -> authorRepository.save(Author.builder()
-                                .name(authorName)
+                                .name(normalizedName) // Store normalized name
                                 .openLibraryId(data.getAuthorKeys() != null && !data.getAuthorKeys().isEmpty() 
                                         ? data.getAuthorKeys().get(0).replace("/authors/", "") : null)
                                 .build()));
@@ -814,10 +815,11 @@ public class ListingService {
      * Create BookMeta from seller-provided input (fallback, unverified).
      */
     private BookMeta createBookMetaFromSellerInput(SimpleListingCreationRequest request) {
-        // Resolve author
-        Author author = authorRepository.findByName(request.getAuthor())
+        // Resolve author - case-insensitive with normalization
+        String normalizedAuthorName = com.example.bookverseserver.util.AuthorNameNormalizer.normalize(request.getAuthor());
+        Author author = authorRepository.findByNameIgnoreCase(normalizedAuthorName)
                 .orElseGet(() -> authorRepository.save(Author.builder()
-                        .name(request.getAuthor())
+                        .name(normalizedAuthorName) // Store normalized name
                         .build()));
         
         // Resolve category

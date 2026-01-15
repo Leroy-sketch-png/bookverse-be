@@ -46,4 +46,29 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
          "LEFT JOIN FETCH o.shippingAddress " +
          "WHERE oi.seller.id = :sellerId")
   List<Order> findOrdersBySellerId(@Param("sellerId") Long sellerId);
+  
+  /**
+   * Calculate average shipping time (hours) for a seller's orders.
+   * Only considers orders that have been shipped (shippedAt is not null).
+   */
+  @Query("SELECT AVG(EXTRACT(EPOCH FROM (o.shippedAt - o.createdAt)) / 3600) " +
+         "FROM Order o JOIN o.items oi " +
+         "WHERE oi.seller.id = :sellerId AND o.shippedAt IS NOT NULL")
+  Double calculateAverageShippingTimeHours(@Param("sellerId") Long sellerId);
+  
+  /**
+   * Count total orders for a seller (excluding cancelled).
+   */
+  @Query("SELECT COUNT(DISTINCT o) FROM Order o JOIN o.items oi " +
+         "WHERE oi.seller.id = :sellerId AND o.status NOT IN :excludedStatuses")
+  Long countOrdersBySellerId(@Param("sellerId") Long sellerId, 
+                              @Param("excludedStatuses") List<OrderStatus> excludedStatuses);
+  
+  /**
+   * Count shipped/delivered orders for a seller (fulfilled orders).
+   */
+  @Query("SELECT COUNT(DISTINCT o) FROM Order o JOIN o.items oi " +
+         "WHERE oi.seller.id = :sellerId AND o.status IN :fulfilledStatuses")
+  Long countFulfilledOrdersBySellerId(@Param("sellerId") Long sellerId,
+                                       @Param("fulfilledStatuses") List<OrderStatus> fulfilledStatuses);
 }

@@ -177,9 +177,10 @@ public class AuthorService {
             }
         }
 
-        // 2. If not found by ID, try to find by Name
+        // 2. If not found by ID, try to find by Name (case-insensitive with normalization)
         if (name != null && !name.isEmpty()) {
-            Optional<Author> existingAuthor = authorRepository.findByName(name);
+            String normalizedName = com.example.bookverseserver.util.AuthorNameNormalizer.normalize(name);
+            Optional<Author> existingAuthor = authorRepository.findByNameIgnoreCase(normalizedName);
             if (existingAuthor.isPresent()) {
                 Author author = existingAuthor.get();
                 // Link OLID if we have it but DB doesn't

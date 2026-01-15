@@ -167,6 +167,25 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      */
     long countBySellerId(Long sellerId);
 
+    /**
+     * Get top category names for a seller based on their listing count.
+     * Returns category names ordered by frequency (most common first).
+     * Only counts active listings with a category assigned.
+     * 
+     * @param sellerId the seller's user ID
+     * @return list of category names (most popular first)
+     */
+    @Query("""
+            SELECT c.name FROM Listing l
+            JOIN l.category c
+            WHERE l.seller.id = :sellerId
+            AND l.status = 'ACTIVE'
+            AND l.deletedAt IS NULL
+            GROUP BY c.id, c.name
+            ORDER BY COUNT(l) DESC
+            """)
+    List<String> findTopCategoryNamesBySellerId(@Param("sellerId") Long sellerId);
+
     // ============ OPTIMIZED QUERIES (N+1 Prevention) ============
 
     /**

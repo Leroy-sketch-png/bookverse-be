@@ -24,4 +24,15 @@ public interface AuthorRepository extends JpaRepository<Author, Long> {
     Optional<Author> findByOpenLibraryId(String openLibraryId);
 
     Optional<Author> findByName(String name);
+    
+    /**
+     * Case-insensitive author lookup - prevents duplicate authors like 
+     * "J.K. Rowling" vs "j.k. rowling" vs "J. K. Rowling"
+     */
+    Optional<Author> findByNameIgnoreCase(String name);
+    
+    /**
+     * Check if an author with this name already exists (case-insensitive).
+     */
+    boolean existsByNameIgnoreCase(String name);
 }
