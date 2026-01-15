@@ -96,5 +96,163 @@ public class EmailService {
         }
         return otp.toString();
     }
+    
+    // ============================================================================
+    // ORDER NOTIFICATION EMAILS
+    // ============================================================================
+    
+    /**
+     * Send order confirmation email to buyer after successful payment.
+     */
+    public void sendOrderConfirmation(String toEmail, String customerName, String orderNumber, 
+                                       String totalAmount, int itemCount) {
+        String subject = "Order Confirmed — " + orderNumber;
+        String htmlContent = String.format("""
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f8f5f0; padding: 20px; border-radius: 8px;">
+                      <h2 style="color: #8B4513;">✓ Order Confirmed!</h2>
+                      <p>Hi %s,</p>
+                      <p>Thank you for your order! We've received your payment and your order is now being processed.</p>
+                      
+                      <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Order Number:</strong> %s</p>
+                        <p style="margin: 5px 0;"><strong>Items:</strong> %d book(s)</p>
+                        <p style="margin: 5px 0;"><strong>Total:</strong> %s</p>
+                      </div>
+                      
+                      <p>You'll receive another email when your order ships.</p>
+                      
+                      <p style="margin-top: 30px;">Happy reading! 📚</p>
+                      <p>The BookVerse Team</p>
+                    </div>
+                  </body>
+                </html>
+                """, customerName, orderNumber, itemCount, totalAmount);
+
+        sendEmailToRecipient(toEmail, customerName, subject, htmlContent);
+    }
+    
+    /**
+     * Send shipping notification email when order is shipped.
+     */
+    public void sendShippingNotification(String toEmail, String customerName, String orderNumber,
+                                          String trackingNumber, String carrier) {
+        String subject = "Your Order Has Shipped — " + orderNumber;
+        String trackingInfo = trackingNumber != null && !trackingNumber.isEmpty() 
+                ? String.format("<p style=\"margin: 5px 0;\"><strong>Tracking:</strong> %s (%s)</p>", trackingNumber, carrier != null ? carrier : "Standard")
+                : "<p style=\"margin: 5px 0;\"><em>Tracking information will be available soon.</em></p>";
+        
+        String htmlContent = String.format("""
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f8f5f0; padding: 20px; border-radius: 8px;">
+                      <h2 style="color: #8B4513;">📦 Your Order is On Its Way!</h2>
+                      <p>Hi %s,</p>
+                      <p>Great news! Your order has been shipped and is on its way to you.</p>
+                      
+                      <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Order Number:</strong> %s</p>
+                        %s
+                      </div>
+                      
+                      <p>You can track your order in your BookVerse account.</p>
+                      
+                      <p style="margin-top: 30px;">Happy reading! 📚</p>
+                      <p>The BookVerse Team</p>
+                    </div>
+                  </body>
+                </html>
+                """, customerName, orderNumber, trackingInfo);
+
+        sendEmailToRecipient(toEmail, customerName, subject, htmlContent);
+    }
+    
+    /**
+     * Send delivery confirmation email when order is delivered.
+     */
+    public void sendDeliveryConfirmation(String toEmail, String customerName, String orderNumber) {
+        String subject = "Your Order Has Been Delivered — " + orderNumber;
+        String htmlContent = String.format("""
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f8f5f0; padding: 20px; border-radius: 8px;">
+                      <h2 style="color: #8B4513;">🎉 Your Books Have Arrived!</h2>
+                      <p>Hi %s,</p>
+                      <p>Your order <strong>%s</strong> has been delivered!</p>
+                      
+                      <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p>We hope you love your new books. If you have a moment, we'd really appreciate a review!</p>
+                        <p>Reviews help other readers discover great books and support the sellers you bought from.</p>
+                      </div>
+                      
+                      <p style="margin-top: 30px;">Happy reading! 📚</p>
+                      <p>The BookVerse Team</p>
+                    </div>
+                  </body>
+                </html>
+                """, customerName, orderNumber);
+
+        sendEmailToRecipient(toEmail, customerName, subject, htmlContent);
+    }
+    
+    /**
+     * Send new order notification to seller.
+     */
+    public void sendNewOrderNotification(String toEmail, String sellerName, String orderNumber,
+                                          String buyerName, String totalAmount, int itemCount) {
+        String subject = "New Order Received — " + orderNumber;
+        String htmlContent = String.format("""
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f8f5f0; padding: 20px; border-radius: 8px;">
+                      <h2 style="color: #8B4513;">🛒 New Order!</h2>
+                      <p>Hi %s,</p>
+                      <p>You have a new order waiting to be fulfilled!</p>
+                      
+                      <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Order Number:</strong> %s</p>
+                        <p style="margin: 5px 0;"><strong>Buyer:</strong> %s</p>
+                        <p style="margin: 5px 0;"><strong>Items:</strong> %d book(s)</p>
+                        <p style="margin: 5px 0;"><strong>Total:</strong> %s</p>
+                      </div>
+                      
+                      <p>Log in to your seller dashboard to view the order details and ship the items.</p>
+                      
+                      <p style="margin-top: 30px;">Thank you for selling on BookVerse!</p>
+                      <p>The BookVerse Team</p>
+                    </div>
+                  </body>
+                </html>
+                """, sellerName, orderNumber, buyerName, itemCount, totalAmount);
+
+        sendEmailToRecipient(toEmail, sellerName, subject, htmlContent);
+    }
+    
+    /**
+     * Helper method to send email to a single recipient.
+     */
+    private void sendEmailToRecipient(String toEmail, String name, String subject, String htmlContent) {
+        List<Recipient> recipients = List.of(
+                Recipient.builder()
+                        .email(toEmail)
+                        .name(name)
+                        .build()
+        );
+
+        SendEmailRequest request = SendEmailRequest.builder()
+                .to(recipients)
+                .subject(subject)
+                .htmlContent(htmlContent)
+                .build();
+
+        try {
+            this.sendEmail(request);
+            log.info("📧 Order email sent: {} to {}", subject, toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send order email to {}: {}", toEmail, e.getMessage());
+            // Don't throw - order emails should not block order flow
+        }
+    }
 }
 

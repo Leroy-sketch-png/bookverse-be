@@ -113,17 +113,34 @@ public class AdminService {
      * Per Vision API_CONTRACTS.md - GET /admin/stats
      */
     public PlatformStatsResponse getPlatformStats(int periodDays) {
+        // Calculate date ranges for trend comparison
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime currentPeriodStart = now.minusDays(periodDays);
+        java.time.LocalDateTime previousPeriodStart = currentPeriodStart.minusDays(periodDays);
+        
         // User stats - REAL counts
         long totalUsers = userRepository.count();
         // Count by account type from UserProfile (stored as String in DB)
         long proSellers = userProfileRepository.countByIsProSellerTrue();
         long sellers = userProfileRepository.countByAccountType("SELLER") + proSellers;
         long buyers = totalUsers - sellers;
+        
+        // User trend: compare new users in current vs previous period
+        long currentPeriodUsers = userRepository.countByCreatedAtBetween(currentPeriodStart, now);
+        long previousPeriodUsers = userRepository.countByCreatedAtBetween(previousPeriodStart, currentPeriodStart);
+        double userTrend = calculateTrendPercentage(currentPeriodUsers, previousPeriodUsers);
 
         // Listing stats
         long activeListings = listingRepository.countByStatus(ListingStatus.ACTIVE);
         long soldOutListings = listingRepository.countByStatus(ListingStatus.SOLD_OUT);
         long draftListings = listingRepository.countByStatus(ListingStatus.DRAFT);
+        
+        // Listing trend: compare new active listings in current vs previous period
+        long currentPeriodListings = listingRepository.countByStatusAndCreatedAtBetween(
+                ListingStatus.ACTIVE, currentPeriodStart, now);
+        long previousPeriodListings = listingRepository.countByStatusAndCreatedAtBetween(
+                ListingStatus.ACTIVE, previousPeriodStart, currentPeriodStart);
+        double listingTrend = calculateTrendPercentage(currentPeriodListings, previousPeriodListings);
 
         // Order stats
         long totalOrders = orderRepository.count();
@@ -133,6 +150,14 @@ public class AdminService {
                 com.example.bookverseserver.enums.PaymentStatus.PAID);
         // Platform fee at 8% standard or 3% for PRO (using simplified 5% avg)
         BigDecimal platformFee = totalRevenue.multiply(BigDecimal.valueOf(0.05));
+        
+        // Revenue trend: compare revenue in current vs previous period
+        BigDecimal currentPeriodRevenue = transactionRepository.sumAmountByStatusAndDateRange(
+                com.example.bookverseserver.enums.PaymentStatus.PAID, currentPeriodStart, now);
+        BigDecimal previousPeriodRevenue = transactionRepository.sumAmountByStatusAndDateRange(
+                com.example.bookverseserver.enums.PaymentStatus.PAID, previousPeriodStart, currentPeriodStart);
+        double revenueTrend = calculateTrendPercentage(
+                currentPeriodRevenue.doubleValue(), previousPeriodRevenue.doubleValue());
 
         // Issue stats
         long pendingModeration = flaggedListingRepository.countByStatus(
@@ -144,35 +169,65 @@ public class AdminService {
         long pendingProApplications = proApplicationRepository.findByStatus(
             ApplicationStatus.PENDING, PageRequest.of(0, 1)
         ).getTotalElements();
+        
+        // Issues trend: compare new pending issues in current vs previous period
+        long currentPeriodFlags = flaggedListingRepository.countByStatusAndFlaggedAtBetween(
+                com.example.bookverseserver.enums.FlagStatus.PENDING, currentPeriodStart, now);
+        long previousPeriodFlags = flaggedListingRepository.countByStatusAndFlaggedAtBetween(
+                com.example.bookverseserver.enums.FlagStatus.PENDING, previousPeriodStart, currentPeriodStart);
+        long currentPeriodDisputes = disputeRepository.countByStatusAndCreatedAtBetween(
+                com.example.bookverseserver.enums.DisputeStatus.OPEN, currentPeriodStart, now);
+        long previousPeriodDisputes = disputeRepository.countByStatusAndCreatedAtBetween(
+                com.example.bookverseserver.enums.DisputeStatus.OPEN, previousPeriodStart, currentPeriodStart);
+        double issueTrend = calculateTrendPercentage(
+                currentPeriodFlags + currentPeriodDisputes,
+                previousPeriodFlags + previousPeriodDisputes);
 
         return PlatformStatsResponse.builder()
                 .users(PlatformStatsResponse.UserStats.builder()
                         .total(totalUsers)
-                        .trend(0.0) // Trend calculation requires historical data
+                        .trend(userTrend)
                         .buyers(buyers)
                         .sellers(sellers)
                         .proSellers(proSellers)
                         .build())
                 .revenue(PlatformStatsResponse.RevenueStats.builder()
                         .total(totalRevenue)
-                        .trend(0.0) // Trend calculation requires historical data
+                        .trend(revenueTrend)
                         .platformFee(platformFee)
                         .transactionCount(totalOrders)
                         .build())
                 .listings(PlatformStatsResponse.ListingStats.builder()
                         .active(activeListings)
-                        .trend(0.0) // Trend calculation requires historical data
+                        .trend(listingTrend)
                         .available(activeListings + draftListings)
                         .sold(soldOutListings)
                         .build())
                 .issues(PlatformStatsResponse.IssueStats.builder()
                         .pending(pendingModeration + pendingDisputes + pendingProApplications)
-                        .trend(0.0) // Trend calculation requires historical data
+                        .trend(issueTrend)
                         .moderation(pendingModeration)
                         .disputes(pendingDisputes)
                         .verifications(pendingProApplications)
                         .build())
                 .build();
+    }
+    
+    /**
+     * Calculate percentage trend: (current - previous) / previous * 100
+     * Returns 0 if previous is 0 (no previous data to compare).
+     * Positive = growth, Negative = decline.
+     */
+    private double calculateTrendPercentage(double current, double previous) {
+        if (previous == 0) {
+            // No previous data: if current > 0, it's infinite growth (cap at 100%)
+            return current > 0 ? 100.0 : 0.0;
+        }
+        return Math.round(((current - previous) / previous) * 10000.0) / 100.0; // Round to 2 decimals
+    }
+    
+    private double calculateTrendPercentage(long current, long previous) {
+        return calculateTrendPercentage((double) current, (double) previous);
     }
 
     /**

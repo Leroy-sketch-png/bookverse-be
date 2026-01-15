@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/vouchers")
 @RequiredArgsConstructor
@@ -26,6 +28,22 @@ import org.springframework.web.bind.annotation.*;
 public class VoucherController {
 
     VoucherService voucherService;
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(summary = "Get all vouchers", description = "Retrieves all vouchers. Requires ADMIN role.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Vouchers retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Admin access required")
+    })
+    public ApiResponse<List<VoucherResponse>> getAllVouchers() {
+        return ApiResponse.<List<VoucherResponse>>builder()
+                .code(1000)
+                .message("Vouchers retrieved successfully!")
+                .result(voucherService.getAllVouchers())
+                .build();
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -61,6 +79,20 @@ public class VoucherController {
                 .result(voucherService.getVoucherByCode(code))
                 .build();
     }
+    
+    @GetMapping("/available")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Get available vouchers", description = "Returns active vouchers that users can apply. No auth required.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Available vouchers retrieved")
+    })
+    public ApiResponse<List<VoucherResponse>> getAvailableVouchers() {
+        return ApiResponse.<List<VoucherResponse>>builder()
+                .code(1000)
+                .message("Available vouchers retrieved!")
+                .result(voucherService.getAvailableVouchers())
+                .build();
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -74,5 +106,26 @@ public class VoucherController {
     public void deleteVoucher(
             @Parameter(description = "Voucher ID", example = "1") @PathVariable("id") Long id) {
         voucherService.deleteVoucher(id);
+    }
+    
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(summary = "Update a voucher", description = "Updates an existing voucher. Requires ADMIN role.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Voucher updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - Admin access required"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Voucher not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Voucher code already exists")
+    })
+    public ApiResponse<VoucherResponse> updateVoucher(
+            @Parameter(description = "Voucher ID", example = "1") @PathVariable("id") Long id,
+            @RequestBody @Valid VoucherRequest voucherRequest) {
+        return ApiResponse.<VoucherResponse>builder()
+                .code(1000)
+                .message("Voucher updated successfully!")
+                .result(voucherService.updateVoucher(id, voucherRequest))
+                .build();
     }
 }

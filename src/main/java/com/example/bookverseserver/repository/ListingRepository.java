@@ -45,6 +45,29 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     void incrementViewCount(@Param("id") Long id);
 
     /**
+     * Atomically reserve stock for an order.
+     * Returns the number of rows affected (1 if successful, 0 if insufficient stock).
+     * Uses WHERE clause to prevent overselling - only succeeds if quantity >= requested amount.
+     * 
+     * @param id the listing ID
+     * @param quantity the quantity to reserve (decrement)
+     * @return 1 if successful, 0 if insufficient stock
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.quantity = l.quantity - :quantity, l.soldCount = l.soldCount + :quantity WHERE l.id = :id AND l.quantity >= :quantity")
+    int reserveStock(@Param("id") Long id, @Param("quantity") int quantity);
+
+    /**
+     * Atomically restore stock after order cancellation or failure.
+     * 
+     * @param id the listing ID
+     * @param quantity the quantity to restore (increment)
+     */
+    @Modifying
+    @Query("UPDATE Listing l SET l.quantity = l.quantity + :quantity, l.soldCount = l.soldCount - :quantity WHERE l.id = :id")
+    void restoreStock(@Param("id") Long id, @Param("quantity") int quantity);
+
+    /**
      * Find related listings for the same book from different sellers.
      * Returns only active, visible listings, excluding the current listing.
      * Ordered by price ascending to show best deals first.
@@ -129,6 +152,15 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * Count listings by status (for admin stats).
      */
     long countByStatus(ListingStatus status);
+
+    /**
+     * Count listings with specific status created within a date range (for trend calculations).
+     */
+    @Query("SELECT COUNT(l) FROM Listing l WHERE l.status = :status AND l.createdAt >= :start AND l.createdAt < :end")
+    long countByStatusAndCreatedAtBetween(
+            @Param("status") ListingStatus status,
+            @Param("start") java.time.LocalDateTime start,
+            @Param("end") java.time.LocalDateTime end);
 
     /**
      * Count all listings by seller ID.
@@ -292,4 +324,36 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             @Param("excludeIds") List<Long> excludeIds,
             Pageable pageable
     );
+    
+    // ============ ON SALE / PROMOTIONS QUERIES ============
+    
+    /**
+     * Find active listings that have an active promotion (for "On Sale" section).
+     * Only returns listings with ACTIVE status and a linked promotion that is ACTIVE.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            LEFT JOIN FETCH l.activePromotion ap
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            AND l.activePromotion IS NOT NULL
+            AND l.activePromotion.status = 'ACTIVE'
+            ORDER BY ap.discountPercentage DESC, l.soldCount DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            AND l.activePromotion IS NOT NULL
+            AND l.activePromotion.status = 'ACTIVE'
+            """)
+    Page<Listing> findOnSaleWithDetails(Pageable pageable);
 }

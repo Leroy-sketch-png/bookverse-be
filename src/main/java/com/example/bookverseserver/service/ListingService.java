@@ -227,6 +227,28 @@ public class ListingService {
                 listingPage.getTotalElements(),
                 listingPage.getTotalPages());
     }
+    
+    /**
+     * Get listings with active promotions ("On Sale" section).
+     * Returns listings sorted by discount percentage (highest first).
+     */
+    @Transactional(readOnly = true)
+    public PagedResponse<ListingResponse> getOnSaleListings(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        
+        Page<Listing> listingPage = listingRepository.findOnSaleWithDetails(pageable);
+        
+        List<ListingResponse> responses = listingPage.getContent().stream()
+                .map(listingMapper::toListingResponse)
+                .toList();
+
+        return PagedResponse.of(
+                responses,
+                page,
+                size,
+                listingPage.getTotalElements(),
+                listingPage.getTotalPages());
+    }
 
     private Sort buildSort(String sortBy, String sortOrder) {
         String field = switch (sortBy != null ? sortBy : "createdAt") {

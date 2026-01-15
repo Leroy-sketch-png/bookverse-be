@@ -186,4 +186,28 @@ public class BookController {
         String bookId = bookService.createBookFromOpenLibrary(request.getIsbn());
         return ApiResponse.<String>builder().message("Book created successfully").result(bookId).build();
     }
+    
+    @GetMapping("/price-stats/{isbn}")
+    @Operation(
+        summary = "Get market price statistics for a book by ISBN",
+        description = "Returns min, max, and average prices for active listings of a book in the marketplace. " +
+                     "**Use case**: Show price suggestions to sellers when they create a new listing. " +
+                     "Returns null if the book doesn't exist in our catalog or has no active listings."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "Price stats retrieved (may be null if no listings exist)"
+        )
+    })
+    public ApiResponse<BookService.PriceStats> getMarketPriceStats(
+        @Parameter(description = "ISBN-10 or ISBN-13 (hyphens allowed)", example = "9780134685991", required = true)
+        @PathVariable String isbn
+    ) {
+        BookService.PriceStats stats = bookService.getMarketPriceStats(isbn);
+        return ApiResponse.<BookService.PriceStats>builder()
+                .result(stats)
+                .message(stats != null ? "Price stats found" : "No listings found for this book")
+                .build();
+    }
 }

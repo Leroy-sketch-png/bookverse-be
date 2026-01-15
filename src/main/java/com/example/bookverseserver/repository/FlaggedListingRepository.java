@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -28,6 +29,15 @@ public interface FlaggedListingRepository extends JpaRepository<FlaggedListing, 
     long countByStatus(FlagStatus status);
     
     long countBySeverity(FlagSeverity severity);
+    
+    /**
+     * Count flags with specific status created within a date range (for trend calculations).
+     */
+    @Query("SELECT COUNT(f) FROM FlaggedListing f WHERE f.status = :status AND f.flaggedAt >= :start AND f.flaggedAt < :end")
+    long countByStatusAndFlaggedAtBetween(
+            @Param("status") FlagStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
     
     @Query("SELECT f FROM FlaggedListing f " +
            "LEFT JOIN FETCH f.listing l " +

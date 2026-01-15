@@ -49,6 +49,7 @@ public enum ErrorCode {
     VOUCHER_MAX_USAGE_PER_USER_REQUIRED(400, "Max usage per user is required", HttpStatus.BAD_REQUEST),
     VOUCHER_MAX_USAGE_PER_USER_INVALID(400, "Max usage per user must be positive", HttpStatus.BAD_REQUEST),
     VOUCHER_MIN_ORDER_VALUE_NOT_MET(400, "Order value does not meet the minimum requirement", HttpStatus.BAD_REQUEST),
+    VOUCHER_USAGE_LIMIT_EXCEEDED(400, "You have reached the maximum usage limit for this voucher", HttpStatus.BAD_REQUEST),
 
     // Shipping Address Validation
     SHIPPING_ADDRESS_FULL_NAME_REQUIRED(400, "Full name is required", HttpStatus.BAD_REQUEST),

@@ -54,6 +54,7 @@ public class CheckoutService {
     VoucherService voucherService;
     ShippingAddressMapper shippingAddressMapper;
     SmsService smsService;
+    EmailService emailService;
 
     // Cryptographically secure random for order numbers
     @NonFinal
@@ -188,8 +189,8 @@ public class CheckoutService {
         
         BigDecimal subtotal = cart.getTotalPrice();
         
-        // Validate and calculate discount
-        BigDecimal discountAmount = voucherService.calculateDiscount(code, subtotal);
+        // Validate and calculate discount (with per-user limit check)
+        BigDecimal discountAmount = voucherService.calculateDiscountForUser(code, subtotal, userId);
         
         // Get voucher details
         Voucher voucher = voucherRepository.findByCode(code)
@@ -289,17 +290,21 @@ public class CheckoutService {
         
         Order savedOrder = orderRepository.save(order);
         
-        // Create Order Items and deduct stock
+        // Create Order Items and reserve stock ATOMICALLY
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cart.getCartItems()) {
             OrderItem orderItem = OrderItem.fromCartItem(cartItem, savedOrder);
             orderItems.add(orderItem);
             
-            // Deduct stock
-            Listing listing = cartItem.getListing();
-            listing.setQuantity(listing.getQuantity() - cartItem.getQuantity());
-            listing.setSoldCount(listing.getSoldCount() + cartItem.getQuantity());
-            listingRepository.save(listing);
+            // Reserve stock atomically - prevents overselling via SQL WHERE clause
+            int reserved = listingRepository.reserveStock(
+                    cartItem.getListing().getId(), 
+                    cartItem.getQuantity()
+            );
+            if (reserved == 0) {
+                // Insufficient stock - rollback transaction
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
         }
         orderItemRepository.saveAll(orderItems);
         
@@ -310,6 +315,11 @@ public class CheckoutService {
                 .note("Order created, awaiting payment")
                 .build();
         orderTimelineRepository.save(timeline);
+        
+        // Record voucher usage (after successful order creation)
+        if (promoCode != null) {
+            voucherService.recordVoucherUsage(promoCode, user);
+        }
         
         // Create REAL Stripe Payment Intent
         PaymentIntent stripeIntent;
@@ -362,6 +372,9 @@ public class CheckoutService {
         
         // Send order confirmation SMS to buyer (async, fails silently)
         sendOrderConfirmationSms(savedOrder, shippingAddress);
+        
+        // Send order confirmation EMAIL to buyer (async, fails silently)
+        sendOrderConfirmationEmail(savedOrder);
         
         // Notify sellers about new order (async, fails silently)
         notifySellersNewOrder(savedOrder);
@@ -561,16 +574,22 @@ public class CheckoutService {
 
         Order savedOrder = orderRepository.save(order);
 
+        // Reserve stock atomically for each item
         List<OrderItem> orderItems = new ArrayList<>();
-        cart.getCartItems().forEach(cartItem -> {
+        for (CartItem cartItem : cart.getCartItems()) {
             OrderItem orderItem = OrderItem.fromCartItem(cartItem, savedOrder);
             orderItems.add(orderItem);
 
-            Listing listing = cartItem.getListing();
-            listing.setQuantity(listing.getQuantity() - cartItem.getQuantity());
-            listing.setSoldCount(listing.getSoldCount() + cartItem.getQuantity());
-            listingRepository.save(listing);
-        });
+            // Reserve stock atomically - prevents overselling via SQL WHERE clause
+            int reserved = listingRepository.reserveStock(
+                    cartItem.getListing().getId(),
+                    cartItem.getQuantity()
+            );
+            if (reserved == 0) {
+                // Insufficient stock - rollback transaction
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+        }
         orderItemRepository.saveAll(orderItems);
 
         OrderTimeline timeline = OrderTimeline.builder()
@@ -682,7 +701,18 @@ public class CheckoutService {
                         log.info("Sent new order SMS to seller {} for order {}", seller.getId(), order.getOrderNumber());
                     }
                     
-                    // TODO: Also send email notification to seller
+                    // Send email notification to seller
+                    String buyerName = order.getUser().getUserProfile() != null && order.getUser().getUserProfile().getDisplayName() != null
+                            ? order.getUser().getUserProfile().getDisplayName()
+                            : order.getUser().getUsername();
+                    emailService.sendNewOrderNotification(
+                            seller.getEmail(),
+                            sellerName,
+                            order.getOrderNumber(),
+                            buyerName,
+                            sellerTotal.setScale(2).toPlainString(),
+                            itemCount
+                    );
                     
                 } catch (Exception e) {
                     log.warn("Failed to notify seller {}: {}", entry.getKey(), e.getMessage());
@@ -692,6 +722,36 @@ public class CheckoutService {
         } catch (Exception e) {
             log.warn("Failed to notify sellers for order {}: {}", order.getId(), e.getMessage());
             // Don't rethrow - notification failure shouldn't break checkout
+        }
+    }
+    
+    /**
+     * Send order confirmation email to buyer.
+     * Fails silently - email is not critical to checkout flow.
+     */
+    private void sendOrderConfirmationEmail(Order order) {
+        try {
+            User buyer = order.getUser();
+            String buyerEmail = buyer.getEmail();
+            String buyerName = buyer.getUserProfile() != null && buyer.getUserProfile().getDisplayName() != null
+                    ? buyer.getUserProfile().getDisplayName()
+                    : buyer.getUsername();
+            
+            int itemCount = order.getItems() != null ? order.getItems().size() : 0;
+            String totalAmount = order.getTotalAmount().setScale(2).toPlainString();
+            
+            emailService.sendOrderConfirmation(
+                    buyerEmail,
+                    buyerName,
+                    order.getOrderNumber(),
+                    totalAmount,
+                    itemCount
+            );
+            
+            log.info("Order confirmation email sent to {} for order {}", buyerEmail, order.getOrderNumber());
+        } catch (Exception e) {
+            log.warn("Failed to send order confirmation email for order {}: {}", order.getId(), e.getMessage());
+            // Don't rethrow - email failure shouldn't break checkout flow
         }
     }
 }

@@ -14,6 +14,7 @@ import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.OrderMapper;
+import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.OrderRepository;
 import com.example.bookverseserver.repository.OrderTimelineRepository;
@@ -43,9 +44,11 @@ public class OrderService {
   OrderItemRepository orderItemRepository;
   OrderTimelineRepository orderTimelineRepository;
   UserRepository userRepository;
+  ListingRepository listingRepository;
   OrderMapper orderMapper;
   TransactionService transactionService;
   SmsService smsService;
+  EmailService emailService;
   
   // Valid status transitions for seller
   private static final Set<OrderStatus> SELLER_ALLOWED_STATUSES = Set.of(
@@ -115,10 +118,10 @@ public class OrderService {
         .build();
     orderTimelineRepository.save(timeline);
 
-    // Restore stock logic
+    // Restore stock atomically for each item
     order.getItems().forEach(item -> {
       if (item.getListing() != null) {
-        item.getListing().setQuantity(item.getListing().getQuantity() + item.getQuantity());
+        listingRepository.restoreStock(item.getListing().getId(), item.getQuantity());
       }
     });
 
@@ -247,9 +250,12 @@ public class OrderService {
     // Send SMS notification to buyer (async, don't block on failure)
     sendOrderStatusSms(order, newStatus);
     
-    log.info("Seller {} updated order {} status from {} to {}", 
+    // Send email notification to buyer
+    sendOrderStatusEmail(order, newStatus, request);
+
+    log.info("Seller {} updated order {} status from {} to {}",
         sellerId, orderId, previousStatus, newStatus);
-    
+
     return UpdateOrderStatusResponse.builder()
         .id(order.getId())
         .status(order.getStatus())
@@ -258,22 +264,22 @@ public class OrderService {
         .updatedAt(now)
         .build();
   }
-  
+
   private String buildTimelineNote(OrderStatus from, OrderStatus to, UpdateOrderStatusRequest request) {
     StringBuilder note = new StringBuilder();
     note.append("Status changed from ").append(from).append(" to ").append(to);
-    
+
     if (to == OrderStatus.SHIPPED && request.getTrackingNumber() != null) {
       note.append(". Tracking: ").append(request.getTrackingNumber());
       if (request.getCarrier() != null) {
         note.append(" (").append(request.getCarrier()).append(")");
       }
     }
-    
+
     if (request.getNote() != null && !request.getNote().isBlank()) {
       note.append(". ").append(request.getNote());
     }
-    
+
     return note.toString();
   }
   
@@ -315,6 +321,45 @@ public class OrderService {
     } catch (Exception e) {
       log.warn("Failed to send SMS for order {}: {}", order.getId(), e.getMessage());
       // Don't rethrow - SMS failure shouldn't break order flow
+    }
+  }
+  
+  /**
+   * Send email notification based on order status change.
+   * Fails silently - email is not critical to order flow.
+   */
+  private void sendOrderStatusEmail(Order order, OrderStatus status, UpdateOrderStatusRequest request) {
+    try {
+      User buyer = order.getUser();
+      String buyerEmail = buyer.getEmail();
+      String buyerName = buyer.getUserProfile() != null && buyer.getUserProfile().getDisplayName() != null
+          ? buyer.getUserProfile().getDisplayName()
+          : buyer.getUsername();
+      
+      switch (status) {
+        case SHIPPED:
+          emailService.sendShippingNotification(
+              buyerEmail,
+              buyerName,
+              order.getOrderNumber(),
+              request.getTrackingNumber(),
+              request.getCarrier()
+          );
+          break;
+        case DELIVERED:
+          emailService.sendDeliveryConfirmation(
+              buyerEmail,
+              buyerName,
+              order.getOrderNumber()
+          );
+          break;
+        default:
+          // No email for other status changes via seller update
+          break;
+      }
+    } catch (Exception e) {
+      log.warn("Failed to send email for order {}: {}", order.getId(), e.getMessage());
+      // Don't rethrow - email failure shouldn't break order flow
     }
   }
 }

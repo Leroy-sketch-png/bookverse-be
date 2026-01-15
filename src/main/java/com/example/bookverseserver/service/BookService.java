@@ -427,4 +427,61 @@ public class BookService {
             return null;
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MARKET PRICE STATS - For seller price suggestions
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Get market price statistics for a book by ISBN.
+     * Returns min/max/avg prices from active listings in the marketplace.
+     * 
+     * @param isbn ISBN-10 or ISBN-13
+     * @return PriceStats or null if book not found/no listings
+     */
+    public PriceStats getMarketPriceStats(String isbn) {
+        String cleanIsbn = isbn.replaceAll("[\\s-]", "");
+        
+        Optional<BookMeta> bookMetaOpt = bookMetaRepository.findByIsbn(cleanIsbn);
+        if (bookMetaOpt.isEmpty()) {
+            return null;
+        }
+        
+        BookMeta bookMeta = bookMetaOpt.get();
+        List<Listing> activeListings = listingRepository.findByBookMetaAndStatusAndVisibility(
+            bookMeta, ListingStatus.ACTIVE, true);
+        
+        if (activeListings.isEmpty()) {
+            return null;
+        }
+        
+        List<BigDecimal> prices = activeListings.stream()
+            .map(Listing::getPrice)
+            .filter(Objects::nonNull)
+            .sorted()
+            .toList();
+        
+        if (prices.isEmpty()) {
+            return null;
+        }
+        
+        BigDecimal min = prices.get(0);
+        BigDecimal max = prices.get(prices.size() - 1);
+        BigDecimal avg = prices.stream()
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(BigDecimal.valueOf(prices.size()), 2, java.math.RoundingMode.HALF_UP);
+        
+        return new PriceStats(min, max, avg, prices.size(), "USD");
+    }
+    
+    /**
+     * Price statistics for a book in the marketplace.
+     */
+    public record PriceStats(
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
+        BigDecimal avgPrice,
+        int totalListings,
+        String currency
+    ) {}
 }

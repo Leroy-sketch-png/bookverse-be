@@ -103,6 +103,27 @@ public class ListingController {
         }
 
         /**
+         * Get listings currently on sale (with active promotions).
+         * Endpoint: GET /api/listings/on-sale
+         * Example: GET /api/listings/on-sale?page=1&size=12
+         * 
+         * Returns listings that have an active promotion, sorted by discount percentage.
+         * Useful for homepage "On Sale" sections.
+         */
+        @GetMapping("/on-sale")
+        public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getOnSaleListings(
+                        @RequestParam(defaultValue = "1") int page,
+                        @RequestParam(defaultValue = "12") int size) {
+                // Convert 1-indexed (API) to 0-indexed (Spring)
+                int pageIndex = Math.max(0, page - 1);
+                PagedResponse<ListingResponse> result = listingService.getOnSaleListings(pageIndex, size);
+
+                return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
+                                .result(result)
+                                .build());
+        }
+
+        /**
          * Get listings by seller ID (public browsing).
          * Endpoint: GET /api/listings/seller/{sellerId}
          * Example: GET /api/listings/seller/2?page=0&size=20

@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Payment, Long> {
@@ -19,6 +21,13 @@ public interface TransactionRepository extends JpaRepository<Payment, Long> {
     // Platform revenue: sum of all PAID payments
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status")
     BigDecimal sumAmountByStatus(PaymentStatus status);
+    
+    // Platform revenue in a date range (for trend calculations)
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = :status AND p.createdAt >= :start AND p.createdAt < :end")
+    BigDecimal sumAmountByStatusAndDateRange(
+            @Param("status") PaymentStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
     
     // Count by status
     long countByStatus(PaymentStatus status);

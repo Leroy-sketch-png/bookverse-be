@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  * Exposes non-sensitive platform data for marketing and trust-building.
  */
 @RestController
-@RequestMapping("/public")
+@RequestMapping("/api/public")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Public", description = "Public platform information endpoints")

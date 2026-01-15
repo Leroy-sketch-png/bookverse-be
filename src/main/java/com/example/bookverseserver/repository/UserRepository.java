@@ -55,4 +55,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = :roleName AND (LOWER(u.username) LIKE :search OR LOWER(u.email) LIKE :search)")
     Page<User> searchUsersByRole(@Param("search") String search, @Param("roleName") RoleName roleName, Pageable pageable);
+
+    /**
+     * Count users created within a date range (for trend calculations).
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :start AND u.createdAt < :end")
+    long countByCreatedAtBetween(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 }

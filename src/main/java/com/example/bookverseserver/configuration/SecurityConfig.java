@@ -52,6 +52,7 @@ public class SecurityConfig {
             "/api/categories",       // GET categories is public for browsing
             "/api/categories/{id}",  // GET single category
             "/api/vouchers/{code}",
+            "/api/vouchers/available",  // GET available vouchers for cart page
             "/api/v1/transactions/**",
             "/error"
     };
@@ -66,7 +67,8 @@ public class SecurityConfig {
     private final String[] PUBLIC_BOOKS_GET = {
             "/api/books",       // GET all books
             "/api/books/{id}",  // GET book by ID
-            "/api/books/lookup/{isbn}"  // GET book preview by ISBN (no auth, no DB write)
+            "/api/books/lookup/{isbn}",  // GET book preview by ISBN (no auth, no DB write)
+            "/api/books/price-stats/{isbn}"  // GET market price stats for seller price suggestions
     };
     
     // Listings endpoints - GET is public for browsing marketplace
@@ -74,6 +76,7 @@ public class SecurityConfig {
             "/api/listings",           // GET all listings (browse marketplace)
             "/api/listings/{id}",      // GET single listing detail
             "/api/listings/{id}/reviews",  // GET reviews for a listing
+            "/api/listings/on-sale",   // GET listings with active promotions
             "/api/listings/seller/{sellerId}"  // GET seller's listings (public browsing)
     };
     
