@@ -49,9 +49,9 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     @Query("""
         SELECT c FROM Conversation c
         LEFT JOIN FETCH c.buyer b
-        LEFT JOIN FETCH b.profile
+        LEFT JOIN FETCH b.userProfile
         LEFT JOIN FETCH c.seller s
-        LEFT JOIN FETCH s.profile
+        LEFT JOIN FETCH s.userProfile
         LEFT JOIN FETCH c.listing l
         LEFT JOIN FETCH l.bookMeta
         LEFT JOIN FETCH c.order

@@ -15,6 +15,7 @@ import com.example.bookverseserver.mapper.CategoryMapper;
 import com.example.bookverseserver.repository.CategoryRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)
 public class CategoryService {
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;

@@ -45,6 +45,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class StripeConnectService {
 
     final UserProfileRepository userProfileRepository;

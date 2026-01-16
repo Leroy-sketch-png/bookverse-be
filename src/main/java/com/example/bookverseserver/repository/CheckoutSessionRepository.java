@@ -15,6 +15,23 @@ public interface CheckoutSessionRepository extends JpaRepository<CheckoutSession
   Optional<CheckoutSession> findByPaymentIntentId(String paymentIntentId);
   
   /**
+   * Find checkout session with fully loaded cart for order creation.
+   * Eagerly loads: cart -> cartItems -> listing -> photos, bookMeta -> authors, images
+   */
+  @Query("SELECT DISTINCT cs FROM CheckoutSession cs " +
+         "LEFT JOIN FETCH cs.user " +
+         "LEFT JOIN FETCH cs.cart c " +
+         "LEFT JOIN FETCH c.cartItems ci " +
+         "LEFT JOIN FETCH ci.listing l " +
+         "LEFT JOIN FETCH l.photos " +
+         "LEFT JOIN FETCH l.seller " +
+         "LEFT JOIN FETCH l.bookMeta bm " +
+         "LEFT JOIN FETCH bm.authors " +
+         "LEFT JOIN FETCH bm.images " +
+         "WHERE cs.id = :sessionId")
+  Optional<CheckoutSession> findByIdWithFullCart(@Param("sessionId") Long sessionId);
+  
+  /**
    * Delete expired checkout sessions that are older than the cutoff date.
    * Only deletes sessions that are not completed (status != 'COMPLETED').
    * @param cutoffDate Delete sessions created before this date

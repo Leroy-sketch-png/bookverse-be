@@ -22,6 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class SellerSettingsService {
     
     SellerSettingsRepository sellerSettingsRepository;

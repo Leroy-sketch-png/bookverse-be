@@ -48,7 +48,7 @@ public class CheckoutSession {
 
   @Column(length = 3)
   @Builder.Default
-  String currency = "USD";
+  String currency = "VND";
 
   @Column(name = "expires_at", nullable = false)
   LocalDateTime expiresAt;

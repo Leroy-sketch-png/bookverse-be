@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class ProSellerService {
 
     ProSellerApplicationRepository applicationRepository;

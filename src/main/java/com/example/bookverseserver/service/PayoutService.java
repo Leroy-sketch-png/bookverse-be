@@ -47,7 +47,7 @@ public class PayoutService {
 
     private static final BigDecimal PRO_COMMISSION_RATE = new BigDecimal("0.03");  // 3%
     private static final BigDecimal CASUAL_COMMISSION_RATE = new BigDecimal("0.08"); // 8%
-    private static final BigDecimal MINIMUM_PAYOUT = new BigDecimal("10.00");
+    private static final BigDecimal MINIMUM_PAYOUT = new BigDecimal("100000");
 
     /**
      * Get seller's balance information

@@ -41,7 +41,7 @@ public class Payment {
 
     @Column(length = 3)
     @Builder.Default
-    String currency = "USD";
+    String currency = "VND";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -164,7 +164,7 @@ public enum ErrorCode {
 
     // --- Payout ---
     PAYOUT_NOT_FOUND(404, "Payout not found", HttpStatus.NOT_FOUND),
-    MINIMUM_PAYOUT_AMOUNT(400, "Minimum payout amount is $10.00", HttpStatus.BAD_REQUEST),
+    MINIMUM_PAYOUT_AMOUNT(400, "Minimum payout amount is ₫100,000", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_BALANCE(400, "Insufficient balance for this payout", HttpStatus.BAD_REQUEST),
     NOT_A_SELLER(403, "You must be a seller to access this resource", HttpStatus.FORBIDDEN),
     INVALID_PAYOUT_STATUS(400, "Payout is not in a valid status for this operation", HttpStatus.BAD_REQUEST),
@@ -183,6 +183,12 @@ public enum ErrorCode {
     MESSAGE_TOO_LONG(400, "Message exceeds maximum length of 2000 characters", HttpStatus.BAD_REQUEST),
     CANNOT_MESSAGE_SELF(400, "You cannot send messages to yourself", HttpStatus.BAD_REQUEST),
     CONVERSATION_ACCESS_DENIED(403, "You don't have access to this conversation", HttpStatus.FORBIDDEN),
+
+    // --- File Upload ---
+    FILE_REQUIRED(400, "File is required", HttpStatus.BAD_REQUEST),
+    FILE_TOO_LARGE(400, "File size exceeds maximum allowed (5MB)", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_TYPE(400, "Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed", HttpStatus.BAD_REQUEST),
+    // FILE_UPLOAD_FAILED already defined at top of enum
 
     // --- 422 UNPROCESSABLE ENTITY ---
     INVALID_PROMO_CODE(422, "Invalid or expired promo code", HttpStatus.UNPROCESSABLE_ENTITY),

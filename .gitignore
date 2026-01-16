@@ -58,3 +58,18 @@ replay_pid*
 
 # Ignore environment variable files
 .env
+
+# ============================================================================
+# SECURITY: Sensitive configuration files with secrets
+# These files contain API keys, passwords, and other secrets.
+# Use environment variables in production instead.
+# ============================================================================
+application-prod.properties
+application-local.properties
+application-secrets.properties
+*-secrets.properties
+*.secret.properties
+
+# Never commit files with "secret" or "prod" in name (safety net)
+*secret*
+*credentials*

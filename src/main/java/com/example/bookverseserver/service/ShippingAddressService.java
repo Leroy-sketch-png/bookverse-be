@@ -9,12 +9,12 @@ import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.ShippingAddressMapper;
 import com.example.bookverseserver.repository.ShippingAddressRepository;
 import com.example.bookverseserver.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class ShippingAddressService {
 
     ShippingAddressRepository shippingAddressRepository;

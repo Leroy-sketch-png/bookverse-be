@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class WishlistService {
 
     private final WishlistRepository wishlistRepository;
@@ -40,16 +41,23 @@ public class WishlistService {
     private final UserRepository userRepository;
 
     public WishlistResponse getUserFavorites(Long userId, Pageable pageable) {
-        Page<Wishlist> wishlistPage = wishlistRepository.findByUserId(userId, pageable);
-
-        // Map wishlist items to WishlistItemDTO
-        List<WishlistItemDTO> items = wishlistPage.getContent().stream()
-                .map(this::mapToDTO)
-                .collect(java.util.stream.Collectors.toList());
+        // Use custom query with JOIN FETCH to prevent LazyInitializationException
+        List<Wishlist> allWishlists = wishlistRepository.findByUserIdWithDetails(userId);
+        
+        // Manual pagination since we can't use Pageable with JOIN FETCH multiple bags
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allWishlists.size());
+        
+        List<WishlistItemDTO> items = allWishlists.subList(
+                Math.min(start, allWishlists.size()), 
+                Math.min(end, allWishlists.size())
+            ).stream()
+            .map(this::mapToDTO)
+            .collect(java.util.stream.Collectors.toList());
 
         return WishlistResponse.builder()
-                .items(items) // Return actual items
-                .totalFavorites(wishlistPage.getTotalElements())
+                .items(items)
+                .totalFavorites((long) allWishlists.size())
                 .build();
     }
 

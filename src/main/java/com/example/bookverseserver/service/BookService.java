@@ -25,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class BookService {
 
     private final BookMetaRepository bookMetaRepository;
@@ -149,7 +151,7 @@ public class BookService {
                     .bookMeta(newBookMeta)
                     .isCover(true)
                     .build();
-            if (newBookMeta.getImages() == null) newBookMeta.setImages(new ArrayList<>());
+            if (newBookMeta.getImages() == null) newBookMeta.setImages(new java.util.HashSet<>());
             newBookMeta.getImages().add(coverImage);
         }
 
@@ -216,8 +218,27 @@ public class BookService {
         };
 
         Page<BookMeta> bookMetaPage = bookMetaRepository.findAll(spec, pageable);
+        
+        // Batch fetch listing aggregations to avoid N+1 queries
+        List<Long> bookIds = bookMetaPage.getContent().stream()
+                .map(BookMeta::getId)
+                .collect(Collectors.toList());
+        
+        Map<Long, ListingAggregation> listingAggregations = new HashMap<>();
+        if (!bookIds.isEmpty()) {
+            List<Object[]> aggregations = listingRepository.findListingAggregationsByBookIds(bookIds);
+            for (Object[] row : aggregations) {
+                Long bookId = (Long) row[0];
+                Long count = (Long) row[1];
+                BigDecimal minPrice = (BigDecimal) row[2];
+                BigDecimal maxPrice = (BigDecimal) row[3];
+                String currency = (String) row[4];
+                listingAggregations.put(bookId, new ListingAggregation(count.intValue(), minPrice, maxPrice, currency));
+            }
+        }
+        
         List<BookResponse> bookResponses = bookMetaPage.getContent().stream()
-                .map(this::convertToBookResponse)
+                .map(bm -> convertToBookResponseWithAggregation(bm, listingAggregations.get(bm.getId())))
                 .collect(Collectors.toList());
 
         // Use PagedResponse with correct meta structure
@@ -234,6 +255,11 @@ public class BookService {
                 .result(pagedResponse)
                 .build();
     }
+    
+    /**
+     * Simple record to hold listing aggregation data.
+     */
+    private record ListingAggregation(int count, BigDecimal minPrice, BigDecimal maxPrice, String currency) {}
 
     public ApiResponse<BookDetailResponse> getBookById(String bookId) {
         return bookMetaRepository.findById(bookId)
@@ -282,6 +308,40 @@ public class BookService {
         
         return bookResponse;
     }
+    
+    /**
+     * Optimized conversion that uses pre-fetched listing aggregation data.
+     * Avoids N+1 queries by using batch-fetched data from getBooks().
+     */
+    private BookResponse convertToBookResponseWithAggregation(BookMeta bookMeta, ListingAggregation aggregation) {
+        BookResponse bookResponse = new BookResponse();
+        bookResponse.setId(bookMeta.getId());
+        bookResponse.setTitle(bookMeta.getTitle());
+        bookResponse.setIsbn(bookMeta.getIsbn());
+        bookResponse.setAuthors(bookMeta.getAuthors().stream()
+                .map(authorMapper::toAuthorResponse)
+                .collect(Collectors.toList()));
+        bookResponse.setCategories(bookMeta.getCategories().stream()
+                .map(category -> new CategoryResponse(category.getId(), category.getName()))
+                .collect(Collectors.toList()));
+        bookResponse.setCoverUrl(bookMeta.getCoverImageUrl());
+        
+        // Use pre-fetched aggregation data (no additional queries!)
+        if (aggregation != null) {
+            bookResponse.setTotalListings(aggregation.count());
+            bookResponse.setMinPrice(aggregation.minPrice());
+            bookResponse.setMaxPrice(aggregation.maxPrice());
+            bookResponse.setCurrency(aggregation.currency());
+        } else {
+            bookResponse.setTotalListings(0);
+        }
+        
+        // Book-level ratings
+        bookResponse.setAverageRating(bookMeta.getAverageRating());
+        bookResponse.setTotalReviews(bookMeta.getTotalReviews());
+        
+        return bookResponse;
+    }
 
     private BookDetailResponse convertToBookDetailResponse(BookMeta bookMeta) {
         BookDetailResponse response = new BookDetailResponse();
@@ -303,7 +363,7 @@ public class BookService {
                 Collections.emptyList());
 
         if (bookMeta.getImages() != null && !bookMeta.getImages().isEmpty()) {
-            response.setCoverImageUrl(bookMeta.getImages().get(0).getUrl());
+            response.setCoverImageUrl(bookMeta.getImages().stream().findFirst().map(img -> img.getUrl()).orElse(null));
         }
         
         // ═══════════════════════════════════════════════════════════════════════════
@@ -471,7 +531,7 @@ public class BookService {
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(prices.size()), 2, java.math.RoundingMode.HALF_UP);
         
-        return new PriceStats(min, max, avg, prices.size(), "USD");
+        return new PriceStats(min, max, avg, prices.size(), "VND");
     }
     
     /**

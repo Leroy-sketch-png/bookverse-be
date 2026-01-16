@@ -7,6 +7,7 @@ import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Review.*;
 import com.example.bookverseserver.service.ReviewService;
 import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.PaginationUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -79,11 +80,12 @@ public class ReviewController {
             @RequestParam(required = false) Integer rating,
             Authentication authentication) {
         Long currentUserId = authentication != null ? securityUtils.getCurrentUserId(authentication) : null;
-        // Convert 1-indexed (API) to 0-indexed (Spring)
-        int pageIndex = Math.max(0, page - 1);
+        // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+        int pageIndex = PaginationUtils.safePage(page);
+        int safeSize = PaginationUtils.safeSize(size);
         return ApiResponse.<ReviewsListResponse>builder()
                 .message("Reviews retrieved successfully")
-                .result(reviewService.getReviewsByListingId(listingId, pageIndex, size, sortBy, sortOrder, rating, currentUserId))
+                .result(reviewService.getReviewsByListingId(listingId, pageIndex, safeSize, sortBy, sortOrder, rating, currentUserId))
                 .build();
     }
 
@@ -103,11 +105,12 @@ public class ReviewController {
             @RequestParam(required = false) Integer rating,
             Authentication authentication) {
         Long currentUserId = authentication != null ? securityUtils.getCurrentUserId(authentication) : null;
-        // Convert 1-indexed (API) to 0-indexed (Spring)
-        int pageIndex = Math.max(0, page - 1);
+        // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+        int pageIndex = PaginationUtils.safePage(page);
+        int safeSize = PaginationUtils.safeSize(size);
         return ApiResponse.<ReviewsListResponse>builder()
                 .message("Seller reviews retrieved successfully")
-                .result(reviewService.getReviewsBySellerId(sellerId, pageIndex, size, sortBy, sortOrder, rating, currentUserId))
+                .result(reviewService.getReviewsBySellerId(sellerId, pageIndex, safeSize, sortBy, sortOrder, rating, currentUserId))
                 .build();
     }
 

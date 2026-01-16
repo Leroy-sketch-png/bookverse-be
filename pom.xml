@@ -84,16 +84,11 @@
             <version>2.2.0</version>
         </dependency>
 
-        <!-- Cloudinary -->
-        <dependency>
-            <groupId>com.cloudinary</groupId>
-            <artifactId>cloudinary-http44</artifactId>
-            <version>1.36.0</version>
-        </dependency>
+        <!-- Cloudinary (consolidated - single version to avoid conflicts) -->
         <dependency>
             <groupId>com.cloudinary</groupId>
             <artifactId>cloudinary-taglib</artifactId>
-            <version>1.36.0</version>
+            <version>1.37.0</version>
         </dependency>
 
         <!-- JWT Provider -->
@@ -142,7 +137,7 @@
             <version>${firebase.admin.version}</version>
         </dependency>
 
-        <!-- Cloud Storage -->
+        <!-- Cloud Storage (cloudinary-http44 is transitive via cloudinary-taglib) -->
         <dependency>
             <groupId>com.cloudinary</groupId>
             <artifactId>cloudinary-http44</artifactId>

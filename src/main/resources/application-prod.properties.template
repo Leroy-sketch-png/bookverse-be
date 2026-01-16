@@ -1,0 +1,93 @@
+# ============================================================================
+# PRODUCTION CONFIGURATION TEMPLATE
+# ============================================================================
+# Copy this file to application-prod.properties and fill in your secrets.
+# NEVER commit the actual application-prod.properties file!
+# All secrets should come from environment variables in production.
+# ============================================================================
+
+# Active profile
+spring.profiles.active=prod
+
+# Database - Use environment variables in production
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bookverse_db}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:postgres}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA/Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# JWT Configuration
+jwt.signerKey=${JWT_SIGNER_KEY}
+jwt.valid-duration=${JWT_VALID_DURATION:86400}
+jwt.refreshable-duration=${JWT_REFRESHABLE_DURATION:2592000}
+
+# Google OAuth2
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET}
+spring.security.oauth2.client.registration.google.scope=email,profile
+spring.security.oauth2.client.provider.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth
+spring.security.oauth2.client.provider.google.token-uri=https://oauth2.googleapis.com/token
+spring.security.oauth2.client.provider.google.user-info-uri=https://www.googleapis.com/oauth2/v3/userinfo
+
+# Email (Brevo)
+notification.email.brevo-apikey=${BREVO_API_KEY}
+notification.email.sender=${EMAIL_SENDER:noreply@bookverse.vn}
+
+# OTP Configuration
+app.otp.secret=${APP_OTP_SECRET}
+app.otp.ttl-seconds=${APP_OTP_TTL:600}
+app.otp.max-attempts=${APP_OTP_MAX_ATTEMPTS:5}
+
+# Stripe
+stripe.api.key=${STRIPE_API_KEY}
+stripe.publishable.key=${STRIPE_PUBLISHABLE_KEY}
+stripe.webhook.secret=${STRIPE_WEBHOOK_SECRET}
+stripe.connect.enabled=${STRIPE_CONNECT_ENABLED:false}
+
+# Cloudinary
+cloudinary.cloud-name=${CLOUDINARY_CLOUD_NAME}
+cloudinary.api-key=${CLOUDINARY_API_KEY}
+cloudinary.api-secret=${CLOUDINARY_API_SECRET}
+
+# Application URLs
+app.frontend.url=${APP_FRONTEND_URL:http://localhost:3000}
+app.cors.allowed-origins=${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+# ============================================================================
+# VND CURRENCY CONFIGURATION (Vietnam Dong)
+# ============================================================================
+# Minimum payout amount in VND (default: 100,000 VND ~ $4 USD)
+payout.minimum-amount=${PAYOUT_MINIMUM_AMOUNT:100000}
+
+# Flat shipping fee in VND (default: 30,000 VND ~ $1.20 USD)
+checkout.shipping-flat-fee=${CHECKOUT_SHIPPING_FEE:30000}
+
+# Tax rate (percentage, 0.10 = 10% VAT in Vietnam)
+checkout.tax-rate=${CHECKOUT_TAX_RATE:0.10}
+
+# ============================================================================
+# AI Configuration
+# ============================================================================
+ai.enabled=${AI_ENABLED:false}
+ai.gemini.api-key=${GEMINI_API_KEY:}
+ai.cohere.api-key=${COHERE_API_KEY:}
+ai.huggingface.api-key=${HUGGINGFACE_API_KEY:}
+
+# ============================================================================
+# GHN Shipping (Giao Hang Nhanh - Vietnam)
+# ============================================================================
+ghn.enabled=${GHN_ENABLED:false}
+ghn.api.token=${GHN_API_TOKEN:}
+ghn.shop.id=${GHN_SHOP_ID:}
+ghn.api.url=${GHN_API_URL:https://dev-online-gateway.ghn.vn}
+
+# ============================================================================
+# Admin Configuration
+# ============================================================================
+# IMPORTANT: Change this in production! Use a strong password.
+app.admin.password=${ADMIN_PASSWORD}

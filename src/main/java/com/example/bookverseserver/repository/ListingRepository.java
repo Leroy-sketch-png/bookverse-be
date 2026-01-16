@@ -24,11 +24,28 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             ListingStatus status,
             boolean visibility);
 
+    /**
+     * Batch fetch listing aggregations (count, min/max price) for multiple book IDs.
+     * Returns Object[]: [bookMetaId, count, minPrice, maxPrice, currency]
+     * Single query replaces N+1 individual queries.
+     */
+    @Query("""
+            SELECT l.bookMeta.id, COUNT(l), MIN(l.price), MAX(l.price), MIN(l.currency)
+            FROM Listing l
+            WHERE l.bookMeta.id IN :bookIds
+            AND l.status = 'ACTIVE'
+            AND l.visibility = true
+            AND l.deletedAt IS NULL
+            GROUP BY l.bookMeta.id
+            """)
+    List<Object[]> findListingAggregationsByBookIds(@Param("bookIds") List<Long> bookIds);
+
     @NotNull
     @Query("""
                 SELECT l
                 FROM Listing l
                 LEFT JOIN FETCH l.bookMeta bm
+                LEFT JOIN FETCH bm.images
                 LEFT JOIN FETCH l.seller s
                 LEFT JOIN FETCH l.photos p
                 WHERE l.id = :id
@@ -109,6 +126,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     @Query("""
             SELECT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.images
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH l.category c
             WHERE l.category.id = :categoryId
@@ -124,6 +142,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     @Query("""
             SELECT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.images
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH l.category c
             WHERE l.category.slug = :categorySlug
@@ -193,7 +212,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
      * This prevents N+1 queries when mapping to DTOs.
      * 
      * Relations fetched:
-     * - bookMeta (with authors, images)
+     * - bookMeta (with authors, images, categories)
      * - seller (with userProfile)
      * - category
      * - photos
@@ -205,6 +224,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH s.userProfile
             LEFT JOIN FETCH l.category c
@@ -229,6 +250,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH s.userProfile
             LEFT JOIN FETCH l.category c
@@ -253,6 +276,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH s.userProfile
             LEFT JOIN FETCH l.category c
@@ -271,11 +296,69 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     Page<Listing> findNewArrivalsWithDetails(Pageable pageable);
 
     /**
+     * Find active listings sorted by views (trending) with eager fetching.
+     * Used for "Trending Books" section on homepage.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            ORDER BY l.views DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            """)
+    Page<Listing> findTrendingWithDetails(Pageable pageable);
+
+    /**
+     * Find active listings sorted by book's publishedDate (new releases) with eager fetching.
+     * Used for "New Releases" section - shows books with most recent publication dates.
+     */
+    @Query(value = """
+            SELECT DISTINCT l FROM Listing l
+            LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
+            LEFT JOIN FETCH l.seller s
+            LEFT JOIN FETCH s.userProfile
+            LEFT JOIN FETCH l.category c
+            LEFT JOIN FETCH l.photos p
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            AND bm.publishedDate IS NOT NULL
+            ORDER BY bm.publishedDate DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT l) FROM Listing l
+            JOIN l.bookMeta bm
+            WHERE l.deletedAt IS NULL
+            AND l.visibility = true
+            AND l.status = 'ACTIVE'
+            AND bm.publishedDate IS NOT NULL
+            """)
+    Page<Listing> findNewReleasesByPublishedDateWithDetails(Pageable pageable);
+
+    /**
      * Find seller listings by status and category with pagination.
      */
     @Query("""
             SELECT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.images
             LEFT JOIN FETCH l.category c
             LEFT JOIN FETCH l.photos p
             WHERE l.seller.id = :sellerId
@@ -304,6 +387,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH bm.categories c
+            LEFT JOIN FETCH bm.images
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH l.photos p
             WHERE l.status = :status
@@ -330,6 +414,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
     @Query("""
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
+            LEFT JOIN FETCH bm.images
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH l.photos p
             WHERE l.status = :status
@@ -354,6 +439,8 @@ public interface ListingRepository extends JpaRepository<Listing, Long>, JpaSpec
             SELECT DISTINCT l FROM Listing l
             LEFT JOIN FETCH l.bookMeta bm
             LEFT JOIN FETCH bm.authors
+            LEFT JOIN FETCH bm.images
+            LEFT JOIN FETCH bm.categories
             LEFT JOIN FETCH l.seller s
             LEFT JOIN FETCH s.userProfile
             LEFT JOIN FETCH l.category c

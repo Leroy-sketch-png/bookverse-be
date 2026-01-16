@@ -13,11 +13,13 @@ import com.example.bookverseserver.service.ai.ProviderRotator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,19 +37,43 @@ import static lombok.AccessLevel.PRIVATE;
  * 
  * Uses 7 AI providers with intelligent rotation for maximum uptime:
  * Groq → Mistral → OpenRouter → HuggingFace → Fireworks → Cohere → Gemini
+ * 
+ * IMPORTANT: Uses "snapshot" pattern for AI methods - fetch data in a SHORT 
+ * transaction, close it, THEN call AI. This prevents connection leaks since 
+ * AI calls can take 30+ seconds.
  */
 @Service
-@RequiredArgsConstructor
-@FieldDefaults(level = PRIVATE, makeFinal = true)
+@FieldDefaults(level = PRIVATE)
 @Slf4j
 public class AIService {
     
-    AIConfig aiConfig;
-    ProviderRotator providerRotator;
-    ListingRepository listingRepository;
-    ReviewRepository reviewRepository;
-    ListingMapper listingMapper;
-    ObjectMapper objectMapper;
+    final AIConfig aiConfig;
+    final ProviderRotator providerRotator;
+    final ListingRepository listingRepository;
+    final ReviewRepository reviewRepository;
+    final ListingMapper listingMapper;
+    final ObjectMapper objectMapper;
+    
+    // Self-injection for proxy-based @Transactional to work on internal method calls
+    AIService self;
+    
+    @Autowired
+    public AIService(AIConfig aiConfig, ProviderRotator providerRotator, 
+                     ListingRepository listingRepository, ReviewRepository reviewRepository,
+                     ListingMapper listingMapper, ObjectMapper objectMapper) {
+        this.aiConfig = aiConfig;
+        this.providerRotator = providerRotator;
+        this.listingRepository = listingRepository;
+        this.reviewRepository = reviewRepository;
+        this.listingMapper = listingMapper;
+        this.objectMapper = objectMapper;
+    }
+    
+    @Autowired
+    @Lazy
+    public void setSelf(AIService self) {
+        this.self = self;
+    }
     
     @PostConstruct
     public void initializeProviders() {
@@ -81,6 +107,7 @@ public class AIService {
      * @param limit Max number of recommendations
      * @return List of recommended listings
      */
+    @Transactional(readOnly = true)
     public List<ListingResponse> getPersonalizedRecommendations(
             String preferencesJson,
             List<Long> excludeListingIds,
@@ -185,13 +212,44 @@ public class AIService {
     }
     
     /**
-     * Summarize reviews for a book.
+     * DTO to hold review data after transaction closes.
+     * This prevents keeping DB connection open during AI calls.
+     */
+    public record ReviewSnapshot(
+            int rating,
+            String comment,
+            String username
+    ) {
+        static ReviewSnapshot from(Review r) {
+            return new ReviewSnapshot(
+                    r.getRating(),
+                    r.getComment(),
+                    r.getUser() != null ? r.getUser().getUsername() : "Anonymous"
+            );
+        }
+    }
+    
+    /**
+     * Fetch reviews in a SHORT transaction and convert to snapshots.
+     * Transaction closes immediately, then AI can process without holding connection.
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewSnapshot> fetchReviewSnapshots(Long bookId) {
+        return reviewRepository.findByBookMetaIdOrderByCreatedAtDesc(bookId).stream()
+                .map(ReviewSnapshot::from)
+                .toList();
+    }
+    
+    /**
+     * Summarize reviews for a book using snapshot pattern.
+     * Fetches reviews in a short transaction, then calls AI OUTSIDE the transaction.
      * 
      * @param bookId Book ID to summarize reviews for
      * @return AI-generated summary or null if not enough reviews
      */
     public ReviewSummary summarizeReviews(Long bookId) {
-        List<Review> reviews = reviewRepository.findByBookMetaIdOrderByCreatedAtDesc(bookId);
+        // Fetch reviews via self-proxy to ensure @Transactional works
+        List<ReviewSnapshot> reviews = self.fetchReviewSnapshots(bookId);
         
         if (reviews.size() < 3) {
             return null; // Not enough reviews to summarize
@@ -199,11 +257,12 @@ public class AIService {
         
         if (!aiConfig.isEnabled()) {
             // Fallback: simple stats-based summary
-            return buildStatsSummary(reviews);
+            return buildStatsSummaryFromSnapshots(reviews);
         }
         
         try {
-            String prompt = buildReviewSummaryPrompt(reviews);
+            String prompt = buildReviewSummaryPromptFromSnapshots(reviews);
+            // AI call happens OUTSIDE the transaction - no connection leak!
             String response = callLLM(prompt);
             
             JsonNode summary = objectMapper.readTree(response);
@@ -218,7 +277,7 @@ public class AIService {
             
         } catch (Exception e) {
             log.warn("Failed to summarize reviews: {}", e.getMessage());
-            return buildStatsSummary(reviews);
+            return buildStatsSummaryFromSnapshots(reviews);
         }
     }
     
@@ -321,6 +380,48 @@ public class AIService {
     private ReviewSummary buildStatsSummary(List<Review> reviews) {
         double avgRating = reviews.stream()
                 .mapToInt(Review::getRating)
+                .average()
+                .orElse(0);
+        
+        String sentiment = avgRating >= 4 ? "positive" : avgRating >= 3 ? "mixed" : "negative";
+        String summary = String.format(
+                "Based on %d reviews with an average rating of %.1f/5.",
+                reviews.size(), avgRating
+        );
+        
+        return new ReviewSummary(sentiment, summary, List.of(), List.of(), null);
+    }
+    
+    // Snapshot-based helper methods (for use after transaction closes)
+    
+    private String buildReviewSummaryPromptFromSnapshots(List<ReviewSnapshot> reviews) {
+        StringBuilder reviewText = new StringBuilder();
+        for (int i = 0; i < Math.min(10, reviews.size()); i++) {
+            ReviewSnapshot r = reviews.get(i);
+            reviewText.append("Rating: ").append(r.rating()).append("/5\n");
+            reviewText.append("Review: ").append(r.comment()).append("\n\n");
+        }
+        
+        return """
+            Summarize these book reviews. Return JSON only.
+            
+            Reviews:
+            %s
+            
+            Return ONLY valid JSON:
+            {
+                "overallSentiment": "positive|mixed|negative",
+                "summary": "2-3 sentence summary of what readers say",
+                "strengths": ["strength1", "strength2"],
+                "weaknesses": ["weakness1"],
+                "recommendedFor": "who would enjoy this book"
+            }
+            """.formatted(reviewText.toString());
+    }
+    
+    private ReviewSummary buildStatsSummaryFromSnapshots(List<ReviewSnapshot> reviews) {
+        double avgRating = reviews.stream()
+                .mapToInt(ReviewSnapshot::rating)
                 .average()
                 .orElse(0);
         

@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "book_image") // Mapped to book_image table
-@Data
+@Getter
+@Setter
+@ToString(exclude = "bookMeta")
+@EqualsAndHashCode(exclude = "bookMeta")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

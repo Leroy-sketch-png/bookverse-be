@@ -2,7 +2,7 @@ package com.example.bookverseserver.scheduled;
 
 import com.example.bookverseserver.repository.SignupRequestRepository;
 import com.example.bookverseserver.entity.User.SignupRequest;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

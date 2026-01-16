@@ -61,11 +61,11 @@ public class CheckoutService {
     static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @NonFinal
-    @Value("${checkout.tax-rate:0.08}")
+    @Value("${checkout.tax-rate:0.10}")
     BigDecimal taxRate;
 
     @NonFinal
-    @Value("${checkout.shipping-flat-fee:5.00}")
+    @Value("${checkout.shipping-flat-fee:30000}")
     BigDecimal shippingFlatFee;
 
     @NonFinal
@@ -398,7 +398,8 @@ public class CheckoutService {
     // ============================================================================
     
     private CheckoutSession getValidSession(Long userId, Long sessionId) {
-        CheckoutSession session = checkoutSessionRepository.findById(sessionId)
+        // Use eager-loading query to prevent LazyInitializationException
+        CheckoutSession session = checkoutSessionRepository.findByIdWithFullCart(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHECKOUT_SESSION_NOT_FOUND));
         
         if (!session.getUser().getId().equals(userId)) {
@@ -604,7 +605,7 @@ public class CheckoutService {
                 .cart(cart)
                 .order(savedOrder)
                 .amount(total)
-                .currency("USD")
+                .currency("VND")
                 .status("PENDING")
                 .expiresAt(LocalDateTime.now().plusHours(24))
                 .paymentIntentId("pi_" + UUID.randomUUID().toString())

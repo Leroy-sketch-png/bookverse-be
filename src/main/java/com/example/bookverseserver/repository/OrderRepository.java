@@ -50,10 +50,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   /**
    * Calculate average shipping time (hours) for a seller's orders.
    * Only considers orders that have been shipped (shippedAt is not null).
+   * Uses native query because EXTRACT(EPOCH FROM interval) is PostgreSQL-specific.
    */
-  @Query("SELECT AVG(EXTRACT(EPOCH FROM (o.shippedAt - o.createdAt)) / 3600) " +
-         "FROM Order o JOIN o.items oi " +
-         "WHERE oi.seller.id = :sellerId AND o.shippedAt IS NOT NULL")
+  @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (o.shipped_at - o.created_at)) / 3600) " +
+         "FROM orders o JOIN order_items oi ON oi.order_id = o.id " +
+         "WHERE oi.seller_id = :sellerId AND o.shipped_at IS NOT NULL", 
+         nativeQuery = true)
   Double calculateAverageShippingTimeHours(@Param("sellerId") Long sellerId);
   
   /**

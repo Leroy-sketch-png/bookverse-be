@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.bookverseserver.dto.request.Authentication.RoleRequest;
 import com.example.bookverseserver.dto.response.Authentication.RoleResponse;
@@ -19,10 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class RoleService {
     RoleRepository roleRepository;
     RoleMapper roleMapper;
 
+    @Transactional
     public RoleResponse create(RoleRequest request) {
         var role = roleMapper.toRole(request);
 

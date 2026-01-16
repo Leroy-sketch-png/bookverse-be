@@ -6,6 +6,7 @@ import com.example.bookverseserver.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -106,13 +107,16 @@ public class Order {
         LocalDateTime updatedAt;
 
         @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        @BatchSize(size = 50)
         @Builder.Default
         List<OrderItem> items = new ArrayList<>();
 
         @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        @BatchSize(size = 50)
         @Builder.Default
         List<OrderTimeline> timeline = new ArrayList<>();
 
         @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+        @BatchSize(size = 50)
         List<Payment> payments = new ArrayList<>();
 }

@@ -31,5 +31,6 @@ public interface BookMetaRepository extends JpaRepository<BookMeta, String>, Jpa
     // Find by category name (case-insensitive)
     List<BookMeta> findDistinctByCategories_NameIgnoreCase(String name);
 
+    @EntityGraph(attributePaths = { "authors", "categories", "images" })
     Optional<BookMeta> findByIsbn(String isbn);
 }

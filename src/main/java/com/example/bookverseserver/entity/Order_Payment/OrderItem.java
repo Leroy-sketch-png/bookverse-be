@@ -75,7 +75,7 @@ public class OrderItem {
         if (!listing.getPhotos().isEmpty()) {
             cover = listing.getPhotos().get(0).getUrl();
         } else if (meta.getImages() != null && !meta.getImages().isEmpty()) {
-            cover = meta.getImages().get(0).getUrl();
+            cover = meta.getImages().stream().findFirst().map(img -> img.getUrl()).orElse(null);
         }
 
         return OrderItem.builder()

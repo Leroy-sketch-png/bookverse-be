@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +32,14 @@ public class ApplicationInitConfig {
     @NonFinal
     static final String ADMIN_USER_NAME = "admin";
 
+    /**
+     * Admin password from environment variable.
+     * In production, set APP_ADMIN_PASSWORD environment variable.
+     * Default "admin" is ONLY for local development.
+     */
     @NonFinal
-    static final String ADMIN_PASSWORD = "admin";
+    @Value("${app.admin.password:admin}")
+    String adminPassword;
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository) {
@@ -67,7 +74,7 @@ public class ApplicationInitConfig {
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .email("admin@bookverse.com")
-                        .passwordHash(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .passwordHash(passwordEncoder.encode(adminPassword))
                         .roles(roles)
                         .enabled(true)
                         .userProfile(adminProfile)
@@ -76,7 +83,11 @@ public class ApplicationInitConfig {
                 adminProfile.setUser(user);  // Bidirectional relationship
 
                 userRepository.save(user);
-                log.warn("Admin user created with default password: 'admin' — please change it.");
+                if ("admin".equals(adminPassword)) {
+                    log.warn("⚠️ Admin user created with DEFAULT password 'admin' — SET APP_ADMIN_PASSWORD in production!");
+                } else {
+                    log.info("Admin user created with custom password from environment.");
+                }
             }
 
             log.info("Application initialization completed.");

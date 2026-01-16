@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class SignupRequestService {
     private static final Logger log = LoggerFactory.getLogger(SignupRequestService.class);
     private final SignupRequestRepository signupRequestRepository;

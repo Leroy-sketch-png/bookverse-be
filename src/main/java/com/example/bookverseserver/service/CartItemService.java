@@ -14,16 +14,17 @@ import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import com.example.bookverseserver.service.discount.DiscountStrategy;
 import com.example.bookverseserver.service.discount.DiscountStrategyFactory;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class CartItemService {
 
     CartItemRepository cartItemRepository;

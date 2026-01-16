@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class PayoutRequest {
 
     @NotNull(message = "AMOUNT_REQUIRED")
-    @DecimalMin(value = "10.00", message = "MINIMUM_PAYOUT_AMOUNT")
+    @DecimalMin(value = "100000", message = "MINIMUM_PAYOUT_AMOUNT")
     BigDecimal amount;
 
     @NotBlank(message = "PAYOUT_METHOD_REQUIRED")

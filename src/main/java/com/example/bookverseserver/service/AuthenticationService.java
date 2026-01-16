@@ -21,6 +21,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.example.bookverseserver.dto.response.Authentication.AuthenticationResponse;
 import com.example.bookverseserver.dto.response.Authentication.IntrospectResponse;
 import com.example.bookverseserver.entity.User.InvalidatedToken;
@@ -46,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
@@ -103,6 +105,7 @@ public class AuthenticationService {
         return signedJWT;
     }
 
+    @Transactional
     public RefreshResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
         var signedJWT = verifyToken(request.getToken(), true);
 
@@ -142,6 +145,7 @@ public class AuthenticationService {
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
+    @Transactional
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         String input = request.getEmailOrUsername();
         
@@ -201,6 +205,7 @@ public class AuthenticationService {
         return AuthenticationResponse.builder().token(token).authenticated(true).lastLogin(LocalDateTime.now()).user(userResponse).build();
     }
 
+    @Transactional
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
         try {
             var signToken = jwtService.verifyToken(request.getToken(), true);
@@ -247,6 +252,7 @@ public class AuthenticationService {
 
 
 
+    @Transactional
     public String forgotPasswordOtp(String email) {
         String otp = signupRequestService.generateOtpCode();
         String otpHash = signupRequestService.hmacOtp(otp);
@@ -270,6 +276,7 @@ public class AuthenticationService {
         return otp;
     }
 
+    @Transactional
     public UserResponse  verifyOtpAndChangePassword(ForgotPasswordRequest forgotPasswordRequest) {
             // 1. Xác thực Mật khẩu
             if (!forgotPasswordRequest.getPassword().equals(forgotPasswordRequest.getConfirmPassword())) {

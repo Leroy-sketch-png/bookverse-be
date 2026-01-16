@@ -10,24 +10,73 @@ import com.example.bookverseserver.repository.ListingRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Slf4j
 public class MoodDiscoveryService {
     
-    AIService aiService;
-    ListingRepository listingRepository;
-    ObjectMapper objectMapper;
+    final AIService aiService;
+    final ListingRepository listingRepository;
+    final ObjectMapper objectMapper;
+    
+    // Self-injection to enable proxy-based @Transactional for internal method calls
+    MoodDiscoveryService self;
+    
+    @Autowired
+    public MoodDiscoveryService(AIService aiService, ListingRepository listingRepository, ObjectMapper objectMapper) {
+        this.aiService = aiService;
+        this.listingRepository = listingRepository;
+        this.objectMapper = objectMapper;
+    }
+    
+    @Autowired
+    @Lazy
+    public void setSelf(MoodDiscoveryService self) {
+        this.self = self;
+    }
+    
+    /**
+     * DTO to hold listing data after transaction closes.
+     * This prevents lazy loading issues when AI call holds connection too long.
+     */
+    private record ListingSnapshot(
+        Long id,
+        String title,
+        String authors,
+        String description,
+        String categories,
+        String coverUrl,
+        java.math.BigDecimal price,
+        String condition
+    ) {
+        static ListingSnapshot from(Listing l) {
+            return new ListingSnapshot(
+                l.getId(),
+                l.getBookMeta().getTitle(),
+                l.getBookMeta().getAuthors().stream()
+                    .map(a -> a.getName())
+                    .collect(Collectors.joining(", ")),
+                l.getBookMeta().getDescription(),
+                l.getBookMeta().getCategories().stream()
+                    .map(c -> c.getName())
+                    .collect(Collectors.joining(", ")),
+                l.getBookMeta().getCoverImageUrl(),
+                l.getPrice(),
+                l.getCondition().name()
+            );
+        }
+    }
     
     // Curated mood definitions with emojis and characteristics
     private static final Map<String, MoodDefinition> MOODS = Map.ofEntries(
@@ -48,27 +97,39 @@ public class MoodDiscoveryService {
         Map.entry("intense", new MoodDefinition("🔥", "All-in experience", "gripping, complex, demanding", List.of("suspenseful", "emotional", "immersive")))
     );
 
+    /**
+     * Fetch listings in a short transaction and convert to snapshots.
+     * This closes the DB connection before AI calls.
+     */
+    @Transactional(readOnly = true)
+    public List<ListingSnapshot> fetchListingSnapshots(int limit) {
+        return listingRepository.findAllWithDetails(
+            ListingStatus.ACTIVE,
+            PageRequest.of(0, limit)
+        ).getContent().stream()
+            .map(ListingSnapshot::from)
+            .toList();
+    }
+
     public MoodDiscoveryResponse discoverByMood(MoodDiscoveryRequest request) {
         String mood = request.getMood().toLowerCase().trim();
         MoodDefinition moodDef = MOODS.getOrDefault(mood, 
             new MoodDefinition("📚", "Custom mood", mood, List.of()));
         
-        // Get available listings (active ones)
-        List<Listing> availableListings = listingRepository.findAllWithDetails(
-            ListingStatus.ACTIVE,
-            PageRequest.of(0, 100)
-        ).getContent();
+        // Call through self-proxy to ensure @Transactional works for internal method call
+        // This fixes the Spring AOP proxy limitation where this.method() bypasses the proxy
+        List<ListingSnapshot> snapshots = self.fetchListingSnapshots(100);
         
-        if (availableListings.isEmpty()) {
+        if (snapshots.isEmpty()) {
             return buildEmptyResponse(mood, moodDef);
         }
         
-        // Try AI-powered recommendations first
+        // AI call happens OUTSIDE the transaction - no connection leak!
         try {
-            return getAIRecommendations(request, mood, moodDef, availableListings);
+            return getAIRecommendations(request, mood, moodDef, snapshots);
         } catch (Exception e) {
             log.warn("AI mood discovery failed, using fallback: {}", e.getMessage());
-            return getFallbackRecommendations(request, mood, moodDef, availableListings);
+            return getFallbackRecommendations(request, mood, moodDef, snapshots);
         }
     }
     
@@ -76,24 +137,20 @@ public class MoodDiscoveryService {
             MoodDiscoveryRequest request,
             String mood,
             MoodDefinition moodDef,
-            List<Listing> listings
+            List<ListingSnapshot> snapshots
     ) {
         // Build context about available books
-        String booksContext = listings.stream()
+        String booksContext = snapshots.stream()
             .limit(50) // Don't overwhelm the prompt
-            .map(l -> String.format(
+            .map(s -> String.format(
                 "ID:%d | %s by %s | %s | Categories: %s",
-                l.getId(),
-                l.getBookMeta().getTitle(),
-                l.getBookMeta().getAuthors().stream()
-                    .map(a -> a.getName())
-                    .collect(Collectors.joining(", ")),
-                l.getBookMeta().getDescription() != null 
-                    ? l.getBookMeta().getDescription().substring(0, Math.min(100, l.getBookMeta().getDescription().length())) 
+                s.id(),
+                s.title(),
+                s.authors(),
+                s.description() != null 
+                    ? s.description().substring(0, Math.min(100, s.description().length())) 
                     : "No description",
-                l.getBookMeta().getCategories().stream()
-                    .map(c -> c.getName())
-                    .collect(Collectors.joining(", "))
+                s.categories()
             ))
             .collect(Collectors.joining("\n"));
         
@@ -128,14 +185,14 @@ public class MoodDiscoveryService {
         String response = aiService.generateRecommendation(prompt);
         
         // Parse AI response
-        return parseAIResponse(response, mood, moodDef, listings);
+        return parseAIResponse(response, mood, moodDef, snapshots);
     }
     
     private MoodDiscoveryResponse parseAIResponse(
             String aiResponse,
             String mood,
             MoodDefinition moodDef,
-            List<Listing> listings
+            List<ListingSnapshot> snapshots
     ) {
         try {
             // Extract JSON from response
@@ -149,25 +206,23 @@ public class MoodDiscoveryService {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> recs = (List<Map<String, Object>>) parsed.get("recommendations");
             
-            // Map listing IDs to actual listings
-            Map<Long, Listing> listingMap = listings.stream()
-                .collect(Collectors.toMap(Listing::getId, l -> l));
+            // Map listing IDs to snapshots
+            Map<Long, ListingSnapshot> snapshotMap = snapshots.stream()
+                .collect(Collectors.toMap(ListingSnapshot::id, s -> s));
             
             List<MoodRecommendation> recommendations = new ArrayList<>();
             if (recs != null) {
                 for (Map<String, Object> rec : recs) {
                     Long listingId = ((Number) rec.get("listingId")).longValue();
-                    Listing listing = listingMap.get(listingId);
-                    if (listing != null) {
+                    ListingSnapshot snapshot = snapshotMap.get(listingId);
+                    if (snapshot != null) {
                         recommendations.add(MoodRecommendation.builder()
                             .listingId(listingId)
-                            .title(listing.getBookMeta().getTitle())
-                            .author(listing.getBookMeta().getAuthors().stream()
-                                .map(a -> a.getName())
-                                .collect(Collectors.joining(", ")))
-                            .coverUrl(listing.getBookMeta().getCoverImageUrl())
-                            .price(listing.getPrice().doubleValue())
-                            .condition(listing.getCondition().name())
+                            .title(snapshot.title())
+                            .author(snapshot.authors())
+                            .coverUrl(snapshot.coverUrl())
+                            .price(snapshot.price().doubleValue())
+                            .condition(snapshot.condition())
                             .matchScore(((Number) rec.getOrDefault("matchScore", 80)).doubleValue())
                             .whyThisFits((String) rec.getOrDefault("whyThisFits", "Great match for your mood"))
                             .moodTags(rec.get("moodTags") != null ? 
@@ -198,22 +253,20 @@ public class MoodDiscoveryService {
             MoodDiscoveryRequest request,
             String mood,
             MoodDefinition moodDef,
-            List<Listing> listings
+            List<ListingSnapshot> snapshots
     ) {
         // Simple keyword-based matching as fallback
         int limit = request.getLimit() != null ? request.getLimit() : 10;
         
-        List<MoodRecommendation> recommendations = listings.stream()
+        List<MoodRecommendation> recommendations = snapshots.stream()
             .limit(limit)
-            .map(listing -> MoodRecommendation.builder()
-                .listingId(listing.getId())
-                .title(listing.getBookMeta().getTitle())
-                .author(listing.getBookMeta().getAuthors().stream()
-                    .map(a -> a.getName())
-                    .collect(Collectors.joining(", ")))
-                .coverUrl(listing.getBookMeta().getCoverImageUrl())
-                .price(listing.getPrice().doubleValue())
-                .condition(listing.getCondition().name())
+            .map(snapshot -> MoodRecommendation.builder()
+                .listingId(snapshot.id())
+                .title(snapshot.title())
+                .author(snapshot.authors())
+                .coverUrl(snapshot.coverUrl())
+                .price(snapshot.price().doubleValue())
+                .condition(snapshot.condition())
                 .matchScore(70.0 + new Random().nextDouble() * 20)
                 .whyThisFits("Recommended for your " + mood + " mood")
                 .moodTags(List.of(mood))

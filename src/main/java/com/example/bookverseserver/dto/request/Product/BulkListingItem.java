@@ -47,8 +47,8 @@ public class BulkListingItem {
     BookCondition condition;
 
     @NotNull(message = "PRICE_REQUIRED")
-    @DecimalMin(value = "0.01", message = "PRICE_TOO_LOW")
-    @DecimalMax(value = "10000.00", message = "PRICE_TOO_HIGH")
+    @DecimalMin(value = "1000", message = "PRICE_TOO_LOW")
+    @DecimalMax(value = "50000000", message = "PRICE_TOO_HIGH")
     Double price;
 
     @NotNull(message = "STOCK_REQUIRED")

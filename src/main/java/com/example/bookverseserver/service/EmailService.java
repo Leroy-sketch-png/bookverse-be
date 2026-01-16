@@ -30,11 +30,19 @@ public class EmailService {
     @NonFinal
     String apiKey;
 
+    @Value("${notification.email.sender-email:noreply@bookverse.com}")
+    @NonFinal
+    String senderEmail;
+
+    @Value("${notification.email.sender-name:BookVerse}")
+    @NonFinal
+    String senderName;
+
     public void sendEmail(SendEmailRequest request) {
         EmailRequest emailRequest = EmailRequest.builder()
                 .sender(Sender.builder()
-                        .name("BookVerse")
-                        .email("tinvo2005@gmail.com")
+                        .name(senderName)
+                        .email(senderEmail)
                         .build())
                 .to(request.getTo())
                 .subject(request.getSubject())

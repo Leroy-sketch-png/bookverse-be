@@ -46,9 +46,10 @@ public class PublicService {
         
         // Total counts
         Long totalUsers = userRepository.count();
-        Long casualSellers = userProfileRepository.countByAccountType("CASUAL_SELLER");
+        // AccountType enum: BUYER, SELLER, PRO_SELLER (not CASUAL_SELLER)
+        Long sellers = userProfileRepository.countByAccountType("SELLER");
         Long proSellers = userProfileRepository.countByAccountType("PRO_SELLER");
-        Long totalSellers = casualSellers + proSellers;
+        Long totalSellers = sellers + proSellers;
         Long totalBooks = listingRepository.countByStatus(ListingStatus.ACTIVE);
         Long totalOrders = orderRepository.countByStatusIn(
             Arrays.asList(OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED)

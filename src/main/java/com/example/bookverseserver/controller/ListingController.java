@@ -15,6 +15,7 @@ import com.example.bookverseserver.enums.BookCondition;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.service.ListingService;
 import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.PaginationUtils;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -70,10 +71,11 @@ public class ListingController {
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
-                // Convert 1-indexed (API) to 0-indexed (Spring)
-                int pageIndex = Math.max(0, page - 1);
+                // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+                int pageIndex = PaginationUtils.safePage(page);
+                int safeSize = PaginationUtils.safeSize(size);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                q, sellerId, bookId, categoryId, authorId, condition, status, sortBy, sortOrder, pageIndex, size);
+                                q, sellerId, bookId, categoryId, authorId, condition, status, sortBy, sortOrder, pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -92,10 +94,11 @@ public class ListingController {
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
-                // Convert 1-indexed (API) to 0-indexed (Spring)
-                int pageIndex = Math.max(0, page - 1);
+                // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+                int pageIndex = PaginationUtils.safePage(page);
+                int safeSize = PaginationUtils.safeSize(size);
                 PagedResponse<ListingResponse> result = listingService.getListingsByCategory(
-                                categorySlug, sortBy, sortOrder, pageIndex, size);
+                                categorySlug, sortBy, sortOrder, pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -114,9 +117,10 @@ public class ListingController {
         public ResponseEntity<ApiResponse<PagedResponse<ListingResponse>>> getOnSaleListings(
                         @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "12") int size) {
-                // Convert 1-indexed (API) to 0-indexed (Spring)
-                int pageIndex = Math.max(0, page - 1);
-                PagedResponse<ListingResponse> result = listingService.getOnSaleListings(pageIndex, size);
+                // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+                int pageIndex = PaginationUtils.safePage(page);
+                int safeSize = PaginationUtils.safeSize(size);
+                PagedResponse<ListingResponse> result = listingService.getOnSaleListings(pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -135,10 +139,11 @@ public class ListingController {
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "1") int page,
                         @RequestParam(defaultValue = "20") int size) {
-                // Convert 1-indexed (API) to 0-indexed (Spring)
-                int pageIndex = Math.max(0, page - 1);
+                // Convert 1-indexed (API) to 0-indexed (Spring) and cap size
+                int pageIndex = PaginationUtils.safePage(page);
+                int safeSize = PaginationUtils.safeSize(size);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                null, sellerId, null, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, size);
+                                null, sellerId, null, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

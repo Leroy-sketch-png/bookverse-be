@@ -11,14 +11,14 @@ import java.util.Map;
  * Cohere Provider — Command models
  * 
  * Free tier: 1000 requests/month
- * Model: command-r-plus (command-r deprecated Sept 2025)
+ * Model: command-r-08-2024 (command-r-plus removed Sept 2025)
  * 
- * Updated Jan 2026: Migrated to command-r-plus
+ * Updated Jan 2026: command-r-plus deprecated, using command-r-08-2024
  */
 public class CohereProvider extends AbstractChatProvider {
     
     private static final String BASE_URL = "https://api.cohere.ai/v2/chat";
-    private static final String DEFAULT_MODEL = "command-r-plus";
+    private static final String DEFAULT_MODEL = "command-r-08-2024";
     private static final int RPM_LIMIT = 20; // 1000/month = ~30/day = be conservative
     
     public CohereProvider(String apiKey) {

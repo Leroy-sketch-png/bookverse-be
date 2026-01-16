@@ -17,8 +17,8 @@ import java.util.*;
 @Table(name = "book_meta")
 @Getter
 @Setter
-@ToString
-@EqualsAndHashCode(exclude = {"authors", "categories", "tags"})
+@ToString(exclude = {"images", "authors", "categories", "tags"})
+@EqualsAndHashCode(exclude = {"images", "authors", "categories", "tags"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -121,11 +121,15 @@ public class BookMeta {
     LocalDateTime updatedAt;
 
     // One-to-Many relationship for images
+    // Changed to Set to avoid MultipleBagFetchException when fetching with photos
+    // @BatchSize prevents N+1 queries when accessing images in Specification-based queries
     @OneToMany(mappedBy = "bookMeta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    List<BookImage> images = new ArrayList<>();
+    @org.hibernate.annotations.BatchSize(size = 50)
+    Set<BookImage> images = new HashSet<>();
 
     // Many-to-Many relationship for authors
     @ManyToMany(fetch = FetchType.LAZY)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @JoinTable(
             name = "book_author",
             joinColumns = @JoinColumn(name = "book_id"),
@@ -154,7 +158,7 @@ public class BookMeta {
 
     public String getCoverImageUrl() {
         if (images != null && !images.isEmpty()) {
-            return images.get(0).getUrl();
+            return images.stream().findFirst().map(BookImage::getUrl).orElse(null);
         }
         return null;
     }

@@ -34,6 +34,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)  // Default read-only, override for write methods
 public class TransactionService {
 
     private final TransactionRepository transactionRepository; // Lưu ý: Đây chính là PaymentRepository

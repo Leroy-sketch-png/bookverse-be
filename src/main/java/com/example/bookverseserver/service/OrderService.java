@@ -38,6 +38,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // Default to read-only, override for write methods
 public class OrderService {
 
   OrderRepository orderRepository;

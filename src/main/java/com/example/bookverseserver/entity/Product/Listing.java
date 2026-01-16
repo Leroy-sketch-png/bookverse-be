@@ -121,7 +121,9 @@ public class Listing {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
+    // @BatchSize prevents N+1 queries when accessing photos in Specification-based queries
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @Builder.Default
     List<ListingPhoto> photos = new ArrayList<>();
 

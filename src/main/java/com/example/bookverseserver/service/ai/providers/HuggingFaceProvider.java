@@ -15,13 +15,13 @@ import java.util.Map;
  * HuggingFace Inference API Provider
  * 
  * Free tier: ~300 requests/hour
- * Model: microsoft/Phi-3-mini-4k-instruct
+ * Model: Qwen/Qwen2.5-72B-Instruct (well-supported, current)
  * 
- * Updated Jan 2026: Migrated to router.huggingface.co (api-inference deprecated)
+ * Updated Jan 2026: Phi-3-mini deprecated, using Qwen2.5
  */
 public class HuggingFaceProvider extends AbstractChatProvider {
     
-    private static final String DEFAULT_MODEL = "microsoft/Phi-3-mini-4k-instruct";
+    private static final String DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
     private static final int RPM_LIMIT = 60; // ~300/hour = 5/min but be safe
     
     public HuggingFaceProvider(String apiKey) {

@@ -18,6 +18,7 @@ import com.example.bookverseserver.service.OrderService;
 import com.example.bookverseserver.service.SellerService;
 import com.example.bookverseserver.service.SellerSettingsService;
 import com.example.bookverseserver.util.SecurityUtils;
+import com.example.bookverseserver.utils.PaginationUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -85,9 +86,11 @@ public class SellerController {
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
+        int safePage = PaginationUtils.safePage(page);
+        int safeLimit = PaginationUtils.safeLimit(limit);
         return ApiResponse.<PagedResponse<ListingResponse>>builder()
                 .message("Seller listings retrieved successfully")
-                .result(sellerService.getSellerListings(sellerId, status, sortBy, sortOrder, page, limit))
+                .result(sellerService.getSellerListings(sellerId, status, sortBy, sortOrder, safePage + 1, safeLimit))
                 .build();
     }
 
@@ -119,9 +122,11 @@ public class SellerController {
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
+        int safePage = PaginationUtils.safePage(page);
+        int safeLimit = PaginationUtils.safeLimit(limit);
         return ApiResponse.<OrderListResponse>builder()
                 .message("Seller orders retrieved successfully")
-                .result(sellerService.getSellerOrders(sellerId, status, sortBy, sortOrder, page, limit))
+                .result(sellerService.getSellerOrders(sellerId, status, sortBy, sortOrder, safePage + 1, safeLimit))
                 .build();
     }
 
@@ -165,9 +170,10 @@ public class SellerController {
             @RequestParam(defaultValue = "revenue") String sortBy,
             Authentication authentication) {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
+        int safeLimit = PaginationUtils.safeLimit(limit);
         return ApiResponse.<List<ProductPerformanceResponse>>builder()
                 .message("Product performance retrieved successfully")
-                .result(sellerService.getProductPerformance(sellerId, limit, sortBy))
+                .result(sellerService.getProductPerformance(sellerId, safeLimit, sortBy))
                 .build();
     }
 

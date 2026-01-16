@@ -50,6 +50,7 @@ import java.util.HashSet;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)
 public class ListingService {
     ListingRepository listingRepository;
     ListingPhotoRepository listingPhotoRepository;
@@ -117,6 +118,8 @@ public class ListingService {
         // (other sorts like price need to go through Specification for proper sorting)
         boolean isOptimizedSort = 
                 ("soldCount".equals(effectiveSortBy))
+                || ("viewCount".equals(effectiveSortBy) || "views".equals(effectiveSortBy))
+                || ("publishedDate".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder))
                 || ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder));
         
         // For simple queries with common sort patterns, use optimized methods
@@ -127,6 +130,14 @@ public class ListingService {
             if ("soldCount".equals(effectiveSortBy) && (status == null || status == ListingStatus.ACTIVE)) {
                 // Popular books query (sorted by soldCount)
                 listingPage = listingRepository.findPopularWithDetails(pageable);
+            } else if (("viewCount".equals(effectiveSortBy) || "views".equals(effectiveSortBy)) 
+                    && (status == null || status == ListingStatus.ACTIVE)) {
+                // Trending books query (sorted by views/viewCount)
+                listingPage = listingRepository.findTrendingWithDetails(pageable);
+            } else if ("publishedDate".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder)
+                    && (status == null || status == ListingStatus.ACTIVE)) {
+                // New releases query (sorted by book's publishedDate desc)
+                listingPage = listingRepository.findNewReleasesByPublishedDateWithDetails(pageable);
             } else if ("createdAt".equals(effectiveSortBy) && "desc".equalsIgnoreCase(effectiveSortOrder) 
                     && (status == null || status == ListingStatus.ACTIVE)) {
                 // New arrivals query (sorted by createdAt desc)
@@ -418,6 +429,7 @@ public class ListingService {
         return listingMapper.toListingResponse(listing);
     }
 
+    @Transactional
     public ListingUpdateResponse updateListing(Long listingId, ListingUpdateRequest request,
             Authentication authentication) {
         log.info(">>> Entered updateListing with listingId={}", listingId);
@@ -446,6 +458,7 @@ public class ListingService {
         }
     }
 
+    @Transactional
     public String hardDeleteListing(Long listingId, Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
@@ -460,6 +473,7 @@ public class ListingService {
         }
     }
 
+    @Transactional
     public ListingUpdateResponse softDeleteListing(Long listingId, Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
@@ -513,12 +527,13 @@ public class ListingService {
 
     /**
      * Get listing by ID (legacy method - now delegates to getListingDetail).
+     * Uses atomic incrementViewCount to avoid read-modify-write race conditions.
      */
     public ListingResponse getListingById(Long listingId, Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_EXISTED));
 
-        // Increment view count if viewer is not the seller
+        // Increment view count atomically if viewer is not the seller
         Long currentUserId = null;
         try {
             currentUserId = securityUtils.getCurrentUserId(authentication);
@@ -527,8 +542,8 @@ public class ListingService {
         }
 
         if (currentUserId == null || !currentUserId.equals(listing.getSeller().getId())) {
-            listing.setViews(listing.getViews() + 1);
-            listingRepository.save(listing);
+            // Use atomic increment query - runs in its own transaction via @Modifying
+            listingRepository.incrementViewCount(listingId);
         }
 
         return listingMapper.toListingResponse(listing);
@@ -545,6 +560,7 @@ public class ListingService {
                 .toList();
     }
 
+    @Transactional
     public ListingResponse updateListingSoldCount(Long listingId, Integer purchaseQuantity,
             Authentication authentication) {
         Listing listing = listingRepository.findById(listingId)
