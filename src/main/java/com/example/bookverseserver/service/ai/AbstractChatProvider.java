@@ -1,5 +1,6 @@
 package com.example.bookverseserver.service.ai;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -7,9 +8,9 @@ import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -101,14 +102,41 @@ public abstract class AbstractChatProvider implements AIProvider {
             
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
+            // Fetch as String first to handle malformed responses gracefully
+            ResponseEntity<String> response = restTemplate.exchange(
                     baseUrl,
                     HttpMethod.POST,
                     request,
-                    JsonNode.class
+                    String.class
             );
             
-            String result = parseResponse(response.getBody());
+            String responseBody = response.getBody();
+            if (responseBody == null || responseBody.isBlank()) {
+                stats.recordCall(false, "Empty response");
+                throw new AIProviderException(name, "Empty response from provider");
+            }
+            
+            // Parse JSON manually for better error messages
+            JsonNode jsonNode;
+            try {
+                jsonNode = objectMapper.readTree(responseBody);
+            } catch (JsonProcessingException e) {
+                log.warn("[{}] Failed to parse response as JSON: {}", name, 
+                        responseBody.substring(0, Math.min(200, responseBody.length())));
+                stats.recordCall(false, "Invalid JSON response");
+                throw new AIProviderException(name, "Invalid JSON response from provider");
+            }
+            
+            // Check for API error in response
+            if (jsonNode.has("error")) {
+                String errorMsg = jsonNode.path("error").path("message").asText(
+                        jsonNode.path("error").asText("Unknown error"));
+                log.warn("[{}] API error: {}", name, errorMsg);
+                stats.recordCall(false, errorMsg);
+                throw new AIProviderException(name, "API error: " + errorMsg);
+            }
+            
+            String result = parseResponse(jsonNode);
             stats.recordCall(true, null);
             
             log.debug("[{}] Generated {} chars", name, result.length());
@@ -135,6 +163,17 @@ public abstract class AbstractChatProvider implements AIProvider {
         } catch (ResourceAccessException e) {
             stats.recordCall(false, "Timeout");
             throw new AIProviderException(name, "Timeout", false, true);
+            
+        } catch (RestClientException e) {
+            // Handle network/connection errors that aren't HTTP errors
+            String errorMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            log.warn("[{}] REST client error: {}", name, errorMsg);
+            stats.recordCall(false, errorMsg);
+            throw new AIProviderException(name, "Connection error: " + errorMsg, e);
+            
+        } catch (AIProviderException e) {
+            // Re-throw our own exceptions without wrapping
+            throw e;
             
         } catch (Exception e) {
             stats.recordCall(false, e.getMessage());
