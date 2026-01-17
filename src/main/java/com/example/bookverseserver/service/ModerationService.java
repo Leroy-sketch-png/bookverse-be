@@ -38,6 +38,7 @@ import static com.example.bookverseserver.enums.ModerationActionType.*;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // P0: Prevent LazyInitializationException & connection leaks
 public class ModerationService {
 
     // Confidence score for user-reported listings (high confidence)

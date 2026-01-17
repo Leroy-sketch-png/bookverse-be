@@ -33,6 +33,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)  // P0: Prevent LazyInitializationException & connection leaks
 public class MessagingService {
     
     ConversationRepository conversationRepository;

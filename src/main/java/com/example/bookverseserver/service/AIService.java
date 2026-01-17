@@ -4,10 +4,12 @@ import com.example.bookverseserver.configuration.AIConfig;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.entity.Product.Review;
+import com.example.bookverseserver.entity.User.UserProfile;
 import com.example.bookverseserver.enums.ListingStatus;
 import com.example.bookverseserver.mapper.ListingMapper;
 import com.example.bookverseserver.repository.ListingRepository;
 import com.example.bookverseserver.repository.ReviewRepository;
+import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.service.ai.AIProviderException;
 import com.example.bookverseserver.service.ai.ProviderRotator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,6 +53,7 @@ public class AIService {
     final ProviderRotator providerRotator;
     final ListingRepository listingRepository;
     final ReviewRepository reviewRepository;
+    final UserProfileRepository userProfileRepository;
     final ListingMapper listingMapper;
     final ObjectMapper objectMapper;
     
@@ -60,11 +63,13 @@ public class AIService {
     @Autowired
     public AIService(AIConfig aiConfig, ProviderRotator providerRotator, 
                      ListingRepository listingRepository, ReviewRepository reviewRepository,
+                     UserProfileRepository userProfileRepository,
                      ListingMapper listingMapper, ObjectMapper objectMapper) {
         this.aiConfig = aiConfig;
         this.providerRotator = providerRotator;
         this.listingRepository = listingRepository;
         this.reviewRepository = reviewRepository;
+        this.userProfileRepository = userProfileRepository;
         this.listingMapper = listingMapper;
         this.objectMapper = objectMapper;
     }
@@ -97,6 +102,33 @@ public class AIService {
         } else {
             log.warn("⚠️ AI enabled but no providers configured");
         }
+    }
+    
+    /**
+     * Get personalized book recommendations for a user by their ID.
+     * This method handles profile lookup internally within a proper transaction.
+     * 
+     * @param userId User ID (can be null for anonymous users)
+     * @param excludeListingIds Listings to exclude
+     * @param limit Max recommendations
+     * @return List of recommended listings
+     */
+    @Transactional(readOnly = true)
+    public List<ListingResponse> getPersonalizedRecommendationsForUser(
+            Long userId,
+            List<Long> excludeListingIds,
+            int limit
+    ) {
+        String preferencesJson = null;
+        
+        if (userId != null) {
+            UserProfile profile = userProfileRepository.findByUserId(userId).orElse(null);
+            if (profile != null) {
+                preferencesJson = profile.getPreferences();
+            }
+        }
+        
+        return getPersonalizedRecommendations(preferencesJson, excludeListingIds, limit);
     }
     
     /**

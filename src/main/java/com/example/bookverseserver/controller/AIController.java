@@ -4,8 +4,6 @@ import com.example.bookverseserver.dto.request.AI.MoodDiscoveryRequest;
 import com.example.bookverseserver.dto.response.AI.MoodDiscoveryResponse;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
-import com.example.bookverseserver.entity.User.UserProfile;
-import com.example.bookverseserver.repository.UserProfileRepository;
 import com.example.bookverseserver.service.AIService;
 import com.example.bookverseserver.service.MoodDiscoveryService;
 import com.example.bookverseserver.util.SecurityUtils;
@@ -41,7 +39,6 @@ public class AIController {
     
     AIService aiService;
     MoodDiscoveryService moodDiscoveryService;
-    UserProfileRepository userProfileRepository;
     SecurityUtils securityUtils;
     
     /**
@@ -55,18 +52,13 @@ public class AIController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) List<Long> excludeIds
     ) {
-        String preferences = null;
-        
+        Long userId = null;
         if (auth != null && auth.isAuthenticated()) {
-            Long userId = securityUtils.getCurrentUserId(auth);
-            UserProfile profile = userProfileRepository.findByUserId(userId).orElse(null);
-            if (profile != null) {
-                preferences = profile.getPreferences();
-            }
+            userId = securityUtils.getCurrentUserId(auth);
         }
         
-        List<ListingResponse> recommendations = aiService.getPersonalizedRecommendations(
-                preferences,
+        List<ListingResponse> recommendations = aiService.getPersonalizedRecommendationsForUser(
+                userId,
                 excludeIds,
                 limit
         );

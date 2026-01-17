@@ -23,6 +23,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)
 public class PublicService {
     
     UserRepository userRepository;
@@ -36,7 +37,6 @@ public class PublicService {
      * Get public platform statistics for homepage display.
      * Cached for 5 minutes to reduce database load.
      */
-    @Transactional(readOnly = true)
     @Cacheable(value = "publicStats", key = "'stats'")
     public PublicStatsResponse getPublicStats() {
         log.debug("Fetching public platform stats");
