@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)  // P0: Prevent LazyInitializationException & connection leaks
 public class CheckoutService {
 
     CartRepository cartRepository;
