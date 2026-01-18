@@ -75,6 +75,10 @@ public class ReportService {
             case "listing" -> {
                 Listing listing = listingRepository.findById(request.getEntityId())
                         .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND));
+                // Prevent self-reporting own listing
+                if (listing.getSeller().getId().equals(reporter.getId())) {
+                    throw new AppException(ErrorCode.CANNOT_REPORT_OWN_ENTITY);
+                }
                 reportBuilder.reportedListing(listing);
                 reportBuilder.reportedUser(listing.getSeller());
                 reportedListing = listing;
@@ -82,6 +86,10 @@ public class ReportService {
             case "seller" -> {
                 User seller = userRepository.findById(request.getEntityId())
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                // Prevent self-reporting own account
+                if (seller.getId().equals(reporter.getId())) {
+                    throw new AppException(ErrorCode.CANNOT_REPORT_OWN_ENTITY);
+                }
                 reportBuilder.reportedUser(seller);
             }
             case "review" -> {

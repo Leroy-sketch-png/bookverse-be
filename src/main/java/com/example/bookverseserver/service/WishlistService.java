@@ -70,13 +70,18 @@ public class WishlistService {
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new AppException(ErrorCode.LISTING_NOT_FOUND, "Listing not found with id: " + listingId));
 
-        // 2. Check Exists (Idempotent)
+        // 2. Prevent sellers from wishlisting their own listing
+        if (listing.getSeller().getId().equals(userId)) {
+            throw new AppException(ErrorCode.CANNOT_WISHLIST_OWN_LISTING);
+        }
+
+        // 3. Check Exists (Idempotent)
         Optional<Wishlist> existing = wishlistRepository.findByUserIdAndListingId(userId, listingId);
         if (existing.isPresent()) {
             return mapToDTO(existing.get());
         }
 
-        // 3. Create New
+        // 4. Create New
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found"));
 

@@ -30,6 +30,10 @@ public enum ErrorCode {
     INSUFFICIENT_STOCK(400, "Insufficient stock", HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_LISTING(400, "Not enough listing quantity", HttpStatus.BAD_REQUEST),
     CANNOT_PURCHASE_OWN_LISTING(400, "You cannot purchase your own listing", HttpStatus.BAD_REQUEST),
+    
+    // Report & Moderation Logic
+    CANNOT_REPORT_OWN_ENTITY(400, "You cannot report your own listing or account", HttpStatus.BAD_REQUEST),
+    CANNOT_WISHLIST_OWN_LISTING(400, "You cannot add your own listing to wishlist", HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_ORDER(400, "Cannot cancel this order (already processed or shipped)", HttpStatus.BAD_REQUEST),
     ORDER_CANNOT_BE_CANCELLED(400, "Order cannot be cancelled", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(400, "Payment failed", HttpStatus.BAD_REQUEST),

@@ -99,7 +99,9 @@ public class CartService {
                 .cartItems(getCartItems(cart))
                 .summary(summary)
                 .voucher(getVoucher(cart))
-                .itemCount(cart.getCartItems() != null ? cart.getCartItems().size() : 0)
+                .itemCount(cart.getCartItems() != null 
+                    ? cart.getCartItems().stream().mapToInt(item -> item.getQuantity()).sum() 
+                    : 0)
                 .build();
     }
 

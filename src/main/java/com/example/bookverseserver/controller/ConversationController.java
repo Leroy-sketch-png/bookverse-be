@@ -42,12 +42,12 @@ public class ConversationController {
                description = "Returns paginated list of conversations for the current user")
     public ApiResponse<Page<ConversationSummaryResponse>> getConversations(
             Authentication auth,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         Long userId = securityUtils.getCurrentUserId(auth);
         Page<ConversationSummaryResponse> conversations = messagingService.getConversations(
-            userId, PageRequest.of(page, size));
+            userId, PageRequest.of(Math.max(0, page - 1), size));
         
         return ApiResponse.<Page<ConversationSummaryResponse>>builder()
             .result(conversations)
@@ -122,11 +122,11 @@ public class ConversationController {
     public ApiResponse<Page<MessageResponse>> getMessages(
             Authentication auth,
             @PathVariable Long id,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         
         Long userId = securityUtils.getCurrentUserId(auth);
-        Page<MessageResponse> messages = messagingService.getMessages(id, userId, PageRequest.of(page, size));
+        Page<MessageResponse> messages = messagingService.getMessages(id, userId, PageRequest.of(Math.max(0, page - 1), size));
         
         return ApiResponse.<Page<MessageResponse>>builder()
             .result(messages)

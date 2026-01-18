@@ -189,7 +189,7 @@ public class UserService {
                     User newUser = new User();
                     newUser.setGoogleId(googleId);
                     newUser.setEmail(email);
-                    newUser.setUsername(email);
+                    newUser.setUsername(generateUniqueUsername(email));
                     newUser.setAuthProvider("GOOGLE");
                     newUser.setEnabled(true);
 
@@ -204,5 +204,35 @@ public class UserService {
 
         user.setLastLogin(LocalDateTime.now());
         return userRepository.save(user);
+    }
+
+    /**
+     * Generate a unique username from email.
+     * Takes the part before @ and appends random digits if needed.
+     */
+    private String generateUniqueUsername(String email) {
+        String baseUsername = email.split("@")[0]
+                .replaceAll("[^a-zA-Z0-9_]", "")  // Keep only alphanumeric and underscore
+                .toLowerCase();
+        
+        if (baseUsername.length() < 3) {
+            baseUsername = "user" + baseUsername;
+        }
+        
+        // If base username is available, use it
+        if (!userRepository.existsByUsername(baseUsername)) {
+            return baseUsername;
+        }
+        
+        // Otherwise append random digits until unique
+        String candidate;
+        int attempts = 0;
+        do {
+            String suffix = String.valueOf((int) (Math.random() * 10000));
+            candidate = baseUsername + suffix;
+            attempts++;
+        } while (userRepository.existsByUsername(candidate) && attempts < 100);
+        
+        return candidate;
     }
 }
