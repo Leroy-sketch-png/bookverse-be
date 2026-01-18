@@ -38,6 +38,13 @@ public class OpenLibraryDataResponse {
     @JsonProperty("publish_places")
     private List<PublishPlace> publishPlaces;
     
+    /**
+     * "by" statement - often contains English author name when authors[] has Cyrillic.
+     * e.g., "Fyodor Dostoyevsky ; translated with an introduction by David McDuff."
+     */
+    @JsonProperty("by_statement")
+    private String byStatement;
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // RICH SUBJECT DATA - The hidden gold
     // ═══════════════════════════════════════════════════════════════════════════

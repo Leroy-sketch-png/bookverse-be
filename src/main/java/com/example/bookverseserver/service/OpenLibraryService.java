@@ -1,9 +1,11 @@
 package com.example.bookverseserver.service;
 
 import com.example.bookverseserver.dto.response.External.*;
+import com.example.bookverseserver.util.DataCleaningUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OpenLibraryService {
 
     private static final String BASE_URL = "https://openlibrary.org";
@@ -91,15 +94,27 @@ public class OpenLibraryService {
         }
 
         // ═══════════════════════════════════════════════════════════════════════════
-        // AUTHORS
+        // AUTHORS — CLEANED (Latin script only, fallback to by_statement)
         // ═══════════════════════════════════════════════════════════════════════════
-        List<String> authorNames = dataResponse.getAuthors() != null
-                ? dataResponse.getAuthors().stream().map(OpenLibraryDataResponse.Author::getName).collect(Collectors.toList())
-                : Collections.emptyList();
-
-        List<String> authorKeys = dataResponse.getAuthors() != null
-                ? dataResponse.getAuthors().stream().map(OpenLibraryDataResponse.Author::getKey).collect(Collectors.toList())
-                : Collections.emptyList();
+        List<String> authorNames = new ArrayList<>();
+        List<String> authorKeys = new ArrayList<>();
+        
+        if (dataResponse.getAuthors() != null) {
+            String byStatement = dataResponse.getByStatement();
+            
+            for (OpenLibraryDataResponse.Author author : dataResponse.getAuthors()) {
+                String rawName = author.getName();
+                String cleanedName = DataCleaningUtils.cleanAuthorName(rawName, byStatement);
+                
+                if (cleanedName != null) {
+                    authorNames.add(cleanedName);
+                    authorKeys.add(author.getKey());
+                } else {
+                    // Log for monitoring - these need manual attention or transliteration table expansion
+                    log.warn("Rejected non-Latin author name: '{}' (key: {})", rawName, author.getKey());
+                }
+            }
+        }
 
         // ═══════════════════════════════════════════════════════════════════════════
         // SUBJECTS (raw for category mapping)
@@ -130,34 +145,34 @@ public class OpenLibraryService {
         }
 
         // ═══════════════════════════════════════════════════════════════════════════
-        // SUBJECT PLACES (story locations)
+        // SUBJECT PLACES (story locations) — CLEANED & DEDUPLICATED
         // ═══════════════════════════════════════════════════════════════════════════
-        List<String> subjectPlaces = dataResponse.getSubjectPlaces() != null
+        List<String> rawPlaces = dataResponse.getSubjectPlaces() != null
                 ? dataResponse.getSubjectPlaces().stream()
                     .map(OpenLibraryDataResponse.SubjectPlace::getName)
-                    .limit(10) // Cap at 10
                     .collect(Collectors.toList())
                 : Collections.emptyList();
-
+        List<String> subjectPlaces = DataCleaningUtils.cleanSubjectList(rawPlaces, 5);
+        
         // ═══════════════════════════════════════════════════════════════════════════
-        // SUBJECT PEOPLE (characters)
+        // SUBJECT PEOPLE (characters) — CLEANED & DEDUPLICATED
         // ═══════════════════════════════════════════════════════════════════════════
-        List<String> subjectPeople = dataResponse.getSubjectPeople() != null
+        List<String> rawPeople = dataResponse.getSubjectPeople() != null
                 ? dataResponse.getSubjectPeople().stream()
                     .map(OpenLibraryDataResponse.SubjectPerson::getName)
-                    .limit(15) // Cap at 15 characters
                     .collect(Collectors.toList())
                 : Collections.emptyList();
+        List<String> subjectPeople = DataCleaningUtils.cleanSubjectList(rawPeople, 8);
 
         // ═══════════════════════════════════════════════════════════════════════════
-        // SUBJECT TIMES (eras/periods)
+        // SUBJECT TIMES (eras/periods) — CLEANED & DEDUPLICATED
         // ═══════════════════════════════════════════════════════════════════════════
-        List<String> subjectTimes = dataResponse.getSubjectTimes() != null
+        List<String> rawTimes = dataResponse.getSubjectTimes() != null
                 ? dataResponse.getSubjectTimes().stream()
                     .map(OpenLibraryDataResponse.SubjectTime::getName)
-                    .limit(5) // Cap at 5
                     .collect(Collectors.toList())
                 : Collections.emptyList();
+        List<String> subjectTimes = DataCleaningUtils.cleanSubjectList(rawTimes, 3);
 
         // ═══════════════════════════════════════════════════════════════════════════
         // EXTERNAL LINKS (Wikipedia, Britannica, etc.)
