@@ -53,6 +53,8 @@ public class ListingController {
          * - authorId: filter by author
          * - condition: filter by book condition (NEW, LIKE_NEW, GOOD, ACCEPTABLE)
          * - status: filter by status (ACTIVE, SOLD_OUT, DRAFT, etc.)
+         * - minPrice: minimum price filter (inclusive)
+         * - maxPrice: maximum price filter (inclusive)
          * - sortBy: createdAt, price, viewCount, soldCount
          * - sortOrder: asc, desc
          * - page: page number (0-indexed)
@@ -67,6 +69,8 @@ public class ListingController {
                         @RequestParam(required = false) Long authorId,
                         @RequestParam(required = false) BookCondition condition,
                         @RequestParam(required = false) ListingStatus status,
+                        @RequestParam(required = false) Double minPrice,
+                        @RequestParam(required = false) Double maxPrice,
                         @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                         @RequestParam(required = false, defaultValue = "desc") String sortOrder,
                         @RequestParam(defaultValue = "1") int page,
@@ -75,7 +79,8 @@ public class ListingController {
                 int pageIndex = PaginationUtils.safePage(page);
                 int safeSize = PaginationUtils.safeSize(size);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                q, sellerId, bookId, categoryId, authorId, condition, status, sortBy, sortOrder, pageIndex, safeSize);
+                                q, sellerId, bookId, categoryId, authorId, condition, status,
+                                minPrice, maxPrice, sortBy, sortOrder, pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)
@@ -143,7 +148,8 @@ public class ListingController {
                 int pageIndex = PaginationUtils.safePage(page);
                 int safeSize = PaginationUtils.safeSize(size);
                 PagedResponse<ListingResponse> result = listingService.getListingsFiltered(
-                                null, sellerId, null, null, null, null, ListingStatus.ACTIVE, sortBy, sortOrder, pageIndex, safeSize);
+                                null, sellerId, null, null, null, null, ListingStatus.ACTIVE,
+                                null, null, sortBy, sortOrder, pageIndex, safeSize);
 
                 return ResponseEntity.ok(ApiResponse.<PagedResponse<ListingResponse>>builder()
                                 .result(result)

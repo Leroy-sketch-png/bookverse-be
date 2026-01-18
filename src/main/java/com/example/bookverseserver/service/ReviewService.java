@@ -59,6 +59,7 @@ public class ReviewService {
     OrderItemRepository orderItemRepository;
     UserRepository userRepository;
     HtmlSanitizer htmlSanitizer;
+    ContentModerationService contentModerationService;
 
     // =========================================================================
     // 1. Create Review (for completed order item)
@@ -104,6 +105,34 @@ public class ReviewService {
         // 6. Create review with XSS-sanitized comment
         String sanitizedComment = htmlSanitizer.sanitizeBasic(request.getComment());
         
+        // 7. Content moderation check (hybrid rule-based)
+        var moderationResult = contentModerationService.moderate(
+                com.example.bookverseserver.dto.request.ModerationRequest.builder()
+                        .text(sanitizedComment)
+                        .contentType("REVIEW")
+                        .build()
+        );
+        
+        if (moderationResult.getDecision() == com.example.bookverseserver.enums.ContentModerationDecision.BLOCK) {
+            log.warn("Review blocked by content moderation for user {}: {} (category: {})", 
+                    userId, moderationResult.getReason(), moderationResult.getCategory());
+            // Use category-specific error codes for better user feedback
+            ErrorCode errorCode = switch (moderationResult.getCategory()) {
+                case TOXIC -> ErrorCode.CONTENT_TOXIC;
+                case SPAM -> ErrorCode.CONTENT_SPAM;
+                case OFF_TOPIC -> ErrorCode.CONTENT_OFF_TOPIC;
+                default -> ErrorCode.CONTENT_POLICY_VIOLATION;
+            };
+            throw new AppException(errorCode);
+        }
+        
+        // If flagged, we still allow but log for human review
+        if (moderationResult.getDecision() == com.example.bookverseserver.enums.ContentModerationDecision.FLAG) {
+            log.info("Review flagged for human review for user {}: score={}, terms={}", 
+                    userId, moderationResult.getScore(), moderationResult.getMatchedTerms());
+        }
+        
+        // 8. Build review entity
         Review review = Review.builder()
                 .orderItem(orderItem)
                 .listing(orderItem.getListing())

@@ -66,6 +66,7 @@ public class ListingService {
     OpenLibraryService openLibraryService;
     SecurityUtils securityUtils;
     HtmlSanitizer htmlSanitizer;
+    ContentModerationService contentModerationService;
 
     // ============ Filtered Listings Query ============
 
@@ -97,6 +98,8 @@ public class ListingService {
             Long authorId,
             BookCondition condition,
             ListingStatus status,
+            Double minPrice,
+            Double maxPrice,
             String sortBy,
             String sortOrder,
             int page,
@@ -107,7 +110,11 @@ public class ListingService {
         String effectiveSortBy = sortBy != null ? sortBy : "createdAt";
         String effectiveSortOrder = sortOrder != null ? sortOrder : "desc";
         
-        boolean canUseOptimizedQuery = (query == null || query.trim().isEmpty())
+        // Price filter means we can't use the optimized path
+        boolean hasPriceFilter = minPrice != null || maxPrice != null;
+        
+        boolean canUseOptimizedQuery = !hasPriceFilter
+                && (query == null || query.trim().isEmpty())
                 && sellerId == null
                 && bookId == null
                 && categoryId == null
@@ -184,6 +191,13 @@ public class ListingService {
         if (condition != null) {
             spec = spec.and(ListingSpecification.hasCondition(condition));
         }
+        // Price range filtering (AI search integration)
+        if (minPrice != null) {
+            spec = spec.and(ListingSpecification.hasMinPrice(minPrice));
+        }
+        if (maxPrice != null) {
+            spec = spec.and(ListingSpecification.hasMaxPrice(maxPrice));
+        }
         if (status != null) {
             spec = spec.and(ListingSpecification.hasStatus(status));
         } else {
@@ -198,8 +212,22 @@ public class ListingService {
         // Execute query
         Page<Listing> listingPage = listingRepository.findAll(spec, pageable);
 
+        // Post-filter for exact finalPrice matching (handles promoted items)
+        // The specification casts a wide net, we filter precisely here
+        List<Listing> filteredListings = listingPage.getContent();
+        if (maxPrice != null) {
+            filteredListings = filteredListings.stream()
+                    .filter(listing -> listing.getFinalPrice().doubleValue() <= maxPrice)
+                    .toList();
+        }
+        if (minPrice != null) {
+            filteredListings = filteredListings.stream()
+                    .filter(listing -> listing.getFinalPrice().doubleValue() >= minPrice)
+                    .toList();
+        }
+
         // Map to DTOs
-        List<ListingResponse> responses = listingPage.getContent().stream()
+        List<ListingResponse> responses = filteredListings.stream()
                 .map(listingMapper::toListingResponse)
                 .toList();
 
@@ -411,6 +439,38 @@ public class ListingService {
         }
         if (listing.getTitleOverride() != null) {
             listing.setTitleOverride(htmlSanitizer.sanitizeStrict(listing.getTitleOverride()));
+        }
+        
+        // Content moderation check for listing description
+        String contentToModerate = listing.getDescription() != null ? listing.getDescription() : "";
+        if (listing.getTitleOverride() != null) {
+            contentToModerate = listing.getTitleOverride() + " " + contentToModerate;
+        }
+        if (!contentToModerate.isBlank()) {
+            var moderationResult = contentModerationService.moderate(
+                    com.example.bookverseserver.dto.request.ModerationRequest.builder()
+                            .text(contentToModerate)
+                            .contentType("LISTING")
+                            .build()
+            );
+            
+            if (moderationResult.getDecision() == com.example.bookverseserver.enums.ContentModerationDecision.BLOCK) {
+                log.warn("Listing blocked by content moderation: {} (category: {})", 
+                        moderationResult.getReason(), moderationResult.getCategory());
+                // Use category-specific error codes for better user feedback
+                ErrorCode errorCode = switch (moderationResult.getCategory()) {
+                    case TOXIC -> ErrorCode.CONTENT_TOXIC;
+                    case SPAM -> ErrorCode.CONTENT_SPAM;
+                    case OFF_TOPIC -> ErrorCode.CONTENT_OFF_TOPIC;
+                    default -> ErrorCode.CONTENT_POLICY_VIOLATION;
+                };
+                throw new AppException(errorCode);
+            }
+            
+            if (moderationResult.getDecision() == com.example.bookverseserver.enums.ContentModerationDecision.FLAG) {
+                log.info("Listing flagged for human review: score={}, terms={}", 
+                        moderationResult.getScore(), moderationResult.getMatchedTerms());
+            }
         }
         
         listing = listingRepository.save(listing);

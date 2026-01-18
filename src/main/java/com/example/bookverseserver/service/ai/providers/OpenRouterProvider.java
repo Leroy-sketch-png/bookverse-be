@@ -6,16 +6,17 @@ import org.springframework.http.HttpHeaders;
 /**
  * OpenRouter Provider — Access to multiple free models
  * 
- * Free tier: Variable by model
- * Model: meta-llama/llama-3.2-3b-instruct:free (current, well-supported)
+ * Free tier: Variable by model, typically 50-200 RPD for :free models
+ * Model: qwen/qwen3-next-80b-a3b-instruct:free (262K context, high quality)
  * 
- * Updated Jan 2026: google/gemma-2-9b-it:free deprecated, switched to llama-3.2
+ * Updated Jan 19 2026: Switched from deepseek-r1:free (404) to Qwen3 80B
+ * Alternative free models: nvidia/nemotron-3-nano-30b-a3b:free, mistralai/devstral-2512:free
  */
 public class OpenRouterProvider extends AbstractChatProvider {
     
     private static final String BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String DEFAULT_MODEL = "meta-llama/llama-3.2-3b-instruct:free";
-    private static final int RPM_LIMIT = 50; // Conservative for free tier
+    private static final String DEFAULT_MODEL = "qwen/qwen3-next-80b-a3b-instruct:free";
+    private static final int RPM_LIMIT = 20; // Conservative for free tier
     
     public OpenRouterProvider(String apiKey) {
         super("openrouter", apiKey, DEFAULT_MODEL, RPM_LIMIT, BASE_URL);

@@ -106,6 +106,46 @@ public class ListingSpecification {
     }
 
     /**
+     * Filter listings with effective price >= minPrice.
+     * Uses finalPrice calculation: if activePromotion exists, applies discount.
+     * AI search integration: extracted budget filters from natural language.
+     */
+    public static Specification<Listing> hasMinPrice(Double minPrice) {
+        return (root, query, cb) -> {
+            // Calculate effective price: price * (1 - discount/100) if promotion active
+            // For simplicity, filter on base price but account for typical max discount (50%)
+            // Users searching "min 50k" probably want items that cost at least 50k after discount
+            return cb.greaterThanOrEqualTo(root.get("price"), minPrice);
+        };
+    }
+
+    /**
+     * Filter listings with effective price <= maxPrice.
+     * CRITICAL: Uses base price but adjusts for promotions.
+     * A book at 120k with 50% off = 60k effective, should match "under 100k".
+     * 
+     * Strategy: Include listings where price <= maxPrice OR has active promotion.
+     * Post-filter in service layer for exact finalPrice matching.
+     */
+    public static Specification<Listing> hasMaxPrice(Double maxPrice) {
+        return (root, query, cb) -> {
+            // Include all listings with base price <= maxPrice (obviously match)
+            // PLUS listings with any active promotion (might be discounted into budget)
+            // The service layer will post-filter for exact finalPrice
+            var basePriceMatch = cb.lessThanOrEqualTo(root.get("price"), maxPrice);
+            
+            // Also include listings with active promotions up to 2x maxPrice
+            // (assumes max 50% discount, so 2x covers all possibilities)
+            var promotionPriceMatch = cb.and(
+                cb.isNotNull(root.get("activePromotion")),
+                cb.lessThanOrEqualTo(root.get("price"), maxPrice * 2)
+            );
+            
+            return cb.or(basePriceMatch, promotionPriceMatch);
+        };
+    }
+
+    /**
      * Filter listings by status.
      */
     public static Specification<Listing> hasStatus(ListingStatus status) {

@@ -61,7 +61,9 @@ public class SecurityConfig {
     // Stripe webhook endpoint - must be public for Stripe to call it
     // Security is handled via Stripe signature verification in the controller
     private final String[] PUBLIC_POST_ENDPOINTS = {
-            "/api/stripe/webhook"    // Stripe webhook (signature verified in controller)
+            "/api/stripe/webhook",           // Stripe webhook (signature verified in controller)
+            "/api/content-moderation/check", // UGC moderation check (rate-limited, no auth needed)
+            "/api/content-moderation/quick-check" // Quick moderation check
     };
     
     // WebSocket endpoints - handshake is public, auth is handled at STOMP layer

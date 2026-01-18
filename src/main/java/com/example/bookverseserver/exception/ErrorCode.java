@@ -37,6 +37,10 @@ public enum ErrorCode {
     // Report & Moderation Logic
     CANNOT_REPORT_OWN_ENTITY(400, "You cannot report your own listing or account", HttpStatus.BAD_REQUEST),
     CANNOT_WISHLIST_OWN_LISTING(400, "You cannot add your own listing to wishlist", HttpStatus.BAD_REQUEST),
+    CONTENT_POLICY_VIOLATION(400, "Content violates our community guidelines. Please revise and try again.", HttpStatus.BAD_REQUEST),
+    CONTENT_TOXIC(400, "Your content contains language that may be offensive. Please revise and remove any hostile or hateful language.", HttpStatus.BAD_REQUEST),
+    CONTENT_SPAM(400, "Your content was flagged as spam. Please remove promotional content or excessive links.", HttpStatus.BAD_REQUEST),
+    CONTENT_OFF_TOPIC(400, "Your content appears off-topic. Please keep reviews focused on the book.", HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_ORDER(400, "Cannot cancel this order (already processed or shipped)", HttpStatus.BAD_REQUEST),
     ORDER_CANNOT_BE_CANCELLED(400, "Order cannot be cancelled", HttpStatus.BAD_REQUEST),
     ORDER_ALREADY_PAID(400, "This order has already been paid", HttpStatus.BAD_REQUEST),

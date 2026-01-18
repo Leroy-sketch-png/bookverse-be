@@ -14,15 +14,16 @@ import java.util.Map;
 /**
  * Google Gemini Provider — Backup with limited free tier
  * 
- * Free tier: 15 RPM / 1500 RPD
- * Model: gemini-2.0-flash-exp
+ * Free tier: 15 RPM / 1500 RPD (strictly enforced)
+ * Model: gemini-2.0-flash (stable, production-ready)
  * 
  * Note: Uses Google's native API format, not OpenAI-compatible
+ * Updated Jan 2026: Using stable flash model instead of -exp variant
  */
 public class GeminiProvider extends AbstractChatProvider {
     
-    private static final String DEFAULT_MODEL = "gemini-2.0-flash-exp";
-    private static final int RPM_LIMIT = 5; // Be very conservative
+    private static final String DEFAULT_MODEL = "gemini-2.0-flash";
+    private static final int RPM_LIMIT = 3; // Very conservative - last resort backup
     
     public GeminiProvider(String apiKey) {
         super("gemini", apiKey, DEFAULT_MODEL, RPM_LIMIT, buildUrl(DEFAULT_MODEL, apiKey));

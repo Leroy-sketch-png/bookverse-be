@@ -145,6 +145,7 @@ class ListingControllerTest {
         void getListings_DefaultParams_ReturnsListings() throws Exception {
             when(listingService.getListingsFiltered(
                     isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -162,6 +163,7 @@ class ListingControllerTest {
         void getListings_WithSellerFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
                     isNull(), eq(50L), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -178,6 +180,7 @@ class ListingControllerTest {
         void getListings_WithStatusFilter_ReturnsFilteredListings() throws Exception {
             when(listingService.getListingsFiltered(
                     isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(ListingStatus.ACTIVE),
+                    isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -194,6 +197,7 @@ class ListingControllerTest {
         void getListings_SortedByPrice_ReturnsSortedListings() throws Exception {
             when(listingService.getListingsFiltered(
                     isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(),
                     eq("price"), eq("asc"),
                     eq(0), eq(20)))
                     .thenReturn(samplePagedResponse);
@@ -211,6 +215,7 @@ class ListingControllerTest {
         void getListings_WithPagination_ReturnsPaginatedResults() throws Exception {
             when(listingService.getListingsFiltered(
                     isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(),
+                    isNull(), isNull(),
                     eq("createdAt"), eq("desc"),
                     eq(1), eq(10)))
                     .thenReturn(samplePagedResponse);
