@@ -113,7 +113,6 @@ public class PublicSellerService {
                 .displayName(profile != null && profile.getFullName() != null 
                         ? profile.getFullName() : seller.getUsername())
                 .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
-                .coverImageUrl(profile != null ? profile.getCoverImageUrl() : null)
                 .bio(profile != null ? profile.getBio() : null)
                 .location(profile != null ? profile.getLocation() : null)
                 .memberSince(memberSince)

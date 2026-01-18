@@ -14,7 +14,6 @@ public class ProfileResponse {
     private String fullName;
     private String phoneNumber;
     private String avatarUrl;
-    private String coverImageUrl; // Added for seller profile banner
     private String bio;
     private String location;
     private String accountType;

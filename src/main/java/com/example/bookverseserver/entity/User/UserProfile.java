@@ -41,9 +41,6 @@ public class UserProfile {
 
     @Column(name = "avatar_url")
     String avatarUrl;
-    
-    @Column(name = "cover_image_url", columnDefinition = "TEXT")
-    String coverImageUrl;
 
     @Column
     String bio;
