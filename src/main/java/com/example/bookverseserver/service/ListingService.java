@@ -800,11 +800,13 @@ public class ListingService {
                 .categories(categories)
                 .openLibraryId(data.getOpenLibraryId())
                 .goodreadsId(data.getGoodreadsId())
+                .googleBooksId(data.getGoogleBooksId())
                 .firstLine(data.getFirstLine())
                 .subjectPlaces(data.getSubjectPlaces() != null ? String.join(", ", data.getSubjectPlaces()) : null)
                 .subjectPeople(data.getSubjectPeople() != null ? String.join(", ", data.getSubjectPeople()) : null)
                 .subjectTimes(data.getSubjectTimes() != null ? String.join(", ", data.getSubjectTimes()) : null)
                 .externalLinks(serializeExternalLinks(data.getExternalLinks()))
+                .tableOfContents(serializeTableOfContents(data.getTableOfContents()))
                 .build();
         
         // Save first to get ID
@@ -958,6 +960,28 @@ public class ListingService {
             );
         } catch (Exception e) {
             log.warn("Failed to serialize external links: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Serialize table of contents to JSON for storage.
+     */
+    private String serializeTableOfContents(List<RichBookData.TableOfContentsEntry> toc) {
+        if (toc == null || toc.isEmpty()) {
+            return null;
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(
+                    toc.stream()
+                            .map(entry -> java.util.Map.of(
+                                    "label", entry.getLabel() != null ? entry.getLabel() : "",
+                                    "title", entry.getTitle() != null ? entry.getTitle() : ""
+                            ))
+                            .toList()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to serialize table of contents: {}", e.getMessage());
             return null;
         }
     }

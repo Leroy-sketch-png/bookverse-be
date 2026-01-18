@@ -408,9 +408,29 @@ public class BookService {
             }
         }
         
+        // Table of contents
+        if (bookMeta.getTableOfContents() != null) {
+            try {
+                List<Map<String, String>> toc = objectMapper.readValue(
+                        bookMeta.getTableOfContents(), 
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+                response.setTableOfContents(toc.stream()
+                        .map(entry -> {
+                            BookDetailResponse.TableOfContentsEntryResponse tocEntry = new BookDetailResponse.TableOfContentsEntryResponse();
+                            tocEntry.setLabel(entry.get("label"));
+                            tocEntry.setTitle(entry.get("title"));
+                            return tocEntry;
+                        })
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                log.warn("Failed to parse table of contents: {}", e.getMessage());
+            }
+        }
+        
         // Cross-platform IDs
         response.setOpenLibraryId(bookMeta.getOpenLibraryId());
         response.setGoodreadsId(bookMeta.getGoodreadsId());
+        response.setGoogleBooksId(bookMeta.getGoogleBooksId());
         
         // ═══════════════════════════════════════════════════════════════════════════
         // RATINGS - COMPUTED FROM REAL REVIEWS (not hardcoded fiction!)

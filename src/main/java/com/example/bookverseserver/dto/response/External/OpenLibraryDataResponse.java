@@ -80,12 +80,20 @@ public class OpenLibraryDataResponse {
     private List<Excerpt> excerpts;
     
     /**
+     * Table of contents - chapter titles and structure
+     * Enables book preview feature for buyers.
+     * e.g., [{"label": "Chapter 1", "title": "The boy who lived"}, ...]
+     */
+    @JsonProperty("table_of_contents")
+    private List<TableOfContentsEntry> tableOfContents;
+    
+    /**
      * External links - Wikipedia, Britannica, author sites
      */
     private List<ExternalLink> links;
     
     /**
-     * Cross-platform identifiers - goodreads, oclc, isbn_10, isbn_13, etc.
+     * Cross-platform identifiers - goodreads, oclc, isbn_10, isbn_13, google, etc.
      */
     private Identifiers identifiers;
     
@@ -183,6 +191,15 @@ public class OpenLibraryDataResponse {
     
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TableOfContentsEntry {
+        private int level;          // Nesting level (0 = top-level chapter)
+        private String label;       // e.g., "Chapter 1"
+        private String title;       // e.g., "The boy who lived"
+        private String pagenum;     // Page number (may be empty)
+    }
+    
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ExternalLink {
         private String title;
         private String url;
@@ -198,6 +215,7 @@ public class OpenLibraryDataResponse {
         private List<String> isbn13;
         
         private List<String> goodreads;
+        private List<String> google;      // Google Books ID
         private List<String> oclc;
         private List<String> openlibrary;
     }

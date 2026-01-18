@@ -95,6 +95,13 @@ public class BookMeta {
     String externalLinks;
     
     /**
+     * Table of contents as JSON: [{"label": "Chapter 1", "title": "The boy who lived"}, ...]
+     * Enables book preview feature for buyers
+     */
+    @Column(name = "table_of_contents", columnDefinition = "TEXT")
+    String tableOfContents;
+    
+    /**
      * Open Library Work/Edition ID: "OL8479867M"
      * For attribution and future data syncs
      */
@@ -106,6 +113,12 @@ public class BookMeta {
      */
     @Column(name = "goodreads_id", length = 50)
     String goodreadsId;
+    
+    /**
+     * Google Books ID for cross-platform linking
+     */
+    @Column(name = "google_books_id", length = 50)
+    String googleBooksId;
 
     // ═══════════════════════════════════════════════════════════════════════════
 

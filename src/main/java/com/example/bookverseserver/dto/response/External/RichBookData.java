@@ -78,6 +78,12 @@ public class RichBookData {
      */
     private List<ExternalLink> externalLinks;
     
+    /**
+     * Table of contents - chapter titles for book preview
+     * [{"label": "Chapter 1", "title": "The boy who lived"}, ...]
+     */
+    private List<TableOfContentsEntry> tableOfContents;
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // CROSS-PLATFORM IDs
     // ═══════════════════════════════════════════════════════════════════════════
@@ -92,10 +98,22 @@ public class RichBookData {
      */
     private String goodreadsId;
     
+    /**
+     * Google Books ID for cross-platform linking
+     */
+    private String googleBooksId;
+    
     @Data
     @Builder
     public static class ExternalLink {
         private String title;
         private String url;
+    }
+    
+    @Data
+    @Builder
+    public static class TableOfContentsEntry {
+        private String label;   // e.g., "Chapter 1"
+        private String title;   // e.g., "The boy who lived"
     }
 }

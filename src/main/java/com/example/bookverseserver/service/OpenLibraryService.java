@@ -178,6 +178,7 @@ public class OpenLibraryService {
         // ═══════════════════════════════════════════════════════════════════════════
         String openLibraryId = null;
         String goodreadsId = null;
+        String googleBooksId = null;
         
         if (dataResponse.getIdentifiers() != null) {
             if (dataResponse.getIdentifiers().getOpenlibrary() != null 
@@ -187,6 +188,10 @@ public class OpenLibraryService {
             if (dataResponse.getIdentifiers().getGoodreads() != null 
                 && !dataResponse.getIdentifiers().getGoodreads().isEmpty()) {
                 goodreadsId = dataResponse.getIdentifiers().getGoodreads().get(0);
+            }
+            if (dataResponse.getIdentifiers().getGoogle() != null 
+                && !dataResponse.getIdentifiers().getGoogle().isEmpty()) {
+                googleBooksId = dataResponse.getIdentifiers().getGoogle().get(0);
             }
         }
         
@@ -198,6 +203,20 @@ public class OpenLibraryService {
                 openLibraryId = key.substring(7);
             }
         }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // TABLE OF CONTENTS (NEW - High Value!)
+        // ═══════════════════════════════════════════════════════════════════════════
+        List<RichBookData.TableOfContentsEntry> tableOfContents = dataResponse.getTableOfContents() != null
+                ? dataResponse.getTableOfContents().stream()
+                    .filter(entry -> entry.getTitle() != null && !entry.getTitle().isEmpty())
+                    .map(entry -> RichBookData.TableOfContentsEntry.builder()
+                            .label(entry.getLabel())
+                            .title(entry.getTitle())
+                            .build())
+                    .limit(50) // Cap at 50 chapters
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
 
         return RichBookData.builder()
                 .title(dataResponse.getTitle())
@@ -216,8 +235,10 @@ public class OpenLibraryService {
                 .subjectPeople(subjectPeople)
                 .subjectTimes(subjectTimes)
                 .externalLinks(externalLinks)
+                .tableOfContents(tableOfContents)
                 .openLibraryId(openLibraryId)
                 .goodreadsId(goodreadsId)
+                .googleBooksId(googleBooksId)
                 .build();
     }
 

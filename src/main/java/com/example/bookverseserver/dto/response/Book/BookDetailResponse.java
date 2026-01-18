@@ -69,6 +69,12 @@ public class BookDetailResponse {
     private List<ExternalLinkResponse> externalLinks;
     
     /**
+     * Table of contents - chapter titles for book preview
+     * [{"label": "Chapter 1", "title": "The boy who lived"}, ...]
+     */
+    private List<TableOfContentsEntryResponse> tableOfContents;
+    
+    /**
      * Open Library Edition ID
      */
     private String openLibraryId;
@@ -77,6 +83,11 @@ public class BookDetailResponse {
      * Goodreads ID for linking
      */
     private String goodreadsId;
+    
+    /**
+     * Google Books ID for cross-platform linking
+     */
+    private String googleBooksId;
     
     // ═══════════════════════════════════════════════════════════════════════════
     // MARKETPLACE: AVAILABLE LISTINGS
@@ -108,6 +119,12 @@ public class BookDetailResponse {
     public static class ExternalLinkResponse {
         private String title;
         private String url;
+    }
+    
+    @Data
+    public static class TableOfContentsEntryResponse {
+        private String label;   // e.g., "Chapter 1"
+        private String title;   // e.g., "The boy who lived"
     }
     
     @Data
