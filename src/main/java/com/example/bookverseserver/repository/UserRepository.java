@@ -26,13 +26,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) OR LOWER(u.username) = LOWER(:username)")
     Optional<User> findByEmailOrUsernameIgnoreCase(@Param("email") String email, @Param("username") String username);
 
-    /**
-     * @deprecated Use findByEmailOrUsernameIgnoreCase instead for security.
-     * This method is case-sensitive and can lead to duplicate accounts.
-     */
-    @Deprecated
-    Optional<User> findByEmailOrUsername(String email, String username);
-
     Optional<User> findByGoogleId(String googleId);
 
     /**

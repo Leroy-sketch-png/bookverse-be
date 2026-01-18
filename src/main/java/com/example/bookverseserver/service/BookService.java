@@ -14,6 +14,7 @@ import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.mapper.AuthorMapper;
 import com.example.bookverseserver.repository.BookMetaRepository;
 import com.example.bookverseserver.repository.ListingRepository;
+import com.example.bookverseserver.repository.ReviewRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Join;
@@ -42,6 +43,7 @@ public class BookService {
 
     private final BookMetaRepository bookMetaRepository;
     private final ListingRepository listingRepository;
+    private final ReviewRepository reviewRepository;
     private final OpenLibraryService openLibraryService;
     private final AuthorService authorService;
     private final CategoryService categoryService;
@@ -302,9 +304,11 @@ public class BookService {
             bookResponse.setCurrency(currency);
         }
         
-        // Book-level ratings
-        bookResponse.setAverageRating(bookMeta.getAverageRating());
-        bookResponse.setTotalReviews(bookMeta.getTotalReviews());
+        // Book-level ratings - COMPUTED FROM REAL REVIEWS (not hardcoded!)
+        Double realAvgRating = reviewRepository.calculateAverageRatingForBook(bookMeta.getId());
+        Long realReviewCount = reviewRepository.countReviewsForBook(bookMeta.getId());
+        bookResponse.setAverageRating(realAvgRating != null ? BigDecimal.valueOf(realAvgRating) : null);
+        bookResponse.setTotalReviews(realReviewCount != null ? realReviewCount.intValue() : 0);
         
         return bookResponse;
     }
@@ -336,9 +340,11 @@ public class BookService {
             bookResponse.setTotalListings(0);
         }
         
-        // Book-level ratings
-        bookResponse.setAverageRating(bookMeta.getAverageRating());
-        bookResponse.setTotalReviews(bookMeta.getTotalReviews());
+        // Book-level ratings - COMPUTED FROM REAL REVIEWS (not hardcoded!)
+        Double realAvgRating = reviewRepository.calculateAverageRatingForBook(bookMeta.getId());
+        Long realReviewCount = reviewRepository.countReviewsForBook(bookMeta.getId());
+        bookResponse.setAverageRating(realAvgRating != null ? BigDecimal.valueOf(realAvgRating) : null);
+        bookResponse.setTotalReviews(realReviewCount != null ? realReviewCount.intValue() : 0);
         
         return bookResponse;
     }
@@ -407,10 +413,12 @@ public class BookService {
         response.setGoodreadsId(bookMeta.getGoodreadsId());
         
         // ═══════════════════════════════════════════════════════════════════════════
-        // RATINGS (for the BOOK, not individual listings)
+        // RATINGS - COMPUTED FROM REAL REVIEWS (not hardcoded fiction!)
         // ═══════════════════════════════════════════════════════════════════════════
-        response.setAverageRating(bookMeta.getAverageRating() != null ? bookMeta.getAverageRating().doubleValue() : 0.0);
-        response.setTotalReviews(bookMeta.getTotalReviews() != null ? bookMeta.getTotalReviews() : 0);
+        Double realAvgRating = reviewRepository.calculateAverageRatingForBook(bookMeta.getId());
+        Long realReviewCount = reviewRepository.countReviewsForBook(bookMeta.getId());
+        response.setAverageRating(realAvgRating != null ? realAvgRating : 0.0);
+        response.setTotalReviews(realReviewCount != null ? realReviewCount.intValue() : 0);
         
         // ═══════════════════════════════════════════════════════════════════════════
         // MARKETPLACE: ALL AVAILABLE LISTINGS FROM ALL SELLERS

@@ -210,7 +210,7 @@ public class AuthorService {
                 return authorRepository.save(fullAuthor);
             } catch (Exception e) {
                 // If API fails (e.g. timeout), log it and fall back to skeleton creation below
-                System.err.println("Failed to enrich author details for " + name + ": " + e.getMessage());
+                log.warn("Failed to enrich author details for {}: {}", name, e.getMessage());
             }
         }
 

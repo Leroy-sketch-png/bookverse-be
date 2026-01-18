@@ -17,4 +17,5 @@ public class SellerBalanceResponse {
     BigDecimal completedPayouts;    // All-time completed payouts
     BigDecimal availableForPayout;  // What can be requested now
     BigDecimal commissionRate;      // 3% for PRO, 8% for casual
+    BigDecimal minPayoutAmount;     // Minimum payout threshold (₫100,000)
 }

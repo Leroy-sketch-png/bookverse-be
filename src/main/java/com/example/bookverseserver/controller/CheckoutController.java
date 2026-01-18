@@ -159,10 +159,11 @@ public class CheckoutController {
     // ============ Legacy endpoint for backward compatibility ============
     
     /**
-     * @deprecated Use POST /checkout/session instead
+     * @deprecated Use POST /checkout/session instead. This endpoint will return 410 GONE in future versions.
      */
+    @Deprecated(since = "2.0", forRemoval = true)
     @PostMapping
-    @Operation(summary = "Create checkout (legacy)", description = "Legacy endpoint - use POST /checkout/session instead")
+    @Operation(summary = "Create checkout (legacy)", description = "Legacy endpoint - use POST /checkout/session instead", deprecated = true)
     public ApiResponse<CheckoutResponse> createCheckoutSession(
             @RequestBody CreateCheckoutRequest request,
             Authentication authentication) {

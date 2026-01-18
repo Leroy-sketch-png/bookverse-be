@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -107,6 +108,9 @@ public class SecurityConfig {
 
     @Autowired
     private CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+    
+    @Autowired
+    private RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
@@ -135,6 +139,9 @@ public class SecurityConfig {
                 .authenticationEntryPoint(customAuthenticationFailureHandler));
 
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
+        
+        // Add rate limiting filter before authentication
+        httpSecurity.addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();
     }

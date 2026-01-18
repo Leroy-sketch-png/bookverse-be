@@ -6,6 +6,8 @@ import com.example.bookverseserver.dto.response.AI.MoodDiscoveryResponse.MoodRec
 import com.example.bookverseserver.dto.response.AI.MoodDiscoveryResponse.RelatedMood;
 import com.example.bookverseserver.entity.Product.Listing;
 import com.example.bookverseserver.enums.ListingStatus;
+import com.example.bookverseserver.exception.AppException;
+import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.ListingRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -245,7 +247,7 @@ public class MoodDiscoveryService {
                 
         } catch (Exception e) {
             log.error("Failed to parse AI response: {}", e.getMessage());
-            throw new RuntimeException("AI response parsing failed", e);
+            throw new AppException(ErrorCode.AI_RESPONSE_PARSE_FAILED);
         }
     }
     

@@ -10,8 +10,10 @@ import com.example.bookverseserver.entity.Order_Payment.Payment;
 import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.enums.PaymentStatus;
+import com.example.bookverseserver.exception.AppException;
+import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.OrderRepository;
-import com.example.bookverseserver.repository.TransactionRepository; // PaymentRepository đổi tên thành TransactionRepository?
+import com.example.bookverseserver.repository.TransactionRepository;
 import com.example.bookverseserver.repository.UserRepository;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -48,23 +50,23 @@ public class TransactionService {
     public PaymentIntentResponse createPaymentIntent(CreatePaymentIntentRequest request, Long userId, String idempotencyKey) {
         // 1. Lấy User từ DB
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         // 2. Lấy Order từ DB (Dùng Long ID)
         // Giả sử request.getOrderId() trả về Long. Nếu là String thì parse: Long.parseLong(request.getOrderId())
         Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         // 3. Validate: Đảm bảo Order thuộc về User này
         if (!order.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Unauthorized: Order does not belong to this user");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         boolean isAlreadyPaid = order.getPayments().stream()
                 .anyMatch(p -> p.getStatus() == PaymentStatus.PAID);
 
         if (isAlreadyPaid) {
-            throw new RuntimeException("Đơn hàng này đã được thanh toán rồi!");
+            throw new AppException(ErrorCode.ORDER_ALREADY_PAID);
         }
 
         // 4. Lấy số tiền thực tế từ Order
@@ -118,8 +120,8 @@ public class TransactionService {
                     .build();
 
         } catch (StripeException e) {
-            log.error("Stripe Create Intent Error", e);
-            throw new RuntimeException("Failed to create payment intent: " + e.getMessage());
+            log.error("Stripe Create Intent Error: {}", e.getMessage());
+            throw new AppException(ErrorCode.PAYMENT_INTENT_CREATION_FAILED);
         }
     }
 
@@ -128,11 +130,11 @@ public class TransactionService {
         try {
             // 1. Tìm Payment trong DB (Nếu không thấy thì lỗi luôn)
             Payment payment = transactionRepository.findByPaymentIntentId(request.getPaymentIntentId())
-                    .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                    .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_NOT_FOUND));
 
             // 2. Validate Order ID khớp nhau (Tránh trường hợp Payment của đơn A mà verify cho đơn B)
             if (!payment.getOrder().getId().equals(request.getOrderId())) {
-                throw new RuntimeException("Payment does not match the provided Order ID");
+                throw new AppException(ErrorCode.PAYMENT_ORDER_MISMATCH);
             }
 
             // 3. Gọi Stripe kiểm tra trạng thái thực tế
@@ -168,12 +170,13 @@ public class TransactionService {
                         .build();
 
             } else {
-                throw new RuntimeException("Payment not successful. Status: " + intent.getStatus());
+                log.warn("Payment verification failed. Stripe status: {}", intent.getStatus());
+                throw new AppException(ErrorCode.PAYMENT_VERIFICATION_FAILED);
             }
 
         } catch (StripeException e) {
-            log.error("Stripe Verify Error", e);
-            throw new RuntimeException("Stripe verification failed");
+            log.error("Stripe Verify Error: {}", e.getMessage());
+            throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
         }
     }
 

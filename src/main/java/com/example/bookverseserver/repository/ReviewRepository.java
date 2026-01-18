@@ -168,4 +168,34 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
         ORDER BY r.createdAt DESC
         """)
     List<Review> findByBookMetaIdOrderByCreatedAtDesc(@Param("bookId") Long bookId);
+
+    // =========================================================================
+    // BOOK-LEVEL RATING AGGREGATION (REAL DATA, NOT FABRICATED)
+    // =========================================================================
+
+    /**
+     * Compute REAL average rating for a book across ALL its listings.
+     * This is the HONEST alternative to hardcoded book_meta.average_rating.
+     */
+    @Query("""
+        SELECT AVG(r.rating) FROM Review r
+        JOIN r.listing l
+        WHERE l.bookMeta.id = :bookId
+        AND r.isVisible = true
+        AND r.isHidden = false
+        """)
+    Double calculateAverageRatingForBook(@Param("bookId") Long bookId);
+
+    /**
+     * Count REAL reviews for a book across ALL its listings.
+     * This is the HONEST alternative to hardcoded book_meta.total_reviews.
+     */
+    @Query("""
+        SELECT COUNT(r) FROM Review r
+        JOIN r.listing l
+        WHERE l.bookMeta.id = :bookId
+        AND r.isVisible = true
+        AND r.isHidden = false
+        """)
+    Long countReviewsForBook(@Param("bookId") Long bookId);
 }

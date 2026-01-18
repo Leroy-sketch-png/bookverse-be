@@ -200,10 +200,8 @@ public class PublicSellerService {
                 ? listing.getCategory().getName() 
                 : "Uncategorized";
 
-        // Get rating from book meta (convert BigDecimal to Double)
-        Double rating = listing.getBookMeta() != null && listing.getBookMeta().getAverageRating() != null
-                ? listing.getBookMeta().getAverageRating().doubleValue()
-                : 0.0;
+        // Get REAL rating from actual reviews for this listing (not fabricated book_meta rating!)
+        Double rating = reviewRepository.findAverageRatingByListingId(listing.getId());
 
         return SellerProfileListingResponse.builder()
                 .id(listing.getId())

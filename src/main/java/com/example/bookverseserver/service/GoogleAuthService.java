@@ -39,7 +39,7 @@ public class GoogleAuthService {
     final UserService userService;
     final AuthProviderRepository authProviderRepository;
     final UserMapper userMapper;
-    final NoOpTokenEncryptionService tokenEncryptionService;
+    final TokenEncryptionService tokenEncryptionService;
     final NimbusJwtService jwtService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")

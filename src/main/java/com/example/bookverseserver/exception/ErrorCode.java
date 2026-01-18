@@ -12,6 +12,9 @@ public enum ErrorCode {
     FILE_DELETE_FAILED(500, "File delete failed", HttpStatus.INTERNAL_SERVER_ERROR),
     CANNOT_SEND_EMAIL(500, "Cannot send email", HttpStatus.INTERNAL_SERVER_ERROR),
     PAYMENT_INTENT_CREATION_FAILED(500, "Failed to create payment intent", HttpStatus.INTERNAL_SERVER_ERROR),
+    TOKEN_ENCRYPTION_FAILED(500, "Failed to encrypt token", HttpStatus.INTERNAL_SERVER_ERROR),
+    TOKEN_DECRYPTION_FAILED(500, "Failed to decrypt token", HttpStatus.INTERNAL_SERVER_ERROR),
+    AI_RESPONSE_PARSE_FAILED(500, "Failed to parse AI response", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // --- 400 BAD REQUEST (Lỗi dữ liệu đầu vào / Logic) ---
     INVALID_KEY(400, "Invalid enum key", HttpStatus.BAD_REQUEST),
@@ -36,7 +39,11 @@ public enum ErrorCode {
     CANNOT_WISHLIST_OWN_LISTING(400, "You cannot add your own listing to wishlist", HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_ORDER(400, "Cannot cancel this order (already processed or shipped)", HttpStatus.BAD_REQUEST),
     ORDER_CANNOT_BE_CANCELLED(400, "Order cannot be cancelled", HttpStatus.BAD_REQUEST),
+    ORDER_ALREADY_PAID(400, "This order has already been paid", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(400, "Payment failed", HttpStatus.BAD_REQUEST),
+    PAYMENT_VERIFICATION_FAILED(400, "Payment verification failed", HttpStatus.BAD_REQUEST),
+    PAYMENT_ORDER_MISMATCH(400, "Payment does not match the provided order", HttpStatus.BAD_REQUEST),
+    TRANSACTION_NOT_FOUND(404, "Transaction not found", HttpStatus.NOT_FOUND),
 
     // Bulk Upload Validation
     BULK_UPLOAD_EMPTY(400, "Bulk upload must contain at least one book", HttpStatus.BAD_REQUEST),

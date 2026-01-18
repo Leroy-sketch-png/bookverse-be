@@ -81,6 +81,7 @@ public class PayoutService {
                 .completedPayouts(completedPayouts)
                 .availableForPayout(availableForPayout)
                 .commissionRate(commissionRate.multiply(new BigDecimal("100"))) // Display as percentage
+                .minPayoutAmount(MINIMUM_PAYOUT) // Expose constant to frontend
                 .build();
     }
 
