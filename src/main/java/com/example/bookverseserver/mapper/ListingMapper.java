@@ -61,6 +61,7 @@ public abstract class ListingMapper {
                 // Nested seller info
                 .seller(ListingResponse.SellerInfo.builder()
                         .id(seller != null ? seller.getId() : null)
+                        .username(seller != null ? seller.getUsername() : null)
                         .name(profile != null ? profile.getDisplayName() : (seller != null ? seller.getUsername() : null))
                         .avatar(profile != null ? profile.getAvatarUrl() : null)
                         .isPro(profile != null ? profile.getIsProSeller() : false)

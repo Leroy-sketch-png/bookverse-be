@@ -30,8 +30,13 @@ import java.util.stream.Collectors;
  * 
  * Thresholds:
  * - 0-24: APPROVE (clean)
- * - 25-74: FLAG (needs review)
+ * - 25-74: UNCERTAIN → AI decides (APPROVE/FLAG/BLOCK)
  * - 75-100: BLOCK (violates policy)
+ * 
+ * AI Integration:
+ * When content falls in the uncertain zone (25-74), AIService is called
+ * to make an intelligent decision. This prevents false positives while
+ * catching sophisticated attempts to bypass filters.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,6 +47,7 @@ public class ContentModerationService {
     private static final int THRESHOLD_BLOCK = 75;
     
     private final ObjectMapper objectMapper;
+    private final AIService aiService;
     
     // Loaded from blocked_terms.json
     private List<String> criticalTerms = new ArrayList<>();
@@ -172,12 +178,11 @@ public class ContentModerationService {
             decision = ContentModerationDecision.APPROVE;
             reason = "Content appears clean";
         } else {
-            // Uncertain zone (25-74): would call AI here
-            // For now, use FLAG as conservative default
-            decision = ContentModerationDecision.FLAG;
-            reason = "Content flagged for human review";
-            // TODO: Wire to AIService for uncertain cases
-            // aiUsed = true;
+            // Uncertain zone (25-74): AI decides
+            AIModerationResult aiResult = callAIModeration(request.getText(), ruleResult, request.getContentType());
+            decision = aiResult.decision;
+            reason = aiResult.reason;
+            aiUsed = true;
         }
         
         long processingTime = System.currentTimeMillis() - startTime;
@@ -192,6 +197,90 @@ public class ContentModerationService {
             .aiUsed(aiUsed)
             .processingTimeMs(processingTime)
             .build();
+    }
+    
+    // ========================================================================
+    // AI MODERATION FOR UNCERTAIN CASES
+    // ========================================================================
+    
+    /**
+     * Result from AI moderation call
+     */
+    private record AIModerationResult(
+        ContentModerationDecision decision,
+        String reason
+    ) {}
+    
+    /**
+     * Call AI to decide on uncertain content (score 25-74).
+     * Falls back to FLAG if AI unavailable or fails.
+     */
+    private AIModerationResult callAIModeration(String text, RuleResult ruleResult, String contentType) {
+        if (!aiService.isAIAvailable()) {
+            log.debug("AI unavailable, defaulting to FLAG for uncertain content");
+            return new AIModerationResult(ContentModerationDecision.FLAG, "Content flagged for human review");
+        }
+        
+        try {
+            String prompt = buildModerationPrompt(text, ruleResult, contentType);
+            String response = aiService.generateRecommendation(prompt);
+            
+            // Parse AI response
+            return parseAIModerationResponse(response);
+            
+        } catch (Exception e) {
+            log.warn("AI moderation failed, falling back to FLAG: {}", e.getMessage());
+            return new AIModerationResult(ContentModerationDecision.FLAG, "Content flagged for human review");
+        }
+    }
+    
+    /**
+     * Build prompt for AI moderation decision
+     */
+    private String buildModerationPrompt(String text, RuleResult ruleResult, String contentType) {
+        return """
+            You are a content moderator for a book marketplace. Decide if this content is appropriate.
+            
+            Content Type: %s
+            Text: "%s"
+            
+            Context:
+            - Our rule-based system gave it a score of %d/100 (higher = more concerning)
+            - Potential issues flagged: %s
+            - This is a BOOK MARKETPLACE - discussions of violence, death, war in literary context are normal
+            
+            Book titles with violent words (e.g., "To Kill a Mockingbird", "American Psycho") are ALLOWED.
+            Honest negative reviews are ALLOWED even if harsh.
+            Spam, hate speech, personal attacks, and off-topic content are NOT ALLOWED.
+            
+            Respond with ONLY ONE of these exact words:
+            - APPROVE (content is fine for a book marketplace)
+            - FLAG (borderline, needs human review)
+            - BLOCK (clearly violates community guidelines)
+            
+            Your decision:
+            """.formatted(
+                contentType != null ? contentType : "UNKNOWN",
+                text.length() > 500 ? text.substring(0, 500) + "..." : text,
+                ruleResult.score,
+                ruleResult.matchedTerms.isEmpty() ? "none" : String.join(", ", ruleResult.matchedTerms)
+            );
+    }
+    
+    /**
+     * Parse AI response into moderation decision
+     */
+    private AIModerationResult parseAIModerationResponse(String response) {
+        String cleaned = response.trim().toUpperCase();
+        
+        if (cleaned.contains("APPROVE")) {
+            return new AIModerationResult(ContentModerationDecision.APPROVE, "AI determined content is appropriate");
+        } else if (cleaned.contains("BLOCK")) {
+            return new AIModerationResult(ContentModerationDecision.BLOCK, "AI determined content violates guidelines");
+        } else {
+            // Default to FLAG for any other response
+            return new AIModerationResult(ContentModerationDecision.FLAG, "AI flagged for human review");
+        }
     }
     
     /**

@@ -155,6 +155,7 @@ public class BookDetailResponse {
     @Data
     public static class SellerCompact {
         private Long id;
+        private String username;  // URL slug for /seller/{username} links
         private String name;
         private String avatar;
         private Boolean isPro;

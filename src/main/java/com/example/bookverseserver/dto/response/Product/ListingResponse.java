@@ -75,6 +75,7 @@ public class ListingResponse {
 
     /**
      * Compact seller info nested in listing (Vision: SellerCompact)
+     * username is the URL-safe identifier for seller profile links
      */
     @Data
     @NoArgsConstructor
@@ -82,6 +83,7 @@ public class ListingResponse {
     @Builder
     public static class SellerInfo {
         Long id;
+        String username;  // URL slug for /seller/{username} links
         String name;
         String avatar;
         Boolean isPro;

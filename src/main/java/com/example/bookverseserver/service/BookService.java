@@ -477,6 +477,7 @@ public class BookService {
                         if (listing.getSeller() != null) {
                             BookDetailResponse.SellerCompact seller = new BookDetailResponse.SellerCompact();
                             seller.setId(listing.getSeller().getId());
+                            seller.setUsername(listing.getSeller().getUsername());
                             seller.setName(listing.getSeller().getUserProfile() != null ? 
                                     listing.getSeller().getUserProfile().getDisplayName() : 
                                     listing.getSeller().getUsername());
