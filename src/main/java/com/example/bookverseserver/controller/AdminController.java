@@ -14,6 +14,7 @@ import com.example.bookverseserver.service.ProSellerService;
 import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -90,7 +91,7 @@ public class AdminController {
                description = "Reject a PRO seller application with reason")
     public ApiResponse<ProSellerApplicationResponse> rejectApplication(
             @PathVariable Long applicationId,
-            @RequestBody ReviewRequest request,
+            @Valid @RequestBody ReviewRequest request,
             Authentication authentication) {
         Long adminId = securityUtils.getCurrentUserId(authentication);
         return ApiResponse.<ProSellerApplicationResponse>builder()
@@ -107,7 +108,7 @@ public class AdminController {
                description = "Assign a role (MODERATOR, SELLER, etc.) to a user. Admin only.")
     public ApiResponse<UserResponse> assignRole(
             @PathVariable Long userId,
-            @RequestBody RoleRequest request,
+            @Valid @RequestBody RoleRequest request,
             Authentication authentication) {
         Long adminId = securityUtils.getCurrentUserId(authentication);
         return ApiResponse.<UserResponse>builder()

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -181,7 +182,7 @@ public class BookController {
                 example = "{\"isbn\": \"9780134685991\"}"
             ))
         )
-        @RequestBody IsbnRequest request
+        @Valid @RequestBody IsbnRequest request
     ) {
         String bookId = bookService.createBookFromOpenLibrary(request.getIsbn());
         return ApiResponse.<String>builder().message("Book created successfully").result(bookId).build();

@@ -9,6 +9,7 @@ import com.example.bookverseserver.service.MoodDiscoveryService;
 import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -149,7 +150,7 @@ public class AIController {
     @PostMapping("/moods/discover")
     @Operation(summary = "Discover books by mood", 
                description = "Returns AI-curated book recommendations based on reading mood")
-    public ApiResponse<MoodDiscoveryResponse> discoverByMood(@RequestBody MoodDiscoveryRequest request) {
+    public ApiResponse<MoodDiscoveryResponse> discoverByMood(@Valid @RequestBody MoodDiscoveryRequest request) {
         MoodDiscoveryResponse response = moodDiscoveryService.discoverByMood(request);
         return ApiResponse.<MoodDiscoveryResponse>builder()
                 .result(response)

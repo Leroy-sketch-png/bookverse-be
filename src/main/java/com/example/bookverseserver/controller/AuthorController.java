@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -185,7 +186,7 @@ public class AuthorController {
             required = true,
             content = @Content(schema = @Schema(implementation = AuthorRequest.class))
         )
-        @RequestBody AuthorRequest authorRequest
+        @Valid @RequestBody AuthorRequest authorRequest
     ) {
         return ApiResponse.<AuthorResponse>builder()
                 .result(authorService.addAuthor(authorRequest))
@@ -228,7 +229,7 @@ public class AuthorController {
             required = true,
             content = @Content(schema = @Schema(implementation = AuthorDetailRequest.class))
         )
-        @RequestBody AuthorDetailRequest authorRequest,
+        @Valid @RequestBody AuthorDetailRequest authorRequest,
         
         @Parameter(description = "OpenLibrary Author ID", example = "OL23919A", required = true)
         @PathVariable("id") String id
