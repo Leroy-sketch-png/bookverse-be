@@ -12,6 +12,7 @@ import com.example.bookverseserver.enums.*;
 import com.example.bookverseserver.exception.AppException;
 import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.*;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -55,6 +56,7 @@ public class ModerationService {
     OrderRepository orderRepository;
     TransactionService transactionService;
     ReviewRepository reviewRepository;
+    SecurityUtils securityUtils;
 
     // ============ Dashboard Summary ============
 
@@ -411,8 +413,8 @@ public class ModerationService {
      */
     @Transactional
     public DisputeResponse createDispute(DisputeRequest request, Authentication authentication) {
-        String username = authentication.getName();
-        User buyer = userRepository.findByUsername(username)
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        User buyer = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         
         Order order = orderRepository.findById(request.getOrderId())
@@ -466,8 +468,8 @@ public class ModerationService {
      */
     @Transactional(readOnly = true)
     public PagedResponse<DisputeResponse> getMyDisputes(Authentication authentication, int page, int limit) {
-        String username = authentication.getName();
-        User buyer = userRepository.findByUsername(username)
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        User buyer = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         
         PageRequest pageRequest = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

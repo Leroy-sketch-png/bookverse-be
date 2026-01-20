@@ -16,6 +16,7 @@ import com.example.bookverseserver.mapper.PayoutMapper;
 import com.example.bookverseserver.repository.OrderItemRepository;
 import com.example.bookverseserver.repository.SellerPayoutRepository;
 import com.example.bookverseserver.repository.UserRepository;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +45,7 @@ public class PayoutService {
     PayoutMapper payoutMapper;
     SmsService smsService;
     StripeConnectService stripeConnectService;
+    SecurityUtils securityUtils;
 
     private static final BigDecimal PRO_COMMISSION_RATE = new BigDecimal("0.03");  // 3%
     private static final BigDecimal CASUAL_COMMISSION_RATE = new BigDecimal("0.08"); // 8%
@@ -263,8 +265,8 @@ public class PayoutService {
     // ========== Helper methods ==========
 
     private User getCurrentSeller(Authentication authentication) {
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username)
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         
         // Verify user is a seller

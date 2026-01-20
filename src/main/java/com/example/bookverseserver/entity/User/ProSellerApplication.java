@@ -51,7 +51,7 @@ public class ProSellerApplication {
     @Column(name = "monthly_inventory")
     Integer monthlyInventory;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "pro_seller_documents", joinColumns = @JoinColumn(name = "application_id"))
     @Column(name = "document_url", columnDefinition = "TEXT")
     @Builder.Default

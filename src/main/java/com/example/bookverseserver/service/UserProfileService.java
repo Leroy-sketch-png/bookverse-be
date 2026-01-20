@@ -61,7 +61,18 @@ public class UserProfileService {
     public ProfileResponse getProfileForUser(Long userId) {
         UserProfile profile = userProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
-        return userProfileMapper.toResponse(profile);
+        ProfileResponse response = userProfileMapper.toResponse(profile);
+        
+        // Populate roles from User entity for role-based UI
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        Set<String> roleNames = new HashSet<>();
+        for (Role role : user.getRoles()) {
+            roleNames.add(role.getName().name());
+        }
+        response.setRoles(roleNames);
+        
+        return response;
     }
 
     @Transactional(readOnly = true)

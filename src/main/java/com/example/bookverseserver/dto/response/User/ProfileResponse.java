@@ -5,12 +5,16 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 public class ProfileResponse {
     private Long id;
     private Long userId;
     private String displayName;
+    
+    // Roles for role-based UI (ADMIN, MODERATOR, SELLER, USER, PRO_SELLER)
+    private Set<String> roles;
     private String fullName;
     private String phoneNumber;
     private String avatarUrl;

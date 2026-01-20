@@ -62,7 +62,7 @@ public class UserReport {
     @Column(nullable = false, columnDefinition = "TEXT")
     String description;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "report_evidence", joinColumns = @JoinColumn(name = "report_id"))
     @Column(name = "evidence_url", length = 500)
     @Builder.Default

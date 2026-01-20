@@ -52,7 +52,7 @@ public class Dispute {
     @Column(name = "disputed_amount", precision = 12, scale = 2)
     BigDecimal disputedAmount;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "dispute_evidence", joinColumns = @JoinColumn(name = "dispute_id"))
     @Column(name = "evidence_url", length = 500)
     @Builder.Default

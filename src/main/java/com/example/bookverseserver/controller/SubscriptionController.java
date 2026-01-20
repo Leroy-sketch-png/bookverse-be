@@ -7,6 +7,7 @@ import com.example.bookverseserver.exception.ErrorCode;
 import com.example.bookverseserver.repository.UserRepository;
 import com.example.bookverseserver.service.StripeConnectService;
 import com.example.bookverseserver.service.SubscriptionService;
+import com.example.bookverseserver.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +34,7 @@ public class SubscriptionController {
     SubscriptionService subscriptionService;
     StripeConnectService stripeConnectService;
     UserRepository userRepository;
+    SecurityUtils securityUtils;
 
     /**
      * Get current subscription status
@@ -194,8 +196,8 @@ public class SubscriptionController {
     // ==================== Helper ====================
 
     private User getCurrentUser(Authentication authentication) {
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

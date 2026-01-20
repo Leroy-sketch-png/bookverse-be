@@ -232,16 +232,18 @@ public class AdminService {
 
     /**
      * Get PRO seller applications for admin review.
+     * Uses JOIN FETCH to prevent LazyInitializationException when accessing User fields.
      */
+    @Transactional(readOnly = true)
     public PagedResponse<ProApplicationDetailResponse> getProApplications(
             ApplicationStatus status, int page, int limit) {
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by("submittedAt").descending());
         
         Page<ProSellerApplication> applicationPage;
         if (status != null) {
-            applicationPage = proApplicationRepository.findByStatus(status, pageable);
+            applicationPage = proApplicationRepository.findByStatusWithUser(status, pageable);
         } else {
-            applicationPage = proApplicationRepository.findAllByOrderBySubmittedAtDesc(pageable);
+            applicationPage = proApplicationRepository.findAllWithUserOrderBySubmittedAtDesc(pageable);
         }
 
         List<ProApplicationDetailResponse> responses = applicationPage.getContent().stream()
