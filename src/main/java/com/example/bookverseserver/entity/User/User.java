@@ -1,5 +1,6 @@
 package com.example.bookverseserver.entity.User;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
@@ -30,6 +31,7 @@ public class User {
     @Email
     String email;
 
+    @JsonIgnore // Defense-in-depth: never serialize password hash
     @Column(name = "password_hash", length = 255)
     String passwordHash;
 
