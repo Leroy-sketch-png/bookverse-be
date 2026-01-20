@@ -5,9 +5,9 @@ import com.example.bookverseserver.dto.request.Promotion.PromotionUpdateRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Promotion.PromotionResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.PromotionStatus;
 import com.example.bookverseserver.service.PromotionService;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -41,17 +41,19 @@ import org.springframework.web.bind.annotation.*;
 public class PromotionController {
     
     PromotionService promotionService;
+    SecurityUtils securityUtils;
     
     // ============ CRUD Endpoints ============
     
     @PostMapping
     @Operation(summary = "Create a new promotion")
     public ApiResponse<PromotionResponse> createPromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @Valid @RequestBody PromotionCreateRequest request) {
         
-        log.info("Creating promotion for seller {}", user.getId());
-        PromotionResponse response = promotionService.createPromotion(user.getId(), request);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        log.info("Creating promotion for seller {}", userId);
+        PromotionResponse response = promotionService.createPromotion(userId, request);
         
         return ApiResponse.<PromotionResponse>builder()
                 .result(response)
@@ -61,13 +63,14 @@ public class PromotionController {
     @GetMapping
     @Operation(summary = "Get seller's promotions")
     public ApiResponse<PagedResponse<PromotionResponse>> getPromotions(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @RequestParam(required = false) PromotionStatus status,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
         
+        Long userId = securityUtils.getCurrentUserId(authentication);
         PagedResponse<PromotionResponse> response = promotionService.getSellerPromotions(
-                user.getId(), status, page, limit);
+                userId, status, page, limit);
         
         return ApiResponse.<PagedResponse<PromotionResponse>>builder()
                 .result(response)
@@ -77,10 +80,11 @@ public class PromotionController {
     @GetMapping("/{id}")
     @Operation(summary = "Get promotion details")
     public ApiResponse<PromotionResponse> getPromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @PathVariable Long id) {
         
-        PromotionResponse response = promotionService.getPromotion(user.getId(), id);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        PromotionResponse response = promotionService.getPromotion(userId, id);
         
         return ApiResponse.<PromotionResponse>builder()
                 .result(response)
@@ -90,11 +94,12 @@ public class PromotionController {
     @PatchMapping("/{id}")
     @Operation(summary = "Update promotion")
     public ApiResponse<PromotionResponse> updatePromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @PathVariable Long id,
             @Valid @RequestBody PromotionUpdateRequest request) {
         
-        PromotionResponse response = promotionService.updatePromotion(user.getId(), id, request);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        PromotionResponse response = promotionService.updatePromotion(userId, id, request);
         
         return ApiResponse.<PromotionResponse>builder()
                 .result(response)
@@ -104,10 +109,11 @@ public class PromotionController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete promotion")
     public ApiResponse<Void> deletePromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @PathVariable Long id) {
         
-        promotionService.deletePromotion(user.getId(), id);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        promotionService.deletePromotion(userId, id);
         
         return ApiResponse.<Void>builder()
                 .message("Promotion deleted successfully")
@@ -119,10 +125,11 @@ public class PromotionController {
     @PostMapping("/{id}/activate")
     @Operation(summary = "Activate a promotion")
     public ApiResponse<PromotionResponse> activatePromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @PathVariable Long id) {
         
-        PromotionResponse response = promotionService.activatePromotion(user.getId(), id);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        PromotionResponse response = promotionService.activatePromotion(userId, id);
         
         return ApiResponse.<PromotionResponse>builder()
                 .result(response)
@@ -132,10 +139,11 @@ public class PromotionController {
     @PostMapping("/{id}/pause")
     @Operation(summary = "Pause a promotion")
     public ApiResponse<PromotionResponse> pausePromotion(
-            @AuthenticationPrincipal User user,
+            Authentication authentication,
             @PathVariable Long id) {
         
-        PromotionResponse response = promotionService.pausePromotion(user.getId(), id);
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        PromotionResponse response = promotionService.pausePromotion(userId, id);
         
         return ApiResponse.<PromotionResponse>builder()
                 .result(response)

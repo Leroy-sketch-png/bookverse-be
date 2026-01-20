@@ -4,8 +4,8 @@ import com.example.bookverseserver.dto.request.Moderation.CreateReportRequest;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Moderation.UserReportResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.service.ReportService;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -36,17 +36,19 @@ import org.springframework.web.bind.annotation.*;
 public class ReportController {
     
     ReportService reportService;
+    SecurityUtils securityUtils;
     
     @PostMapping
     @Operation(summary = "Submit a report", description = "Report a listing, seller, or review for moderation review")
     public ApiResponse<ReportSubmittedResponse> submitReport(
-            @AuthenticationPrincipal User reporter,
+            Authentication authentication,
             @Valid @RequestBody CreateReportRequest request) {
         
+        Long reporterId = securityUtils.getCurrentUserId(authentication);
         log.info("User {} submitting report for {} {}", 
-                reporter.getId(), request.getEntityType(), request.getEntityId());
+                reporterId, request.getEntityType(), request.getEntityId());
         
-        ReportSubmittedResponse response = reportService.createReport(reporter, request);
+        ReportSubmittedResponse response = reportService.createReport(reporterId, request);
         
         return ApiResponse.<ReportSubmittedResponse>builder()
                 .result(response)
@@ -57,11 +59,12 @@ public class ReportController {
     @GetMapping("/my")
     @Operation(summary = "Get my reports", description = "Get reports submitted by the current user")
     public ApiResponse<PagedResponse<UserReportResponse>> getMyReports(
-            @AuthenticationPrincipal User reporter,
+            Authentication authentication,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
         
-        Page<UserReportResponse> reports = reportService.getMyReports(reporter, page, limit);
+        Long reporterId = securityUtils.getCurrentUserId(authentication);
+        Page<UserReportResponse> reports = reportService.getMyReports(reporterId, page, limit);
         
         PagedResponse<UserReportResponse> pagedResponse = PagedResponse.<UserReportResponse>builder()
                 .data(reports.getContent())

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -73,7 +74,7 @@ public class TransactionController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = CreatePaymentIntentRequest.class))
             )
-            @RequestBody CreatePaymentIntentRequest request,
+            @Valid @RequestBody CreatePaymentIntentRequest request,
             
             @Parameter(description = "Idempotency key to prevent duplicate charges")
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -136,7 +137,7 @@ public class TransactionController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = VerifyPaymentRequest.class))
             )
-            @RequestBody VerifyPaymentRequest request
+            @Valid @RequestBody VerifyPaymentRequest request
     ) {
         try {
             PaymentVerificationResponse response = transactionService.verifyPayment(request);

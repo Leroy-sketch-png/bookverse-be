@@ -458,7 +458,7 @@ public class ModerationService {
         Dispute saved = disputeRepository.save(dispute);
         
         log.info("Dispute filed by buyer {} for order {} - reason: {}", 
-                username, order.getOrderNumber(), request.getReason());
+                buyer.getUsername(), order.getOrderNumber(), request.getReason());
         
         return toDisputeResponse(saved);
     }

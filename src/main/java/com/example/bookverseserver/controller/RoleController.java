@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -67,7 +68,7 @@ public class RoleController {
             required = true,
             content = @Content(schema = @Schema(implementation = RoleRequest.class))
         )
-        @RequestBody RoleRequest request
+        @Valid @RequestBody RoleRequest request
     ) {
         return ApiResponse.<RoleResponse>builder()
                 .result(roleService.create(request))

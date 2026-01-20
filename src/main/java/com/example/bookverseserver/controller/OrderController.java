@@ -9,6 +9,7 @@ import com.example.bookverseserver.dto.response.Order.OrderTrackingDTO;
 import com.example.bookverseserver.enums.OrderStatus;
 import com.example.bookverseserver.service.OrderService;
 import com.example.bookverseserver.util.SecurityUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +53,7 @@ public class OrderController {
   @PostMapping("/{orderId}/cancel")
   public ApiResponse<CancelOrderResponse> cancelOrder(
       @PathVariable Long orderId,
-      @RequestBody CancelOrderRequest request,
+      @Valid @RequestBody CancelOrderRequest request,
       Authentication authentication) {
     Long userId = securityUtils.getCurrentUserId(authentication);
     return ApiResponse.<CancelOrderResponse>builder()

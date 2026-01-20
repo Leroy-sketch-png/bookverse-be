@@ -165,7 +165,7 @@ public class CheckoutController {
     @PostMapping
     @Operation(summary = "Create checkout (legacy)", description = "Legacy endpoint - use POST /checkout/session instead", deprecated = true)
     public ApiResponse<CheckoutResponse> createCheckoutSession(
-            @RequestBody CreateCheckoutRequest request,
+            @Valid @RequestBody CreateCheckoutRequest request,
             Authentication authentication) {
         Long userId = securityUtils.getCurrentUserId(authentication);
         CheckoutResponse checkoutResponse = checkoutService.createCheckoutSession(userId, request);

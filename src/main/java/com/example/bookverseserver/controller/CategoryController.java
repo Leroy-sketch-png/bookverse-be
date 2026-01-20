@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +78,7 @@ public class CategoryController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = CategoryRequest.class))
             )
-            @RequestBody CategoryRequest categoryRequest
+            @Valid @RequestBody CategoryRequest categoryRequest
     ) {
         return ApiResponse.<CategoryResponse>builder()
                 .code(HttpStatus.CREATED.value())
@@ -127,7 +128,7 @@ public class CategoryController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = CategoryRequest.class))
             )
-            @RequestBody CategoryRequest categoryRequest
+            @Valid @RequestBody CategoryRequest categoryRequest
     ) {
         return ApiResponse.<CategoryResponse>builder()
                 .code(HttpStatus.OK.value())

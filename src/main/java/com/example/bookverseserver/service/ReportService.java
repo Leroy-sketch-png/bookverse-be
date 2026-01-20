@@ -47,12 +47,16 @@ public class ReportService {
     private static final Set<String> VALID_ENTITY_TYPES = Set.of("listing", "seller", "review");
     
     @Transactional
-    public ReportSubmittedResponse createReport(User reporter, CreateReportRequest request) {
+    public ReportSubmittedResponse createReport(Long reporterId, CreateReportRequest request) {
         // Validate entity type
         String entityType = request.getEntityType().toLowerCase();
         if (!VALID_ENTITY_TYPES.contains(entityType)) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+        
+        // Lookup reporter
+        User reporter = userRepository.findById(reporterId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         
         // Build the report
         UserReport.UserReportBuilder reportBuilder = UserReport.builder()
@@ -146,14 +150,14 @@ public class ReportService {
      * Get reports submitted by the current user.
      */
     @Transactional(readOnly = true)
-    public Page<UserReportResponse> getMyReports(User reporter, int page, int limit) {
+    public Page<UserReportResponse> getMyReports(Long reporterId, int page, int limit) {
         PageRequest pageRequest = PageRequest.of(
                 Math.max(0, page - 1), 
                 Math.min(limit, 50), 
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
         
-        Page<UserReport> reports = userReportRepository.findByReporterId(reporter.getId(), pageRequest);
+        Page<UserReport> reports = userReportRepository.findByReporterId(reporterId, pageRequest);
         return reports.map(this::toUserReportResponse);
     }
     

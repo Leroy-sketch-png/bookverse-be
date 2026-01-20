@@ -5,9 +5,9 @@ import com.example.bookverseserver.dto.request.Moderation.ModerationActionReques
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Moderation.*;
 import com.example.bookverseserver.dto.response.PagedResponse;
-import com.example.bookverseserver.entity.User.User;
 import com.example.bookverseserver.enums.*;
 import com.example.bookverseserver.service.ModerationService;
+import com.example.bookverseserver.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 public class ModerationController {
     
     ModerationService moderationService;
+    SecurityUtils securityUtils;
     
     // ============ Dashboard ============
     
@@ -59,11 +60,12 @@ public class ModerationController {
     @PostMapping("/listings/flag")
     @Operation(summary = "Flag a listing for moderation review")
     public ApiResponse<FlaggedListingResponse> flagListing(
-            @AuthenticationPrincipal User moderator,
+            Authentication authentication,
             @Valid @RequestBody FlagListingRequest request) {
         
-        log.info("Moderator {} flagging listing {}", moderator.getId(), request.getListingId());
-        FlaggedListingResponse response = moderationService.flagListing(request, moderator.getId());
+        Long moderatorId = securityUtils.getCurrentUserId(authentication);
+        log.info("Moderator {} flagging listing {}", moderatorId, request.getListingId());
+        FlaggedListingResponse response = moderationService.flagListing(request, moderatorId);
         
         return ApiResponse.<FlaggedListingResponse>builder()
                 .result(response)
@@ -90,13 +92,14 @@ public class ModerationController {
     @PostMapping("/listings/{flagId}/review")
     @Operation(summary = "Review and take action on flagged listing")
     public ApiResponse<FlaggedListingResponse> reviewFlaggedListing(
-            @AuthenticationPrincipal User moderator,
+            Authentication authentication,
             @PathVariable Long flagId,
             @Valid @RequestBody ModerationActionRequest request) {
         
-        log.info("Moderator {} reviewing flagged listing {}", moderator.getId(), flagId);
+        Long moderatorId = securityUtils.getCurrentUserId(authentication);
+        log.info("Moderator {} reviewing flagged listing {}", moderatorId, flagId);
         FlaggedListingResponse response = moderationService.reviewFlaggedListing(
-                moderator.getId(), flagId, request);
+                moderatorId, flagId, request);
         
         return ApiResponse.<FlaggedListingResponse>builder()
                 .result(response)
@@ -125,13 +128,14 @@ public class ModerationController {
     @PostMapping("/reports/{reportId}/action")
     @Operation(summary = "Take action on user report")
     public ApiResponse<UserReportResponse> takeActionOnReport(
-            @AuthenticationPrincipal User moderator,
+            Authentication authentication,
             @PathVariable Long reportId,
             @Valid @RequestBody ModerationActionRequest request) {
         
-        log.info("Moderator {} taking action on report {}", moderator.getId(), reportId);
+        Long moderatorId = securityUtils.getCurrentUserId(authentication);
+        log.info("Moderator {} taking action on report {}", moderatorId, reportId);
         UserReportResponse response = moderationService.takeActionOnReport(
-                moderator.getId(), reportId, request);
+                moderatorId, reportId, request);
         
         return ApiResponse.<UserReportResponse>builder()
                 .result(response)
@@ -158,13 +162,14 @@ public class ModerationController {
     @PostMapping("/disputes/{disputeId}/resolve")
     @Operation(summary = "Resolve a dispute")
     public ApiResponse<DisputeResponse> resolveDispute(
-            @AuthenticationPrincipal User moderator,
+            Authentication authentication,
             @PathVariable Long disputeId,
             @Valid @RequestBody ModerationActionRequest request) {
         
-        log.info("Moderator {} resolving dispute {}", moderator.getId(), disputeId);
+        Long moderatorId = securityUtils.getCurrentUserId(authentication);
+        log.info("Moderator {} resolving dispute {}", moderatorId, disputeId);
         DisputeResponse response = moderationService.resolveDispute(
-                moderator.getId(), disputeId, request);
+                moderatorId, disputeId, request);
         
         return ApiResponse.<DisputeResponse>builder()
                 .result(response)

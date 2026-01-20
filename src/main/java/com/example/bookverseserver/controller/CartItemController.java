@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +67,7 @@ public class CartItemController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = CartItemRequest.class))
             )
-            @RequestBody CartItemRequest cartItemRequest,
+            @Valid @RequestBody CartItemRequest cartItemRequest,
             Authentication authentication
     ) {
         Long userId = securityUtils.getCurrentUserId(authentication);

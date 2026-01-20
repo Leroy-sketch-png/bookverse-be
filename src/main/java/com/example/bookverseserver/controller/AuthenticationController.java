@@ -72,7 +72,7 @@ public class AuthenticationController {
             description = "Authenticate user using email or username and password"
     )
     public ApiResponse<AuthenticationResponse> authenticate(
-            @RequestBody AuthenticationRequest request
+            @Valid @RequestBody AuthenticationRequest request
     ) {
         log.info(">>> Login attempt: {}", request.getEmailOrUsername());
         AuthenticationResponse result = authenticationService.authenticate(request);
@@ -89,7 +89,7 @@ public class AuthenticationController {
             description = "Authenticate user using Google OAuth authorization code"
     )
     public ApiResponse<AuthenticationResponse> googleAuth(
-            @RequestBody GoogleAuthRequest request
+            @Valid @RequestBody GoogleAuthRequest request
     ) {
         try {
             AuthenticationResponse response =
@@ -114,7 +114,7 @@ public class AuthenticationController {
             description = "Check whether a token is valid or expired"
     )
     public ApiResponse<IntrospectResponse> introspect(
-            @RequestBody IntrospectRequest request
+            @Valid @RequestBody IntrospectRequest request
     ) throws ParseException, JOSEException {
         IntrospectResponse result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
@@ -130,7 +130,7 @@ public class AuthenticationController {
             description = "Generate a new access token using refresh token"
     )
     public ApiResponse<RefreshResponse> refresh(
-            @RequestBody RefreshRequest request
+            @Valid @RequestBody RefreshRequest request
     ) throws ParseException, JOSEException {
         RefreshResponse result = authenticationService.refreshToken(request);
         return ApiResponse.<RefreshResponse>builder()
@@ -147,7 +147,7 @@ public class AuthenticationController {
     )
     @SecurityRequirement(name = "bearer-key")
     public ApiResponse<Void> logout(
-            @RequestBody LogoutRequest request
+            @Valid @RequestBody LogoutRequest request
     ) throws ParseException, JOSEException {
         authenticationService.logout(request);
         return ApiResponse.<Void>builder()
@@ -164,7 +164,7 @@ public class AuthenticationController {
             description = "Verify OTP and update new password"
     )
     public ApiResponse<UserResponse> verifyOtpAndChangePassword(
-            @RequestBody ForgotPasswordRequest request
+            @Valid @RequestBody ForgotPasswordRequest request
     ) {
         UserResponse response =
                 authenticationService.verifyOtpAndChangePassword(request);

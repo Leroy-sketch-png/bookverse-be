@@ -52,7 +52,7 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    ApiResponse<UserResponse> updateUser(@PathVariable Long userId, @RequestBody UserUpdateRequest request) {
+    ApiResponse<UserResponse> updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(userId, request))
                 .build();
@@ -69,7 +69,7 @@ public class UserController {
     @PatchMapping("/{userId}/enable")
     public ApiResponse<Void> updateUserStatus(
             @PathVariable Long userId,
-            @RequestBody UserStatusRequest request
+            @Valid @RequestBody UserStatusRequest request
     ) {
         userService.updateUserStatus(userId, request);
         return ApiResponse.<Void>builder()

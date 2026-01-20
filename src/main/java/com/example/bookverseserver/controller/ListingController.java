@@ -203,7 +203,7 @@ public class ListingController {
         @PreAuthorize("hasRole('SELLER')")
         @PostMapping
         public ResponseEntity<ApiResponse<ListingResponse>> createListing(
-                        @RequestBody ListingCreationRequest request,
+                        @Valid @RequestBody ListingCreationRequest request,
                         Authentication authentication) {
                 ListingResponse created = listingService.createListing(request, authentication);
 
@@ -220,7 +220,7 @@ public class ListingController {
         @PreAuthorize("hasRole('SELLER')")
         @PostMapping("/create")
         public ApiResponse<ListingResponse> createListingLegacy(
-                        @RequestBody ListingCreationRequest request,
+                        @Valid @RequestBody ListingCreationRequest request,
                         Authentication authentication) {
                 return ApiResponse.<ListingResponse>builder()
                                 .result(listingService.createListing(request, authentication))
@@ -259,7 +259,7 @@ public class ListingController {
         @PutMapping("/{id}")
         public ResponseEntity<ApiResponse<ListingUpdateResponse>> updateListing(
                         @PathVariable("id") Long id,
-                        @RequestBody ListingUpdateRequest request,
+                        @Valid @RequestBody ListingUpdateRequest request,
                         Authentication authentication) {
                 log.info(">>> Entered controller update with id={}, user={}", id,
                                 authentication != null ? authentication.getName() : "null");
@@ -277,7 +277,7 @@ public class ListingController {
         @PutMapping("/update")
         public ApiResponse<ListingUpdateResponse> updateListingLegacy(
                         @RequestParam("id") Long id,
-                        @RequestBody ListingUpdateRequest request,
+                        @Valid @RequestBody ListingUpdateRequest request,
                         Authentication authentication) {
                 log.info(">>> Entered controller update with id={}, user={}", id,
                                 authentication != null ? authentication.getName() : "null");
@@ -350,7 +350,7 @@ public class ListingController {
         @PutMapping("/soft-delete")
         public ApiResponse<ListingUpdateResponse> softDelete(
                         @RequestParam("id") Long id,
-                        @RequestBody ListingDeleteRequest request,
+                        @Valid @RequestBody ListingDeleteRequest request,
                         Authentication authentication) {
                 return ApiResponse.<ListingUpdateResponse>builder()
                                 .result(listingService.softDeleteListing(id, authentication))
