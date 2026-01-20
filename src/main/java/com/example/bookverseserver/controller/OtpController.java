@@ -96,7 +96,7 @@ public class OtpController {
             required = true,
             content = @Content(schema = @Schema(implementation = EmailVerificationRequest.class))
         )
-        @RequestBody EmailVerificationRequest request
+        @Valid @RequestBody EmailVerificationRequest request
     ) {
         try {
             signupRequestService.verifyOtpAndCreateUser(request.getEmail(), request.getOtp());
