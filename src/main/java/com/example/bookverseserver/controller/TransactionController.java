@@ -82,9 +82,8 @@ public class TransactionController {
             Authentication authentication
     ) {
         try {
-            // 1. Lấy User ID từ SecurityUtils (Utility class của bạn)
-            //Long userId = securityUtils.getCurrentUserId(authentication);
-            Long userId = 4L;
+            // Get authenticated user ID
+            Long userId = securityUtils.getCurrentUserId(authentication);
 
             // 2. Gọi Service xử lý logic
             PaymentIntentResponse response = transactionService.createPaymentIntent(request, userId, idempotencyKey);
