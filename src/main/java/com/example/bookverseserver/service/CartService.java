@@ -61,6 +61,7 @@ public class CartService {
         return discountStrategy.calculateDiscount(savedCart.getTotalPrice(), savedCart.getVoucher().getDiscountValue(), savedCart.getVoucher().getMinOrderValue());
     }
 
+    @Transactional  // Override class-level readOnly=true since this method creates carts
     public CartResponse getCartByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));

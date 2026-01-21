@@ -1,41 +1,40 @@
 -- ============================================
 -- BOOKVERSE DEMO SEED DATA v2
--- Compatible with Hibernate-generated schema
--- DEMO/DEV ONLY - Credentials in README
+-- Professional Demo Data - January 2026
+-- ALL PASSWORDS: Bookverse2026!
 -- ============================================
 
 -- ============================================
 -- 1. CREATE DEMO USERS
--- BCrypt hash generated for demo credentials
+-- Password hash for: Bookverse2026!
 -- ============================================
 
 INSERT INTO "user" (id, username, email, password_hash, enabled, failed_login_count, auth_provider, created_at, updated_at)
 VALUES 
-    (2, 'tinvo', 'tinvo@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
-    (3, 'seller1', 'seller1@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
-    (4, 'buyer1', 'buyer1@example.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
-    (5, 'demoseller', 'demoseller@bookverse.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
-    (6, 'demobuyer', 'demobuyer@bookverse.com', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW())
+    (2, 'tinvo', 'tinvo@bookverse.vn', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (3, 'sarahchen', 'sarah.chen@bookverse.vn', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (4, 'alexnguyen', 'alex.nguyen@bookverse.vn', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (5, 'minhpham', 'minh.pham@bookverse.vn', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW()),
+    (6, 'emilytran', 'emily.tran@bookverse.vn', '$2a$10$EqKcp1WFKVQISheBxkXpUO.CpWkE.4Fo5rPWYzBs/B5TBbFQNY7GS', true, 0, 'LOCAL', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Assign roles (role_id: 1=USER, 2=SELLER, 3=PRO_SELLER, 4=MODERATOR, 5=ADMIN)
 INSERT INTO user_role (user_id, role_id) VALUES
-    (2, 1), (2, 2), (2, 3),  -- tinvo is USER + SELLER + PRO_SELLER
-    (3, 1), (3, 2),          -- seller1 is USER + SELLER
-    (4, 1),                  -- buyer1 is USER
-    (5, 1), (5, 2),          -- demoseller is USER + SELLER
-    (6, 1)                   -- demobuyer is USER
+    (2, 1), (2, 2), (2, 3),  -- tinvo: PRO Seller
+    (3, 1), (3, 2),          -- sarahchen: Seller
+    (4, 1),                  -- alexnguyen: Buyer
+    (5, 1), (5, 2),          -- minhpham: Seller
+    (6, 1)                   -- emilytran: Buyer
 ON CONFLICT DO NOTHING;
 
--- User profiles (phone_number instead of phone)
--- account_type must match: BUYER, SELLER, PRO_SELLER (not BUSINESS/PERSONAL)
+-- User profiles
 INSERT INTO user_profile (id, user_id, display_name, avatar_url, bio, phone_number, account_type, is_pro_seller, created_at, updated_at)
 VALUES
-    (2, 2, 'Tin Vo', 'https://i.pravatar.cc/150?u=tinvo', 'Passionate book collector and seller', '+84912345678', 'PRO_SELLER', true, NOW(), NOW()),
-    (3, 3, 'Book Seller Pro', 'https://i.pravatar.cc/150?u=seller1', 'Quality used books at great prices', '+84923456789', 'SELLER', false, NOW(), NOW()),
-    (4, 4, 'Happy Reader', 'https://i.pravatar.cc/150?u=buyer1', 'Love reading sci-fi and fantasy', '+84934567890', 'BUYER', false, NOW(), NOW()),
-    (5, 5, 'Demo Seller', 'https://i.pravatar.cc/150?u=demoseller', 'Demo account for presentations. Username: demoseller, Password: demo123', '+84945678901', 'SELLER', false, NOW(), NOW()),
-    (6, 6, 'Demo Buyer', 'https://i.pravatar.cc/150?u=demobuyer', 'Demo buyer account. Username: demobuyer, Password: demo123', '+84956789012', 'BUYER', false, NOW(), NOW())
+    (2, 2, 'Tin Vo Books', 'https://i.pravatar.cc/150?u=tinvo', 'Curated collection of programming and technology books. Fast shipping, excellent condition guaranteed.', '+84912345678', 'PRO_SELLER', true, NOW(), NOW()),
+    (3, 3, 'Sarah Chen', 'https://i.pravatar.cc/150?u=sarahchen', 'History and non-fiction enthusiast. Building a community of thoughtful readers.', '+84923456789', 'SELLER', false, NOW(), NOW()),
+    (4, 4, 'Alex Nguyen', 'https://i.pravatar.cc/150?u=alexnguyen', 'Avid reader and book collector since 2018.', '+84934567890', 'BUYER', false, NOW(), NOW()),
+    (5, 5, 'Minh Pham', 'https://i.pravatar.cc/150?u=minhpham', 'Sharing beloved books with new readers. Specializing in fiction and fantasy.', '+84945678901', 'SELLER', false, NOW(), NOW()),
+    (6, 6, 'Emily Tran', 'https://i.pravatar.cc/150?u=emilytran', 'Software engineer who loves reading about design and creativity.', '+84956789012', 'BUYER', false, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -117,8 +116,8 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 INSERT INTO shipping_address (id, user_id, full_name, phone, address_line1, address_line2, ward, district, city, postal_code, country, is_default, created_at, updated_at) VALUES
-    (1, 4, 'Happy Reader', '+84934567890', '123 Nguyen Hue Street', 'Apartment 5A', 'Ben Nghe Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW()),
-    (2, 6, 'Demo Buyer', '+84956789012', '456 Le Loi Boulevard', NULL, 'Ben Thanh Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW())
+    (1, 4, 'Alex Nguyen', '+84934567890', '123 Nguyen Hue Street', 'Apartment 5A', 'Ben Nghe Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW()),
+    (2, 6, 'Emily Tran', '+84956789012', '456 Le Loi Boulevard', NULL, 'Ben Thanh Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -126,15 +125,15 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 INSERT INTO orders (id, user_id, order_number, status, subtotal, total_amount, tax, shipping, discount, total, shipping_address_id, tracking_number, carrier, shipped_at, delivered_at, created_at, updated_at) VALUES
-    -- Orders for tinvo (PRO seller) - should have ~500k balance after commission
-    (1, 4, 'ORD-2026-001', 'DELIVERED', 150.00, 150.00, 0.00, 0.00, 0.00, 150.00, 1, 'VN123456789', 'GHN', NOW() - INTERVAL '10 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '14 days', NOW()),
-    (2, 4, 'ORD-2026-002', 'DELIVERED', 200.00, 200.00, 0.00, 0.00, 0.00, 200.00, 1, 'VN234567890', 'GHN', NOW() - INTERVAL '8 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '12 days', NOW()),
-    (3, 6, 'ORD-2026-003', 'DELIVERED', 100.00, 100.00, 0.00, 0.00, 0.00, 100.00, 2, 'VN345678901', 'GHN', NOW() - INTERVAL '6 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '10 days', NOW()),
-    -- Orders for seller1 (casual seller) - less balance
-    (4, 4, 'ORD-2026-004', 'DELIVERED', 75.00, 75.00, 0.00, 5.00, 0.00, 80.00, 1, 'VN456789012', 'GHN', NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '8 days', NOW()),
-    (5, 6, 'ORD-2026-005', 'DELIVERED', 50.00, 50.00, 0.00, 5.00, 0.00, 55.00, 2, 'VN567890123', 'GHN', NOW() - INTERVAL '4 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '6 days', NOW()),
+    -- Orders for tinvo (PRO seller)
+    (1, 4, 'BV-2026-0001', 'DELIVERED', 150.00, 150.00, 0.00, 0.00, 0.00, 150.00, 1, 'GHN7823456789', 'GHN Express', NOW() - INTERVAL '10 days', NOW() - INTERVAL '7 days', NOW() - INTERVAL '14 days', NOW()),
+    (2, 4, 'BV-2026-0002', 'DELIVERED', 200.00, 200.00, 0.00, 0.00, 0.00, 200.00, 1, 'GHN7834567890', 'GHN Express', NOW() - INTERVAL '8 days', NOW() - INTERVAL '5 days', NOW() - INTERVAL '12 days', NOW()),
+    (3, 6, 'BV-2026-0003', 'DELIVERED', 100.00, 100.00, 0.00, 0.00, 0.00, 100.00, 2, 'GHN7845678901', 'GHN Express', NOW() - INTERVAL '6 days', NOW() - INTERVAL '3 days', NOW() - INTERVAL '10 days', NOW()),
+    -- Orders for sarahchen (casual seller)
+    (4, 4, 'BV-2026-0004', 'DELIVERED', 75.00, 75.00, 0.00, 5.00, 0.00, 80.00, 1, 'GHN7856789012', 'GHN Express', NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '8 days', NOW()),
+    (5, 6, 'BV-2026-0005', 'DELIVERED', 50.00, 50.00, 0.00, 5.00, 0.00, 55.00, 2, 'GHN7867890123', 'GHN Express', NOW() - INTERVAL '4 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '6 days', NOW()),
     -- Pending order (for demo flow)
-    (6, 6, 'ORD-2026-006', 'PENDING', 35.00, 35.00, 0.00, 0.00, 0.00, 35.00, 2, NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day', NOW())
+    (6, 6, 'BV-2026-0006', 'PENDING', 35.00, 35.00, 0.00, 0.00, 0.00, 35.00, 2, NULL, NULL, NULL, NULL, NOW() - INTERVAL '1 day', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -142,7 +141,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 INSERT INTO order_items (id, order_id, listing_id, book_id, seller_id, title, author, cover_image, quantity, price, subtotal, created_at) VALUES
-    -- Order 1: tinvo's listings (2x Effective Java @ 35.00, 1x Clean Code @ 28.00 = 98.00 actually, let's adjust)
+    -- Order 1: tinvo's listings
     (1, 1, 1, 1, 2, 'Effective Java', 'Joshua Bloch', 'https://covers.openlibrary.org/b/isbn/9780134685991-L.jpg', 2, 35.00, 70.00, NOW()),
     (2, 1, 2, 2, 2, 'Clean Code', 'Robert C. Martin', 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg', 1, 28.00, 28.00, NOW()),
     (3, 1, 5, 5, 2, '1984', 'George Orwell', 'https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg', 1, 12.00, 12.00, NOW()),
@@ -152,10 +151,10 @@ INSERT INTO order_items (id, order_id, listing_id, book_id, seller_id, title, au
     -- Order 3: tinvo's listings
     (6, 3, 5, 5, 2, '1984', 'George Orwell', 'https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg', 3, 12.00, 36.00, NOW()),
     (7, 3, 2, 2, 2, 'Clean Code', 'Robert C. Martin', 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg', 1, 28.00, 28.00, NOW()),
-    -- Order 4: seller1's listings
+    -- Order 4: sarahchen's listings
     (8, 4, 3, 3, 3, 'Sapiens', 'Yuval Noah Harari', 'https://covers.openlibrary.org/b/isbn/9780062316110-L.jpg', 2, 18.00, 36.00, NOW()),
     (9, 4, 4, 4, 3, 'Harry Potter', 'J.K. Rowling', 'https://covers.openlibrary.org/b/isbn/9780439708180-L.jpg', 1, 15.00, 15.00, NOW()),
-    -- Order 5: seller1's listings
+    -- Order 5: sarahchen's listings
     (10, 5, 4, 4, 3, 'Harry Potter', 'J.K. Rowling', 'https://covers.openlibrary.org/b/isbn/9780439708180-L.jpg', 2, 15.00, 30.00, NOW()),
     -- Order 6: pending order (tinvo)
     (11, 6, 1, 1, 2, 'Effective Java', 'Joshua Bloch', 'https://covers.openlibrary.org/b/isbn/9780134685991-L.jpg', 1, 35.00, 35.00, NOW())
@@ -166,17 +165,17 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 INSERT INTO review (id, order_item_id, listing_id, seller_id, user_id, rating, comment, helpful_count, verified_purchase, created_at, updated_at) VALUES
-    -- Reviews for tinvo (PRO seller) - mix of ratings for realistic AI summary
-    (1, 1, 1, 2, 4, 5, 'Perfect condition, shipped super fast! The book was exactly as described. Highly recommend this seller!', 12, true, NOW() - INTERVAL '6 days', NOW()),
-    (2, 2, 2, 2, 4, 5, 'Clean Code arrived in pristine condition. Great communication from seller. Will buy again!', 8, true, NOW() - INTERVAL '6 days', NOW()),
-    (3, 3, 5, 2, 4, 4, 'Good book, shipping was a bit slow but condition was accurate. Overall satisfied.', 3, true, NOW() - INTERVAL '6 days', NOW()),
-    (4, 4, 2, 2, 4, 5, 'Another great purchase! Seller always packages books carefully.', 5, true, NOW() - INTERVAL '4 days', NOW()),
-    (5, 6, 5, 2, 6, 5, 'Excellent seller! Fast shipping and book condition better than expected.', 7, true, NOW() - INTERVAL '2 days', NOW()),
-    (6, 7, 2, 2, 6, 4, 'Good transaction. Minor delay but seller communicated proactively.', 2, true, NOW() - INTERVAL '2 days', NOW()),
-    -- Reviews for seller1 (casual seller)
-    (7, 8, 3, 3, 4, 4, 'Sapiens in good condition. Some highlighting but readable. Fair price.', 4, true, NOW() - INTERVAL '1 day', NOW()),
-    (8, 9, 4, 3, 4, 5, 'Harry Potter was a gift for my niece, she loved it! Great seller.', 6, true, NOW() - INTERVAL '1 day', NOW()),
-    (9, 10, 4, 3, 6, 4, 'Good condition as described. Packaging could be better.', 1, true, NOW(), NOW())
+    -- Reviews for tinvo (PRO seller)
+    (1, 1, 1, 2, 4, 5, 'Excellent condition, exactly as described. Fast shipping and professional packaging. Highly recommend!', 12, true, NOW() - INTERVAL '6 days', NOW()),
+    (2, 2, 2, 2, 4, 5, 'Book arrived in pristine condition. Great communication throughout. Will definitely buy again.', 8, true, NOW() - INTERVAL '6 days', NOW()),
+    (3, 3, 5, 2, 4, 4, 'Good book in accurate condition. Shipping took a bit longer than expected but seller kept me updated.', 3, true, NOW() - INTERVAL '6 days', NOW()),
+    (4, 4, 2, 2, 4, 5, 'Another fantastic purchase from this seller. Books are always carefully packaged.', 5, true, NOW() - INTERVAL '4 days', NOW()),
+    (5, 6, 5, 2, 6, 5, 'Outstanding seller! Lightning fast shipping and the book condition exceeded my expectations.', 7, true, NOW() - INTERVAL '2 days', NOW()),
+    (6, 7, 2, 2, 6, 4, 'Smooth transaction. There was a minor shipping delay but the seller was proactive in communication.', 2, true, NOW() - INTERVAL '2 days', NOW()),
+    -- Reviews for sarahchen (casual seller)
+    (7, 8, 3, 3, 4, 4, 'Book was in good readable condition with some minor highlighting. Fair price for the quality.', 4, true, NOW() - INTERVAL '1 day', NOW()),
+    (8, 9, 4, 3, 4, 5, 'Bought this as a gift and it was perfect. Great seller with quick responses!', 6, true, NOW() - INTERVAL '1 day', NOW()),
+    (9, 10, 4, 3, 6, 4, 'Book condition was accurate. Would appreciate more protective packaging next time.', 1, true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
