@@ -10,10 +10,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByPaymentIntentId(String paymentIntentId);
+
+    // Find by order ID
+    List<Payment> findByOrderId(Long orderId);
 
     // Tìm theo User ID (Vì Payment map User object, ta dùng user.id)
     Page<Payment> findByUserId(Long userId, Pageable pageable);

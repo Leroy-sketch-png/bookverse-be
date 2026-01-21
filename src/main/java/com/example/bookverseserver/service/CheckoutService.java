@@ -35,6 +35,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.example.bookverseserver.configuration.DemoModeConfig;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 public class CheckoutService {
 
     CartRepository cartRepository;
+    CartItemRepository cartItemRepository;
     OrderRepository orderRepository;
     OrderItemRepository orderItemRepository;
     CheckoutSessionRepository checkoutSessionRepository;
@@ -56,6 +59,7 @@ public class CheckoutService {
     ShippingAddressMapper shippingAddressMapper;
     SmsService smsService;
     EmailService emailService;
+    DemoModeConfig demoModeConfig;
 
     // Cryptographically secure random for order numbers
     @NonFinal
@@ -98,6 +102,18 @@ public class CheckoutService {
         BigDecimal tax = subtotal.multiply(taxRate);
         BigDecimal shipping = shippingFlatFee;
         BigDecimal total = subtotal.add(tax).add(shipping);
+
+        // Check for existing pending session for this cart (prevents duplicate constraint violation)
+        Optional<CheckoutSession> existingSession = checkoutSessionRepository.findPendingByCartId(cart.getId());
+        if (existingSession.isPresent()) {
+            CheckoutSession session = existingSession.get();
+            // Update the session with fresh totals and extend expiry
+            session.setAmount(total);
+            session.setExpiresAt(LocalDateTime.now().plusHours(24));
+            CheckoutSession updatedSession = checkoutSessionRepository.save(session);
+            log.info("Reusing existing checkout session {} for user {}", updatedSession.getId(), userId);
+            return buildSessionResponse(updatedSession, cart, subtotal, tax, shipping, BigDecimal.ZERO, null);
+        }
 
         // Create checkout session (no order yet - order is created on complete)
         CheckoutSession session = CheckoutSession.builder()
@@ -360,52 +376,67 @@ public class CheckoutService {
             voucherService.recordVoucherUsage(promoCode, user);
         }
         
-        // Create REAL Stripe Payment Intent
-        PaymentIntent stripeIntent;
-        try {
-            long amountInCents = total.multiply(BigDecimal.valueOf(100)).longValue();
-            
-            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                    .setAmount(amountInCents)
-                    .setCurrency("vnd")
-                    .setAutomaticPaymentMethods(
-                            PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
-                                    .setEnabled(true)
-                                    .build()
-                    )
-                    .putMetadata("order_id", String.valueOf(savedOrder.getId()))
-                    .putMetadata("user_id", String.valueOf(user.getId()))
-                    .putMetadata("order_number", savedOrder.getOrderNumber())
-                    .build();
-            
-            stripeIntent = PaymentIntent.create(params);
-            log.info("Created Stripe payment intent {} for order {}", stripeIntent.getId(), savedOrder.getId());
-            
-        } catch (StripeException e) {
-            log.error("Stripe error creating payment intent", e);
-            throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
+        // Payment Intent - Demo Mode or Real Stripe
+        String paymentIntentId;
+        String clientSecret;
+        String paymentStatus;
+        
+        if (demoModeConfig.isEnabled()) {
+            // DEMO MODE: Simulate payment success without Stripe API
+            paymentIntentId = demoModeConfig.generateFakePaymentIntentId();
+            clientSecret = demoModeConfig.generateFakeClientSecret();
+            paymentStatus = "requires_payment_method"; // Frontend will auto-confirm in demo mode
+            log.info("🎓 DEMO MODE: Simulated payment intent {} for order {}", paymentIntentId, savedOrder.getId());
+        } else {
+            // REAL MODE: Create Stripe Payment Intent
+            try {
+                long amountInCents = total.multiply(BigDecimal.valueOf(100)).longValue();
+                
+                PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                        .setAmount(amountInCents)
+                        .setCurrency("vnd")
+                        .setAutomaticPaymentMethods(
+                                PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
+                                        .setEnabled(true)
+                                        .build()
+                        )
+                        .putMetadata("order_id", String.valueOf(savedOrder.getId()))
+                        .putMetadata("user_id", String.valueOf(user.getId()))
+                        .putMetadata("order_number", savedOrder.getOrderNumber())
+                        .build();
+                
+                PaymentIntent stripeIntent = PaymentIntent.create(params);
+                paymentIntentId = stripeIntent.getId();
+                clientSecret = stripeIntent.getClientSecret();
+                paymentStatus = stripeIntent.getStatus();
+                log.info("Created Stripe payment intent {} for order {}", paymentIntentId, savedOrder.getId());
+                
+            } catch (StripeException e) {
+                log.error("Stripe error creating payment intent", e);
+                throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
+            }
         }
         
         // Save payment record
         Payment payment = Payment.builder()
                 .order(savedOrder)
                 .user(user)
-                .paymentIntentId(stripeIntent.getId())
+                .paymentIntentId(paymentIntentId)
                 .amount(total)
                 .status(PaymentStatus.PENDING)
-                .paymentMethod("STRIPE")
+                .paymentMethod(demoModeConfig.isEnabled() ? "DEMO" : "STRIPE")
                 .build();
         transactionRepository.save(payment);
         
         // Update checkout session
         session.setOrder(savedOrder);
-        session.setPaymentIntentId(stripeIntent.getId());
-        session.setClientSecret(stripeIntent.getClientSecret());
+        session.setPaymentIntentId(paymentIntentId);
+        session.setClientSecret(clientSecret);
         session.setStatus("READY_FOR_PAYMENT");
         checkoutSessionRepository.save(session);
         
-        // Clear cart
-        cart.getCartItems().clear();
+        // Clear cart using direct SQL to avoid optimistic locking issues
+        cartItemRepository.deleteAllByCartIdDirect(cart.getId());
         cart.setTotalPrice(BigDecimal.ZERO);
         cartRepository.save(cart);
         
@@ -421,15 +452,55 @@ public class CheckoutService {
         return CompleteCheckoutResponse.builder()
                 .orderId(savedOrder.getId())
                 .orderNumber(savedOrder.getOrderNumber())
+                .demoMode(demoModeConfig.isEnabled())
                 .paymentIntent(CompleteCheckoutResponse.PaymentIntentDTO.builder()
-                        .id(stripeIntent.getId())
-                        .clientSecret(stripeIntent.getClientSecret())
+                        .id(paymentIntentId)
+                        .clientSecret(clientSecret)
                         .amount(total)
                         .currency("VND")
-                        .status(stripeIntent.getStatus())
+                        .status(paymentStatus)
                         .publishableKey(stripePublishableKey)
                         .build())
                 .build();
+    }
+
+    // ============================================================================
+    // DEMO MODE: Simulate Payment Success
+    // ============================================================================
+    
+    @Transactional
+    public void demoConfirmPayment(Long userId, Long orderId) {
+        if (!demoModeConfig.isEnabled()) {
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
+        
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        if (!order.getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        
+        // Update order status to PROCESSING (simulating payment success)
+        order.setStatus(OrderStatus.PROCESSING);
+        orderRepository.save(order);
+        
+        // Update payment record
+        Payment payment = transactionRepository.findByOrderId(orderId).stream().findFirst().orElse(null);
+        if (payment != null) {
+            payment.setStatus(PaymentStatus.COMPLETED);
+            transactionRepository.save(payment);
+        }
+        
+        // Add timeline entry
+        OrderTimeline timeline = OrderTimeline.builder()
+                .order(order)
+                .status("PROCESSING")
+                .note("Payment confirmed (Demo Mode)")
+                .build();
+        orderTimelineRepository.save(timeline);
+        
+        log.info("🎓 DEMO MODE: Payment confirmed for order {}", orderId);
     }
 
     // ============================================================================

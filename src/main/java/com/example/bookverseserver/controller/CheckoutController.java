@@ -156,6 +156,25 @@ public class CheckoutController {
                 .build();
     }
 
+    /**
+     * DEMO MODE: Simulate successful payment without Stripe
+     * Only works when demo.mode=true in application.properties
+     */
+    @PostMapping("/{orderId}/demo-confirm")
+    @Operation(summary = "Demo confirm payment", description = "Simulates payment success in demo mode (requires demo.mode=true)")
+    public ApiResponse<Void> demoConfirmPayment(
+            @PathVariable Long orderId,
+            Authentication authentication) {
+        Long userId = securityUtils.getCurrentUserId(authentication);
+        log.info("Demo confirming payment for order {} by user {}", orderId, userId);
+        
+        checkoutService.demoConfirmPayment(userId, orderId);
+        
+        return ApiResponse.<Void>builder()
+                .message("Payment confirmed (demo mode)")
+                .build();
+    }
+
     // ============ Legacy endpoint for backward compatibility ============
     
     /**

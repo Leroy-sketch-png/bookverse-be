@@ -15,6 +15,13 @@ public interface CheckoutSessionRepository extends JpaRepository<CheckoutSession
   Optional<CheckoutSession> findByPaymentIntentId(String paymentIntentId);
   
   /**
+   * Find an existing pending checkout session for a cart.
+   * Used to prevent duplicate sessions (cart_id has unique constraint).
+   */
+  @Query("SELECT cs FROM CheckoutSession cs WHERE cs.cart.id = :cartId AND cs.status = 'PENDING'")
+  Optional<CheckoutSession> findPendingByCartId(@Param("cartId") Long cartId);
+  
+  /**
    * Find checkout session with fully loaded cart for order creation.
    * Eagerly loads: cart -> cartItems -> listing -> photos, bookMeta -> authors, images
    */

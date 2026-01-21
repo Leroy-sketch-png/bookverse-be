@@ -17,6 +17,10 @@ public class CompleteCheckoutResponse {
     Long orderId;
     String orderNumber;
     
+    // Demo mode flag - when true, frontend should skip Stripe Elements
+    @Builder.Default
+    Boolean demoMode = false;
+    
     // Stripe payment intent for frontend
     PaymentIntentDTO paymentIntent;
     
