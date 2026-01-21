@@ -2,6 +2,7 @@ package com.example.bookverseserver.controller;
 
 import com.example.bookverseserver.dto.request.SendMessageRequest;
 import com.example.bookverseserver.dto.response.MessageResponse;
+import com.example.bookverseserver.enums.MessageType;
 import com.example.bookverseserver.service.MessagingService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 
 /**
  * WebSocket controller for real-time messaging.
@@ -51,9 +53,23 @@ public class ChatWebSocketController {
             // Save message to database
             MessageResponse message = messagingService.sendMessage(conversationId, senderId, request);
             
+            // Create broadcast-safe version without isFromMe (each client calculates it)
+            // The isFromMe field is sender-specific and shouldn't be broadcast to all participants
+            MessageBroadcast broadcast = MessageBroadcast.builder()
+                .id(message.getId())
+                .conversationId(message.getConversationId())
+                .sender(message.getSender())
+                .message(message.getMessage())
+                .type(message.getType())
+                .relatedId(message.getRelatedId())
+                .sharedListing(message.getSharedListing())
+                .readAt(message.getReadAt())
+                .createdAt(message.getCreatedAt())
+                .build();
+            
             // Broadcast to all subscribers of this conversation
             String destination = "/topic/conversation/" + conversationId;
-            messagingTemplate.convertAndSend(destination, message);
+            messagingTemplate.convertAndSend(destination, broadcast);
             
             log.info("Message broadcast to {}", destination);
             
@@ -106,6 +122,27 @@ public class ChatWebSocketController {
     // ─────────────────────────────────────────────────────────────────────────
     // Inner Classes for WebSocket Messages
     // ─────────────────────────────────────────────────────────────────────────
+    
+    /**
+     * Message broadcast DTO - excludes isFromMe since each client calculates it.
+     * This prevents the bug where sender's isFromMe=true gets broadcast to recipient.
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class MessageBroadcast {
+        private Long id;
+        private Long conversationId;
+        private MessageResponse.SenderInfo sender;
+        private String message;
+        private com.example.bookverseserver.enums.MessageType type;
+        private Long relatedId;
+        private MessageResponse.SharedListingInfo sharedListing;
+        private java.time.LocalDateTime readAt;
+        private java.time.LocalDateTime createdAt;
+        // NOTE: No isFromMe field - frontend calculates based on sender.id
+    }
     
     @lombok.Data
     @lombok.NoArgsConstructor
