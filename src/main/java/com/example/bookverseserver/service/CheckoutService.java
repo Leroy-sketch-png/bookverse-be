@@ -159,9 +159,43 @@ public class CheckoutService {
     @Transactional
     public CheckoutSessionResponse updateSession(Long userId, Long sessionId, UpdateCheckoutSessionRequest request) {
         CheckoutSession session = getValidSession(userId, sessionId);
+        User user = session.getUser();
         
-        if (request.getShippingAddressId() != null) {
-            // Validate address belongs to user
+        Long addressId = null;
+        
+        // Option 1: Inline address creation
+        if (request.getShippingAddress() != null) {
+            UpdateCheckoutSessionRequest.InlineShippingAddressRequest inlineAddr = request.getShippingAddress();
+            
+            // Create new shipping address
+            ShippingAddress newAddress = ShippingAddress.builder()
+                    .user(user)
+                    .fullName(inlineAddr.getFullName())
+                    .phoneNumber(inlineAddr.getPhoneNumber())
+                    .addressLine1(inlineAddr.getAddressLine1())
+                    .addressLine2(inlineAddr.getAddressLine2())
+                    .city(inlineAddr.getCity())
+                    .postalCode(inlineAddr.getPostalCode())
+                    .country(inlineAddr.getCountry() != null ? inlineAddr.getCountry() : "Vietnam")
+                    .provinceId(inlineAddr.getProvinceId())
+                    .district(inlineAddr.getDistrict())
+                    .districtId(inlineAddr.getDistrictId())
+                    .ward(inlineAddr.getWard())
+                    .wardCode(inlineAddr.getWardCode())
+                    .note(inlineAddr.getNote())
+                    .isDefault(Boolean.TRUE.equals(inlineAddr.getIsDefault()))
+                    .build();
+            
+            // Handle default address logic
+            if (Boolean.TRUE.equals(inlineAddr.getIsDefault())) {
+                shippingAddressRepository.resetDefaultAddress(userId);
+            }
+            
+            ShippingAddress savedAddress = shippingAddressRepository.save(newAddress);
+            addressId = savedAddress.getId();
+        }
+        // Option 2: Select existing address by ID
+        else if (request.getShippingAddressId() != null) {
             ShippingAddress address = shippingAddressRepository.findById(request.getShippingAddressId())
                     .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
             
@@ -169,8 +203,12 @@ public class CheckoutService {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
             
-            // Store address ID in session (we'll use paymentIntentId field temporarily)
-            session.setPaymentIntentId("addr:" + request.getShippingAddressId());
+            addressId = address.getId();
+        }
+        
+        // Store selected address ID in session
+        if (addressId != null) {
+            session.setPaymentIntentId("addr:" + addressId);
             session.setStatus("SHIPPING_SELECTED");
         }
         
