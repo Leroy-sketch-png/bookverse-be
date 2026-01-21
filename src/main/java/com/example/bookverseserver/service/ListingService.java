@@ -900,12 +900,22 @@ public class ListingService {
                         .name(normalizedAuthorName) // Store normalized name
                         .build()));
         
-        // Resolve category
-        Category category = categoryRepository.findByName(request.getCategory())
-                .orElseGet(() -> categoryRepository.save(Category.builder()
-                        .name(request.getCategory())
-                        .slug(request.getCategory().toLowerCase().replaceAll("\\s+", "-"))
-                        .build()));
+        // Resolve category by SLUG (the stable identifier), not name
+        // Frontend sends slug like "kinh-doanh", not display name like "Kinh Doanh"
+        String categorySlug = request.getCategory().toLowerCase().replaceAll("\\s+", "-");
+        Category category = categoryRepository.findBySlug(categorySlug)
+                .orElseGet(() -> {
+                    // Only create new category if it truly doesn't exist
+                    // Convert slug back to title case for display name
+                    String displayName = java.util.Arrays.stream(categorySlug.split("-"))
+                            .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
+                            .collect(java.util.stream.Collectors.joining(" "));
+                    log.info("Creating new category: {} (slug: {})", displayName, categorySlug);
+                    return categoryRepository.save(Category.builder()
+                            .name(displayName)
+                            .slug(categorySlug)
+                            .build());
+                });
         
         BookMeta bookMeta = BookMeta.builder()
                 .title(request.getTitle())

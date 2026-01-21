@@ -146,9 +146,9 @@ public class CheckoutService {
         BigDecimal discount = BigDecimal.ZERO;
         VoucherInfoDTO voucherInfo = null;
         
-        // Check for applied voucher
-        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
-            String voucherCode = session.getClientSecret().substring(8);
+        // Check for applied voucher (from session or cart)
+        String voucherCode = extractVoucherCode(session, cart);
+        if (voucherCode != null) {
             try {
                 Voucher voucher = voucherRepository.findByCode(voucherCode).orElse(null);
                 if (voucher != null) {
@@ -162,6 +162,7 @@ public class CheckoutService {
                 }
             } catch (Exception e) {
                 // Voucher no longer valid, ignore
+                log.debug("Voucher {} no longer valid during getSession", voucherCode);
             }
         }
         
@@ -315,11 +316,12 @@ public class CheckoutService {
         BigDecimal discount = BigDecimal.ZERO;
         String promoCode = null;
         
-        // Check for voucher
-        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
-            promoCode = session.getClientSecret().substring(8);
+        // Check for voucher (from session or cart)
+        promoCode = extractVoucherCode(session, cart);
+        if (promoCode != null) {
             try {
                 discount = voucherService.calculateDiscount(promoCode, subtotal);
+                log.info("Applied voucher {} with discount {} for checkout session {}", promoCode, discount, sessionId);
             } catch (Exception e) {
                 log.warn("Voucher {} no longer valid, ignoring", promoCode);
                 promoCode = null;
@@ -617,6 +619,25 @@ public class CheckoutService {
         if (!unavailableItems.isEmpty()) {
             throw new OutOfStockException(unavailableItems);
         }
+    }
+
+    /**
+     * Extract applied voucher from checkout session or cart.
+     * Priority: 1) session.clientSecret "voucher:CODE" 2) cart.voucher entity
+     * Returns voucher code string or null if no voucher applied.
+     */
+    private String extractVoucherCode(CheckoutSession session, Cart cart) {
+        // Priority 1: Check session clientSecret for "voucher:CODE" format
+        if (session.getClientSecret() != null && session.getClientSecret().startsWith("voucher:")) {
+            return session.getClientSecret().substring(8);
+        }
+        
+        // Priority 2: Check cart's applied voucher entity
+        if (cart.getVoucher() != null) {
+            return cart.getVoucher().getCode();
+        }
+        
+        return null;
     }
 
     /**
