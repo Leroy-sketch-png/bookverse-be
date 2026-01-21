@@ -129,7 +129,9 @@ public class UserProfile {
     /**
      * Optimistic locking to help with concurrent updates to the same profile.
      * Add handling in the service layer to retry/handle OptimisticLockException if desired.
+     * MUST have default value - NULL causes NPE in Hibernate.
      */
     @Version
-    Integer version;
+    @Column(nullable = false)
+    Integer version = 0;
 }
