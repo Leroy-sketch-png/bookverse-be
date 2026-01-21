@@ -94,6 +94,19 @@ public class PayoutService {
     public PayoutResponse requestPayout(PayoutRequest request, Authentication authentication) {
         User seller = getCurrentSeller(authentication);
         
+        // Validate Stripe Connect account is ready
+        UserProfile profile = seller.getUserProfile();
+        if (profile == null || profile.getStripeAccountId() == null) {
+            throw new AppException(ErrorCode.CONNECT_ACCOUNT_NOT_READY);
+        }
+        
+        // Check for existing pending/processing payout
+        List<SellerPayout> pendingPayouts = payoutRepository.findBySellerAndStatusIn(
+            seller, List.of(SellerPayoutStatus.PENDING, SellerPayoutStatus.PROCESSING));
+        if (!pendingPayouts.isEmpty()) {
+            throw new AppException(ErrorCode.PAYOUT_ALREADY_PENDING);
+        }
+        
         // Get available balance
         SellerBalanceResponse balance = getBalance(authentication);
         

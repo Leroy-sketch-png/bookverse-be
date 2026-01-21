@@ -6,6 +6,7 @@ import com.example.bookverseserver.dto.request.SellerSettingsUpdateRequest;
 import com.example.bookverseserver.dto.response.Analytics.*;
 import com.example.bookverseserver.dto.response.ApiResponse;
 import com.example.bookverseserver.dto.response.Order.OrderListResponse;
+import com.example.bookverseserver.dto.response.Order.SellerOrderListResponse;
 import com.example.bookverseserver.dto.response.Order.UpdateOrderStatusResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Product.BulkUploadResponse;
@@ -113,8 +114,8 @@ public class SellerController {
     @GetMapping("/orders")
     @PreAuthorize("hasAnyRole('SELLER', 'PRO_SELLER')")
     @Operation(summary = "Get seller's orders", 
-               description = "Returns paginated list of orders containing seller's listings")
-    public ApiResponse<OrderListResponse> getSellerOrders(
+               description = "Returns paginated list of orders containing seller's listings with buyer info")
+    public ApiResponse<SellerOrderListResponse> getSellerOrders(
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortOrder,
@@ -124,7 +125,7 @@ public class SellerController {
         Long sellerId = securityUtils.getCurrentUserId(authentication);
         int safePage = PaginationUtils.safePage(page);
         int safeLimit = PaginationUtils.safeLimit(limit);
-        return ApiResponse.<OrderListResponse>builder()
+        return ApiResponse.<SellerOrderListResponse>builder()
                 .message("Seller orders retrieved successfully")
                 .result(sellerService.getSellerOrders(sellerId, status, sortBy, sortOrder, safePage + 1, safeLimit))
                 .build();

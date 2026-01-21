@@ -3,6 +3,8 @@ package com.example.bookverseserver.service;
 import com.example.bookverseserver.dto.response.Analytics.*;
 import com.example.bookverseserver.dto.response.Order.OrderDTO;
 import com.example.bookverseserver.dto.response.Order.OrderListResponse;
+import com.example.bookverseserver.dto.response.Order.SellerOrderListResponse;
+import com.example.bookverseserver.dto.response.Order.SellerOrderResponse;
 import com.example.bookverseserver.dto.response.PagedResponse;
 import com.example.bookverseserver.dto.response.Product.ListingResponse;
 import com.example.bookverseserver.entity.Order_Payment.Order;
@@ -271,7 +273,7 @@ public class SellerService {
     // ============ Seller Orders ============
 
     @Transactional(readOnly = true)
-    public OrderListResponse getSellerOrders(
+    public SellerOrderListResponse getSellerOrders(
             Long sellerId,
             OrderStatus status,
             String sortBy,
@@ -287,6 +289,10 @@ public class SellerService {
         for (Order order : allOrders) {
             if (order.getPayments() != null) order.getPayments().size();
             if (order.getTimeline() != null) order.getTimeline().size();
+            // Initialize user profile for buyer info
+            if (order.getUser() != null && order.getUser().getUserProfile() != null) {
+                order.getUser().getUserProfile().getFullName();
+            }
         }
         
         // Apply filters and sorting
@@ -305,12 +311,12 @@ public class SellerService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        // Map orders to DTOs
-        List<OrderDTO> orderDTOs = orderMapper.toOrderDTOList(pagedOrders);
+        // Map orders to seller-specific DTOs with buyer info
+        List<SellerOrderResponse> orderDTOs = orderMapper.toSellerOrderResponseList(pagedOrders);
         
-        return OrderListResponse.builder()
+        return SellerOrderListResponse.builder()
                 .data(orderDTOs)
-                .meta(OrderListResponse.PaginationMeta.builder()
+                .meta(SellerOrderListResponse.PaginationMeta.builder()
                         .page(page)
                         .limit(limit)
                         .totalItems(totalItems)

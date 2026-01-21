@@ -3,6 +3,8 @@ package com.example.bookverseserver.mapper;
 import com.example.bookverseserver.dto.response.Order.OrderDTO;
 import com.example.bookverseserver.dto.response.Order.OrderItemDTO;
 import com.example.bookverseserver.dto.response.Order.OrderTimelineDTO;
+import com.example.bookverseserver.dto.response.Order.SellerOrderItemResponse;
+import com.example.bookverseserver.dto.response.Order.SellerOrderResponse;
 import com.example.bookverseserver.dto.response.ShippingAddress.ShippingAddressResponse;
 import com.example.bookverseserver.entity.Order_Payment.Order;
 import com.example.bookverseserver.entity.Order_Payment.OrderItem;
@@ -165,5 +167,74 @@ public interface OrderMapper {
   default List<OrderDTO> toOrderDTOList(List<Order> orders) {
     if (orders == null) return List.of();
     return orders.stream().map(this::toOrderDTO).collect(Collectors.toList());
+  }
+
+  // ============ Seller Order Mapping ============
+
+  /**
+   * Map Order entity to SellerOrderResponse (seller view with buyer info)
+   */
+  default SellerOrderResponse toSellerOrderResponse(Order order) {
+    if (order == null) return null;
+    
+    // Get buyer info from order.user
+    User buyer = order.getUser();
+    String buyerName = "Unknown Buyer";
+    String buyerEmail = null;
+    if (buyer != null) {
+      UserProfile profile = buyer.getUserProfile();
+      buyerName = profile != null && profile.getFullName() != null 
+          ? profile.getFullName() 
+          : buyer.getUsername();
+      buyerEmail = buyer.getEmail();
+    }
+    
+    // Map order items to seller format (flat structure)
+    List<SellerOrderItemResponse> books = order.getItems() != null
+        ? order.getItems().stream().map(this::toSellerOrderItemResponse).collect(Collectors.toList())
+        : List.of();
+    
+    return SellerOrderResponse.builder()
+        .id(order.getId())
+        .orderNumber(order.getOrderNumber())
+        .status(order.getStatus())
+        .buyerName(buyerName)
+        .buyerEmail(buyerEmail)
+        .shippingAddress(mapShippingAddress(order.getShippingAddress()))
+        .books(books)
+        .totalPrice(order.getTotal())
+        .trackingNumber(order.getTrackingNumber())
+        .shippedAt(order.getShippedAt())
+        .createdAt(order.getCreatedAt())
+        .updatedAt(order.getUpdatedAt())
+        .build();
+  }
+
+  /**
+   * Map OrderItem to SellerOrderItemResponse (flat structure for seller view)
+   */
+  default SellerOrderItemResponse toSellerOrderItemResponse(OrderItem orderItem) {
+    if (orderItem == null) return null;
+    
+    String listingId = orderItem.getListing() != null 
+        ? String.valueOf(orderItem.getListing().getId()) 
+        : null;
+    String image = orderItem.getCoverImage();
+    
+    return SellerOrderItemResponse.builder()
+        .listingId(listingId)
+        .title(orderItem.getTitle())
+        .image(image)
+        .quantity(orderItem.getQuantity())
+        .price(orderItem.getPrice())
+        .build();
+  }
+
+  /**
+   * Map list of Orders to SellerOrderResponse list
+   */
+  default List<SellerOrderResponse> toSellerOrderResponseList(List<Order> orders) {
+    if (orders == null) return List.of();
+    return orders.stream().map(this::toSellerOrderResponse).collect(Collectors.toList());
   }
 }

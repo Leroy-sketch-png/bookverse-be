@@ -183,6 +183,7 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(400, "Insufficient balance for this payout", HttpStatus.BAD_REQUEST),
     NOT_A_SELLER(403, "You must be a seller to access this resource", HttpStatus.FORBIDDEN),
     INVALID_PAYOUT_STATUS(400, "Payout is not in a valid status for this operation", HttpStatus.BAD_REQUEST),
+    PAYOUT_ALREADY_PENDING(409, "You already have a pending payout request. Please wait for it to be processed.", HttpStatus.CONFLICT),
 
     // --- Stripe Integration ---
     STRIPE_CONNECT_ERROR(500, "Error connecting to Stripe Connect", HttpStatus.INTERNAL_SERVER_ERROR),
