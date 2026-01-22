@@ -254,30 +254,46 @@ public class AuthenticationService {
 
     @Transactional
     public String forgotPasswordOtp(String email) {
+        // Normalize email
+        String normalizedEmail = email.trim().toLowerCase();
+        
+        // Check if user exists - don't reveal if email exists for security, but don't save OTP either
+        boolean userExists = userRepository.findByEmail(normalizedEmail).isPresent();
+        if (!userExists) {
+            log.warn("Forgot password requested for non-existent email: {}", normalizedEmail);
+            // Still "succeed" silently to not reveal email existence, but don't save OTP
+            // The user will get "OTP not found" when they try to verify
+            return "silent_fail";
+        }
+        
         String otp = signupRequestService.generateOtpCode();
         String otpHash = signupRequestService.hmacOtp(otp);
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(otpTtlSeconds);
 
-        forgotPasswordRepository.findByEmail(email).ifPresent(existing -> {
+        forgotPasswordRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
             forgotPasswordRepository.delete(existing);
-            log.info("Replaced existing signup request for {}", email);
+            forgotPasswordRepository.flush(); // Ensure delete is executed before insert
+            log.info("Replaced existing forgot password request for {}", normalizedEmail);
         });
 
         ForgotPasswordOtpStorage request =  new ForgotPasswordOtpStorage();
         request.setOtpHash(otpHash);
         request.setExpiresAt(expiresAt);
-        request.setEmail(email);
+        request.setEmail(normalizedEmail);
         request.setCreatedAt(Instant.now());
 
         forgotPasswordRepository.save(request);
-        emailService.sendOtpEmail(email, otp);
+        emailService.sendOtpEmail(normalizedEmail, otp);
 
         return otp;
     }
 
     @Transactional
     public UserResponse  verifyOtpAndChangePassword(ForgotPasswordRequest forgotPasswordRequest) {
+            // Normalize email to match what was stored
+            String normalizedEmail = forgotPasswordRequest.getEmail().trim().toLowerCase();
+            
             // 1. Xác thực Mật khẩu
             if (!forgotPasswordRequest.getPassword().equals(forgotPasswordRequest.getConfirmPassword())) {
                 throw new AppException(ErrorCode.PASSWORDS_MISMATCH);
@@ -286,13 +302,13 @@ public class AuthenticationService {
             // 2. Tìm kiếm và Xác minh OTP
             // Phương thức findByEmail là hợp lý nhất, vì người dùng gửi yêu cầu quên mật khẩu bằng email
             // và ta cần tìm bản ghi OTP dựa trên email đó.
-            ForgotPasswordOtpStorage request = forgotPasswordRepository.findByEmail(forgotPasswordRequest.getEmail())
+            ForgotPasswordOtpStorage request = forgotPasswordRepository.findByEmail(normalizedEmail)
                     .orElseThrow(() -> new AppException(ErrorCode.OTP_NOT_FOUND));
 
             // P0 Security Fix #5: Check if too many OTP attempts
             if (request.getAttempts() != null && request.getAttempts() >= MAX_OTP_ATTEMPTS) {
                 forgotPasswordRepository.delete(request);
-                log.warn("OTP brute-force attempt detected for email: {}", forgotPasswordRequest.getEmail());
+                log.warn("OTP brute-force attempt detected for email: {}", normalizedEmail);
                 throw new AppException(ErrorCode.TOO_MANY_OTP_ATTEMPTS);
             }
 
@@ -311,7 +327,7 @@ public class AuthenticationService {
                 // P0 Security Fix #5: Increment attempt count
                 request.setAttempts((request.getAttempts() == null ? 0 : request.getAttempts()) + 1);
                 forgotPasswordRepository.save(request);
-                log.warn("Invalid OTP attempt {} for email: {}", request.getAttempts(), forgotPasswordRequest.getEmail());
+                log.warn("Invalid OTP attempt {} for email: {}", request.getAttempts(), normalizedEmail);
                 throw new AppException(ErrorCode.INVALID_OTP);
             }
 

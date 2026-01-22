@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ForgotPasswordRepository extends JpaRepository<ForgotPasswordOtpStorage, String> {
+public interface ForgotPasswordRepository extends JpaRepository<ForgotPasswordOtpStorage, Long> {
     Optional<ForgotPasswordOtpStorage> findByEmail(String email);
 
 }

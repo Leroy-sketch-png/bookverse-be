@@ -16,7 +16,9 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
 
     Optional<EmailVerificationToken> findByEmail(String email);
 
-    void deleteByEmail(String email);
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM EmailVerificationToken t WHERE t.email = :email")
+    void deleteByEmail(@Param("email") String email);
 
     @Modifying
     @Query("DELETE FROM EmailVerificationToken t WHERE t.expiryDate < :now")
