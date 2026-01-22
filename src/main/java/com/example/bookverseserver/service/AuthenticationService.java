@@ -253,17 +253,15 @@ public class AuthenticationService {
 
 
     @Transactional
-    public String forgotPasswordOtp(String email) {
+    public void forgotPasswordOtp(String email) {
         // Normalize email
         String normalizedEmail = email.trim().toLowerCase();
         
-        // Check if user exists - don't reveal if email exists for security, but don't save OTP either
+        // Check if user exists - throw error if not (user wants immediate feedback)
         boolean userExists = userRepository.findByEmail(normalizedEmail).isPresent();
         if (!userExists) {
             log.warn("Forgot password requested for non-existent email: {}", normalizedEmail);
-            // Still "succeed" silently to not reveal email existence, but don't save OTP
-            // The user will get "OTP not found" when they try to verify
-            return "silent_fail";
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
         
         String otp = signupRequestService.generateOtpCode();
@@ -285,8 +283,6 @@ public class AuthenticationService {
 
         forgotPasswordRepository.save(request);
         emailService.sendOtpEmail(normalizedEmail, otp);
-
-        return otp;
     }
 
     @Transactional

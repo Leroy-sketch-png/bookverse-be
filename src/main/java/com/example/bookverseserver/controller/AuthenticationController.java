@@ -158,6 +158,21 @@ public class AuthenticationController {
 
     // ================= FORGOT PASSWORD =================
 
+    @PostMapping("/forgot-password")
+    @Operation(
+            summary = "Request password reset OTP",
+            description = "Send OTP to email for password reset. Email must exist in system."
+    )
+    public ApiResponse<String> requestForgotPasswordOtp(
+            @Valid @RequestBody OtpSendRequest request
+    ) {
+        authenticationService.forgotPasswordOtp(request.getEmail());
+        return ApiResponse.<String>builder()
+                .code(HttpStatus.OK.value())
+                .result("OTP sent to email")
+                .build();
+    }
+
     @PostMapping("/change-forgot-password")
     @Operation(
             summary = "Change forgotten password",
