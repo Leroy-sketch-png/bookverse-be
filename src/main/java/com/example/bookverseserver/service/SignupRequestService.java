@@ -82,14 +82,17 @@ public class SignupRequestService {
      * Create or replace a SignupRequest for email.
      * Returns the plaintext OTP for immediate sending (not persisted).
      */
+    @Transactional  // Override class-level readOnly=true since this method creates/updates records
     public String createSignupRequest(String email, String username, String passwordHash) {
         String otp = generateOtpCode();
         String otpHash = hmacOtp(otp);
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(otpTtlSeconds);
 
+        // Delete existing signup request if any - must flush to avoid unique constraint violation
         signupRequestRepository.findByEmail(email).ifPresent(existing -> {
             signupRequestRepository.delete(existing);
+            signupRequestRepository.flush();  // Force delete to DB before insert
             log.info("Replaced existing signup request for {}", email);
         });
 

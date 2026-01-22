@@ -46,6 +46,7 @@ public class PayoutService {
     SmsService smsService;
     StripeConnectService stripeConnectService;
     SecurityUtils securityUtils;
+    com.example.bookverseserver.configuration.DemoModeConfig demoModeConfig;
 
     private static final BigDecimal PRO_COMMISSION_RATE = new BigDecimal("0.03");  // 3%
     private static final BigDecimal CASUAL_COMMISSION_RATE = new BigDecimal("0.08"); // 8%
@@ -94,10 +95,15 @@ public class PayoutService {
     public PayoutResponse requestPayout(PayoutRequest request, Authentication authentication) {
         User seller = getCurrentSeller(authentication);
         
-        // Validate Stripe Connect account is ready
+        // In demo mode, skip Stripe account validation
         UserProfile profile = seller.getUserProfile();
-        if (profile == null || profile.getStripeAccountId() == null) {
-            throw new AppException(ErrorCode.CONNECT_ACCOUNT_NOT_READY);
+        if (!demoModeConfig.isEnabled()) {
+            // Validate Stripe Connect account is ready (skip in demo mode)
+            if (profile == null || profile.getStripeAccountId() == null) {
+                throw new AppException(ErrorCode.CONNECT_ACCOUNT_NOT_READY);
+            }
+        } else {
+            log.info("[DEMO MODE] Skipping Stripe account validation for payout request");
         }
         
         // Check for existing pending/processing payout

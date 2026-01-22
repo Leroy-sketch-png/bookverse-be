@@ -49,6 +49,7 @@ import java.util.Optional;
 public class StripeConnectService {
 
     final UserProfileRepository userProfileRepository;
+    final com.example.bookverseserver.configuration.DemoModeConfig demoModeConfig;
 
     @Value("${stripe.api.key}")
     String stripeSecretKey;
@@ -72,6 +73,23 @@ public class StripeConnectService {
      */
     @Transactional
     public String createConnectAccount(User seller) {
+        // Demo mode: Simulate successful Connect onboarding
+        if (demoModeConfig.isEnabled()) {
+            log.info("[DEMO MODE] Simulating Stripe Connect onboarding for seller {}", seller.getId());
+            UserProfile profile = seller.getUserProfile();
+            if (profile == null) {
+                profile = new UserProfile();
+                profile.setUser(seller);
+            }
+            // Set fake account ID so payout requests work
+            String fakeAccountId = demoModeConfig.generateFakeConnectAccountId();
+            profile.setStripeAccountId(fakeAccountId);
+            userProfileRepository.save(profile);
+            log.info("[DEMO MODE] Created fake Stripe account {} for seller {}", fakeAccountId, seller.getId());
+            // Return success page URL instead of Stripe onboarding
+            return frontendUrl + "/seller/settings/payouts?demo=success";
+        }
+
         if (!connectEnabled) {
             log.info("[Stripe Connect DISABLED] Would create account for seller {}", seller.getId());
             return null;
@@ -169,6 +187,20 @@ public class StripeConnectService {
      */
     public Map<String, Object> getAccountStatus(String accountId) {
         Map<String, Object> status = new HashMap<>();
+        
+        // Demo mode: Return fully connected status if seller has demo account
+        if (demoModeConfig.isEnabled() && accountId != null && accountId.startsWith("acct_demo_")) {
+            log.info("[DEMO MODE] Returning simulated Connect status for {}", accountId);
+            status.put("connected", true);
+            status.put("hasAccount", true);
+            status.put("accountId", accountId);
+            status.put("payoutsEnabled", true);
+            status.put("chargesEnabled", true);
+            status.put("onboardingComplete", true);
+            status.put("detailsSubmitted", true);
+            status.put("message", "[DEMO] Bank account connected successfully");
+            return status;
+        }
         
         if (!connectEnabled || accountId == null) {
             status.put("connected", false);

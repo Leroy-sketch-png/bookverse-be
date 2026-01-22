@@ -55,4 +55,18 @@ public class DemoModeConfig {
     public String generateFakeTrackingNumber() {
         return "DEMO" + System.currentTimeMillis();
     }
+
+    /**
+     * Generate a fake Stripe Connect account ID for demo mode
+     */
+    public String generateFakeConnectAccountId() {
+        return "acct_demo_" + System.currentTimeMillis();
+    }
+
+    /**
+     * Generate a fake Stripe payout ID for demo mode
+     */
+    public String generateFakePayoutId() {
+        return "po_demo_" + System.currentTimeMillis();
+    }
 }
