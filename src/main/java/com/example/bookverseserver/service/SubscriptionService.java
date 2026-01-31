@@ -81,14 +81,14 @@ public class SubscriptionService {
             log.info("[Stripe Subscription DISABLED] Would create checkout for seller {}", seller.getId());
             // In disabled mode, just upgrade the user directly (for testing)
             upgradeToProSeller(seller, "sim_sub_" + System.currentTimeMillis());
-            return frontendUrl + "/seller?upgraded=true";
+            return frontendUrl + "/home/dashboard/seller?tab=analytics&upgraded=true";
         }
 
         if (proPriceId.contains("PLACEHOLDER")) {
             log.warn("Stripe PRO price ID not configured. Set stripe.pro.price.id in properties.");
             // Fall back to instant upgrade for demo
             upgradeToProSeller(seller, "demo_sub_" + System.currentTimeMillis());
-            return frontendUrl + "/seller?upgraded=true";
+            return frontendUrl + "/home/dashboard/seller?tab=analytics&upgraded=true";
         }
 
         try {
@@ -99,8 +99,8 @@ public class SubscriptionService {
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                     .setCustomer(customerId)
-                    .setSuccessUrl(frontendUrl + "/seller?subscription=success&session_id={CHECKOUT_SESSION_ID}")
-                    .setCancelUrl(frontendUrl + "/seller/upgrade?cancelled=true")
+                    .setSuccessUrl(frontendUrl + "/home/dashboard/seller?tab=analytics&subscription=success&session_id={CHECKOUT_SESSION_ID}")
+                    .setCancelUrl(frontendUrl + "/seller/upgrade-to-pro?cancelled=true")
                     .addLineItem(
                             SessionCreateParams.LineItem.builder()
                                     .setPrice(proPriceId)

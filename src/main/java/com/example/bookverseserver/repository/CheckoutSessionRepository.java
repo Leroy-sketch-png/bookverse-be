@@ -1,7 +1,9 @@
 package com.example.bookverseserver.repository;
 
 import com.example.bookverseserver.entity.Order_Payment.CheckoutSession;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +17,22 @@ public interface CheckoutSessionRepository extends JpaRepository<CheckoutSession
   Optional<CheckoutSession> findByPaymentIntentId(String paymentIntentId);
   
   /**
+   * Find any existing checkout session for a cart (regardless of status).
+   * Used to prevent duplicate sessions (cart_id has unique constraint via @OneToOne).
+   * Uses pessimistic write lock to prevent race conditions on concurrent checkout requests.
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT cs FROM CheckoutSession cs WHERE cs.cart.id = :cartId")
+  Optional<CheckoutSession> findByCartIdForUpdate(@Param("cartId") Long cartId);
+  
+  /**
+   * Find any existing checkout session for a cart (no lock, for read-only queries).
+   */
+  @Query("SELECT cs FROM CheckoutSession cs WHERE cs.cart.id = :cartId")
+  Optional<CheckoutSession> findByCartId(@Param("cartId") Long cartId);
+  
+  /**
    * Find an existing pending checkout session for a cart.
-   * Used to prevent duplicate sessions (cart_id has unique constraint).
    */
   @Query("SELECT cs FROM CheckoutSession cs WHERE cs.cart.id = :cartId AND cs.status = 'PENDING'")
   Optional<CheckoutSession> findPendingByCartId(@Param("cartId") Long cartId);

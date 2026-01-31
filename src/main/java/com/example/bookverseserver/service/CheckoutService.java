@@ -103,15 +103,25 @@ public class CheckoutService {
         BigDecimal shipping = shippingFlatFee;
         BigDecimal total = subtotal.add(tax).add(shipping);
 
-        // Check for existing pending session for this cart (prevents duplicate constraint violation)
-        Optional<CheckoutSession> existingSession = checkoutSessionRepository.findPendingByCartId(cart.getId());
+        // Check for ANY existing session for this cart (cart_id has unique constraint via @OneToOne)
+        // Use pessimistic lock to prevent race conditions on concurrent checkout requests
+        Optional<CheckoutSession> existingSession = checkoutSessionRepository.findByCartIdForUpdate(cart.getId());
         if (existingSession.isPresent()) {
             CheckoutSession session = existingSession.get();
-            // Update the session with fresh totals and extend expiry
+            
+            // If session is PENDING, reuse it with fresh totals
+            // If session is COMPLETED/FAILED/EXPIRED, reset it to PENDING for new checkout
             session.setAmount(total);
+            session.setStatus("PENDING");
             session.setExpiresAt(LocalDateTime.now().plusHours(24));
+            // Clear old order association if any (for re-checkout scenarios)
+            session.setOrder(null);
+            session.setPaymentIntentId(null);
+            session.setClientSecret(null);
+            
             CheckoutSession updatedSession = checkoutSessionRepository.save(session);
-            log.info("Reusing existing checkout session {} for user {}", updatedSession.getId(), userId);
+            log.info("Reusing/resetting checkout session {} (was {}) for user {}", 
+                    updatedSession.getId(), session.getStatus(), userId);
             return buildSessionResponse(updatedSession, cart, subtotal, tax, shipping, BigDecimal.ZERO, null);
         }
 
@@ -126,7 +136,7 @@ public class CheckoutService {
                 .build();
 
         CheckoutSession savedSession = checkoutSessionRepository.save(session);
-        log.info("Created checkout session {} for user {}", savedSession.getId(), userId);
+        log.info("Created new checkout session {} for user {}", savedSession.getId(), userId);
 
         return buildSessionResponse(savedSession, cart, subtotal, tax, shipping, BigDecimal.ZERO, null);
     }

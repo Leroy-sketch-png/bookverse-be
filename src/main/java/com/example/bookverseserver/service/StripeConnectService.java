@@ -87,7 +87,7 @@ public class StripeConnectService {
             userProfileRepository.save(profile);
             log.info("[DEMO MODE] Created fake Stripe account {} for seller {}", fakeAccountId, seller.getId());
             // Return success page URL instead of Stripe onboarding
-            return frontendUrl + "/seller/settings/payouts?demo=success";
+            return frontendUrl + "/home/dashboard/seller?tab=settings&payout=success";
         }
 
         if (!connectEnabled) {
@@ -153,8 +153,8 @@ public class StripeConnectService {
         try {
             AccountLinkCreateParams params = AccountLinkCreateParams.builder()
                     .setAccount(accountId)
-                    .setRefreshUrl(frontendUrl + "/seller/settings/payouts?refresh=true")
-                    .setReturnUrl(frontendUrl + "/seller/settings/payouts?success=true")
+                    .setRefreshUrl(frontendUrl + "/home/dashboard/seller?tab=settings&payout=refresh")
+                    .setReturnUrl(frontendUrl + "/home/dashboard/seller?tab=settings&payout=success")
                     .setType(AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING)
                     .build();
 

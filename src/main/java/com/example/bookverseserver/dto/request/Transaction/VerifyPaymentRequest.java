@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class VerifyPaymentRequest {
     
     @NotBlank(message = "PAYMENT_INTENT_ID_REQUIRED")
-    @Pattern(regexp = "^pi_[a-zA-Z0-9]+$", message = "INVALID_PAYMENT_INTENT_ID_FORMAT")
+    @Pattern(regexp = "^pi_[a-zA-Z0-9_]+$", message = "INVALID_PAYMENT_INTENT_ID_FORMAT")
     private String paymentIntentId;
     
     @NotNull(message = "ORDER_ID_REQUIRED")

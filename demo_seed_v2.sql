@@ -30,11 +30,11 @@ ON CONFLICT DO NOTHING;
 -- User profiles
 INSERT INTO user_profile (id, user_id, display_name, avatar_url, bio, phone_number, account_type, is_pro_seller, created_at, updated_at)
 VALUES
-    (2, 2, 'Tin Vo Books', 'https://i.pravatar.cc/150?u=tinvo', 'Curated collection of programming and technology books. Fast shipping, excellent condition guaranteed.', '+84912345678', 'PRO_SELLER', true, NOW(), NOW()),
-    (3, 3, 'Sarah Chen', 'https://i.pravatar.cc/150?u=sarahchen', 'History and non-fiction enthusiast. Building a community of thoughtful readers.', '+84923456789', 'SELLER', false, NOW(), NOW()),
-    (4, 4, 'Alex Nguyen', 'https://i.pravatar.cc/150?u=alexnguyen', 'Avid reader and book collector since 2018.', '+84934567890', 'BUYER', false, NOW(), NOW()),
-    (5, 5, 'Minh Pham', 'https://i.pravatar.cc/150?u=minhpham', 'Sharing beloved books with new readers. Specializing in fiction and fantasy.', '+84945678901', 'SELLER', false, NOW(), NOW()),
-    (6, 6, 'Emily Tran', 'https://i.pravatar.cc/150?u=emilytran', 'Software engineer who loves reading about design and creativity.', '+84956789012', 'BUYER', false, NOW(), NOW())
+    (2, 2, 'Tin Vo Books', 'https://i.pravatar.cc/150?u=tinvo', 'Curated collection of programming and technology books. Fast shipping, excellent condition guaranteed.', '0912345678', 'PRO_SELLER', true, NOW(), NOW()),
+    (3, 3, 'Sarah Chen', 'https://i.pravatar.cc/150?u=sarahchen', 'History and non-fiction enthusiast. Building a community of thoughtful readers.', '0923456789', 'SELLER', false, NOW(), NOW()),
+    (4, 4, 'Alex Nguyen', 'https://i.pravatar.cc/150?u=alexnguyen', 'Avid reader and book collector since 2018.', '0934567890', 'BUYER', false, NOW(), NOW()),
+    (5, 5, 'Minh Pham', 'https://i.pravatar.cc/150?u=minhpham', 'Sharing beloved books with new readers. Specializing in fiction and fantasy.', '0945678901', 'SELLER', false, NOW(), NOW()),
+    (6, 6, 'Emily Tran', 'https://i.pravatar.cc/150?u=emilytran', 'Software engineer who loves reading about design and creativity.', '0956789012', 'BUYER', false, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -116,8 +116,8 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 INSERT INTO shipping_address (id, user_id, full_name, phone, address_line1, address_line2, ward, district, city, postal_code, country, is_default, created_at, updated_at) VALUES
-    (1, 4, 'Alex Nguyen', '+84934567890', '123 Nguyen Hue Street', 'Apartment 5A', 'Ben Nghe Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW()),
-    (2, 6, 'Emily Tran', '+84956789012', '456 Le Loi Boulevard', NULL, 'Ben Thanh Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW())
+    (1, 4, 'Alex Nguyen', '0934567890', '123 Nguyen Hue Street', 'Apartment 5A', 'Ben Nghe Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW()),
+    (2, 6, 'Emily Tran', '0956789012', '456 Le Loi Boulevard', NULL, 'Ben Thanh Ward', 'District 1', 'Ho Chi Minh City', '70000', 'Vietnam', true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
